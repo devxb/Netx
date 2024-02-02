@@ -1,0 +1,17 @@
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.builtins { kotlin {} }
+        }
+    }
+}
+
+dependencies {
+    implementation "com.google.protobuf:protobuf-kotlin:${protobufVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+
+    protobuf files("./api-spec/")
+}
