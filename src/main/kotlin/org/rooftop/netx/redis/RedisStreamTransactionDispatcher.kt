@@ -54,12 +54,20 @@ class RedisStreamTransactionDispatcher(
 
     private fun publishJoin(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
-            .doOnNext { eventPublisher.publishEvent(TransactionJoinEvent(it.id, it.replay)) }
+            .doOnNext {
+                eventPublisher.publishEvent(
+                    TransactionJoinEvent(
+                        it.id,
+                        it.replay,
+                        it.serverId
+                    )
+                )
+            }
     }
 
     private fun publishCommit(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
-            .doOnNext { eventPublisher.publishEvent(TransactionCommitEvent(it.id)) }
+            .doOnNext { eventPublisher.publishEvent(TransactionCommitEvent(it.id, it.serverId)) }
     }
 
     private fun publishRollback(it: Transaction): Mono<Transaction> {
@@ -69,7 +77,8 @@ class RedisStreamTransactionDispatcher(
                     TransactionRollbackEvent(
                         it.id,
                         it.replay,
-                        it.cause
+                        it.serverId,
+                        it.cause,
                     )
                 )
             }
@@ -78,7 +87,7 @@ class RedisStreamTransactionDispatcher(
     private fun publishStart(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
             .doOnNext {
-                eventPublisher.publishEvent(TransactionStartEvent(it.id, it.replay))
+                eventPublisher.publishEvent(TransactionStartEvent(it.id, it.replay, it.serverId))
             }
     }
 }

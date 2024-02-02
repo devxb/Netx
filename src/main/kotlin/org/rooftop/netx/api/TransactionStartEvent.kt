@@ -1,6 +1,7 @@
 package org.rooftop.netx.api
 
 data class TransactionStartEvent(
-    private val transactionId: String,
-    private val replay: String,
+    val transactionId: String,
+    val replay: String,
+    val nodeName: String,
 )
