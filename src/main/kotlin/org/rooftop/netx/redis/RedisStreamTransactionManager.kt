@@ -9,10 +9,11 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
 
 class RedisStreamTransactionManager(
+    nodeId: Int,
     nodeName: String,
     applicationEventPublisher: ApplicationEventPublisher,
     private val transactionServer: ReactiveRedisTemplate<String, ByteArray>,
-) : AbstractTransactionManager(nodeName, SpringEventPublisher(applicationEventPublisher)) {
+) : AbstractTransactionManager(nodeId, nodeName, SpringEventPublisher(applicationEventPublisher)) {
 
     override fun exists(transactionId: String): Mono<String> {
         return transactionServer.opsForStream<String, ByteArray>()

@@ -17,13 +17,19 @@ class RedisTransactionAutoConfiguration(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
     @Value("\${netx.group}") private val group: String,
+    @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     @Bean
     fun redisStreamTransactionManager(): TransactionManager =
-        RedisStreamTransactionManager(nodeName, applicationEventPublisher, transactionServer())
+        RedisStreamTransactionManager(
+            nodeId,
+            nodeName,
+            applicationEventPublisher,
+            transactionServer()
+        )
 
     @Bean
     fun redisStreamTransactionDispatcher(): RedisStreamTransactionDispatcher =

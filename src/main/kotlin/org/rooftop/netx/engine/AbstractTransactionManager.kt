@@ -7,9 +7,10 @@ import org.rooftop.netx.idl.transaction
 import reactor.core.publisher.Mono
 
 abstract class AbstractTransactionManager(
+    nodeId: Int,
     private val nodeName: String,
     private val eventPublisher: EventPublisher,
-    private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(),
+    private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
 ) : TransactionManager {
 
     override fun start(replay: String): Mono<String> {
