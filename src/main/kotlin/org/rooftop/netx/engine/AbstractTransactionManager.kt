@@ -1,6 +1,7 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.TransactionIdGenerator
+import org.rooftop.netx.api.TransactionJoinEvent
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
@@ -15,7 +16,7 @@ abstract class AbstractTransactionManager(
 
     override fun start(replay: String): Mono<String> {
         return startTransaction(replay)
-            .publishJoinedEvent()
+            .subscribeTransaction()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
     }
 
@@ -26,6 +27,7 @@ abstract class AbstractTransactionManager(
                     id = transactionId
                     serverId = appServerId
                     this.replay = replay
+                    this.state = TransactionState.TRANSACTION_STATE_START
                 })
             }
     }
@@ -33,7 +35,7 @@ abstract class AbstractTransactionManager(
     override fun join(transactionId: String, replay: String): Mono<String> {
         return exists(transactionId)
             .joinTransaction(replay)
-            .publishJoinedEvent()
+            .subscribeTransaction()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
@@ -48,9 +50,9 @@ abstract class AbstractTransactionManager(
             }
     }
 
-    private fun Mono<String>.publishJoinedEvent(): Mono<String> {
+    private fun Mono<String>.subscribeTransaction(): Mono<String> {
         return this.doOnSuccess {
-            eventPublisher.publish(TransactionJoinedEvent(it))
+            eventPublisher.publish(SubscribeTransactionEvent(it))
         }
     }
 
