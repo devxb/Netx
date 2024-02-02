@@ -1,4 +1,4 @@
-package org.rooftop.netx.core
+package org.rooftop.netx.engine
 
 fun interface EventPublisher {
 
