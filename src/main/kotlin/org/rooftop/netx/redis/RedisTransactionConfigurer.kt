@@ -13,7 +13,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext
 import org.springframework.data.redis.serializer.StringRedisSerializer
 
 @AutoConfiguration
-class RedisTransactionAutoConfiguration(
+class RedisTransactionConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
     @Value("\${netx.group}") private val group: String,

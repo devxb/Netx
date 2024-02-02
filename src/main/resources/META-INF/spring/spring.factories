@@ -1,0 +1,2 @@
+org.rooftop.netx.redis.AutoConfigureRedisTransaction=\
+org.rooftop.netx.redis.RedisTransactionConfigurer
