@@ -12,11 +12,11 @@ class RedisStreamTransactionManager(
     nodeId: Int,
     nodeName: String,
     applicationEventPublisher: ApplicationEventPublisher,
-    private val transactionServer: ReactiveRedisTemplate<String, ByteArray>,
+    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
 ) : AbstractTransactionManager(nodeId, nodeName, SpringEventPublisher(applicationEventPublisher)) {
 
     override fun exists(transactionId: String): Mono<String> {
-        return transactionServer.opsForStream<String, ByteArray>()
+        return reactiveRedisTemplate.opsForStream<String, ByteArray>()
             .range(transactionId, Range.open("-", "+"))
             .map { Transaction.parseFrom(it.value[DATA].toString().toByteArray()) }
             .next()
@@ -35,7 +35,7 @@ class RedisStreamTransactionManager(
     }
 
     override fun publishTransaction(transactionId: String, transaction: Transaction): Mono<String> {
-        return transactionServer.opsForStream<String, ByteArray>()
+        return reactiveRedisTemplate.opsForStream<String, ByteArray>()
             .add(
                 Record.of<String?, String?, ByteArray?>(mapOf(DATA to transaction.toByteArray()))
                     .withStreamKey(transactionId)
