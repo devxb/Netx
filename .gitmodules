@@ -1,0 +1,3 @@
+[submodule "idl"]
+	path = idl
+	url = https://github.com/rooftop-MSA/Netx-IDL.git
