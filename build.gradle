@@ -1,8 +1,10 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 plugins {
     id "application"
     id "org.jetbrains.kotlin.jvm" version "${jetbrainKotlinVersion}"
     id "org.jetbrains.kotlin.plugin.spring" version "${jetbrainKotlinVersion}"
-    id "org.springframework.boot" version "${springbootVersion}"
+    id "org.springframework.boot" version "${springbootVersion}" apply false
     id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
     id "org.sonarqube" version "${sonarcloudVersion}"
     id "com.google.protobuf" version "${protobufPluginVersion}"
@@ -13,6 +15,12 @@ version = "${version}"
 
 repositories {
     mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom SpringBootPlugin.BOM_COORDINATES
+    }
 }
 
 apply from: "gradle/mq.gradle"

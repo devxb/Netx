@@ -1,7 +1,5 @@
 package org.rooftop.netx.engine
 
-import org.rooftop.netx.api.TransactionIdGenerator
-import org.rooftop.netx.api.TransactionJoinEvent
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
@@ -9,9 +7,9 @@ import org.rooftop.netx.idl.transaction
 import reactor.core.publisher.Mono
 
 abstract class AbstractTransactionManager(
-    private val appServerId: String,
+    private val nodeName: String,
     private val eventPublisher: EventPublisher,
-    private val transactionIdGenerator: TransactionIdGenerator,
+    private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(),
 ) : TransactionManager {
 
     override fun start(replay: String): Mono<String> {
@@ -25,7 +23,7 @@ abstract class AbstractTransactionManager(
             .flatMap { transactionId ->
                 publishTransaction(transactionId, transaction {
                     id = transactionId
-                    serverId = appServerId
+                    serverId = nodeName
                     this.replay = replay
                     this.state = TransactionState.TRANSACTION_STATE_START
                 })
@@ -43,7 +41,7 @@ abstract class AbstractTransactionManager(
         return flatMap { transactionId ->
                 publishTransaction(transactionId, transaction {
                     id = transactionId
-                    serverId = appServerId
+                    serverId = nodeName
                     this.replay = replay
                     state = TransactionState.TRANSACTION_STATE_JOIN
                 })
@@ -60,7 +58,7 @@ abstract class AbstractTransactionManager(
         return exists(transactionId)
             .publishTransaction(transaction {
                 id = transactionId
-                serverId = appServerId
+                serverId = nodeName
                 state = TransactionState.TRANSACTION_STATE_ROLLBACK
                 this.cause = cause
             })
@@ -71,7 +69,7 @@ abstract class AbstractTransactionManager(
         return exists(transactionId)
             .publishTransaction(transaction {
                 id = transactionId
-                serverId = appServerId
+                serverId = nodeName
                 state = TransactionState.TRANSACTION_STATE_COMMIT
             })
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }

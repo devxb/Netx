@@ -20,7 +20,7 @@ import reactor.core.scheduler.Schedulers
 class RedisStreamTransactionDispatcher(
     private val eventPublisher: ApplicationEventPublisher,
     private val streamGroup: String,
-    private val name: String,
+    private val nodeName: String,
     connectionFactory: ReactiveRedisConnectionFactory,
 ) {
 
@@ -33,7 +33,7 @@ class RedisStreamTransactionDispatcher(
     @EventListener(SubscribeTransactionEvent::class)
     fun subscribeStream(subscribeTransactionEvent: SubscribeTransactionEvent): Flux<Transaction> {
         return receiver.receiveAutoAck(
-            Consumer.from(streamGroup, name),
+            Consumer.from(streamGroup, nodeName),
             StreamOffset.fromStart(subscribeTransactionEvent.transactionId)
         ).publishOn(Schedulers.parallel())
             .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) }

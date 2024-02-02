@@ -1,20 +1,18 @@
 package org.rooftop.netx.redis
 
-import org.rooftop.netx.api.TransactionIdGenerator
 import org.rooftop.netx.engine.AbstractTransactionManager
-import org.rooftop.netx.engine.EventPublisher
 import org.rooftop.netx.idl.Transaction
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Range
 import org.springframework.data.redis.connection.stream.Record
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
 
 class RedisStreamTransactionManager(
-    appServerId: String,
-    transactionIdGenerator: TransactionIdGenerator,
-    eventPublisher: EventPublisher,
+    nodeName: String,
+    applicationEventPublisher: ApplicationEventPublisher,
     private val transactionServer: ReactiveRedisTemplate<String, ByteArray>,
-) : AbstractTransactionManager(appServerId, eventPublisher, transactionIdGenerator) {
+) : AbstractTransactionManager(nodeName, SpringEventPublisher(applicationEventPublisher)) {
 
     override fun exists(transactionId: String): Mono<String> {
         return transactionServer.opsForStream<String, ByteArray>()
