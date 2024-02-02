@@ -1,0 +1,24 @@
+plugins {
+    id "application"
+    id "org.jetbrains.kotlin.jvm" version "${jetbrainKotlinVersion}"
+    id "org.jetbrains.kotlin.plugin.spring" version "${jetbrainKotlinVersion}"
+    id "org.springframework.boot" version "${springbootVersion}"
+    id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
+    id "org.sonarqube" version "${sonarcloudVersion}"
+    id "com.google.protobuf" version "${protobufPluginVersion}"
+}
+
+group = "${group}"
+version = "${version}"
+
+repositories {
+    mavenCentral()
+}
+
+apply from: "gradle/mq.gradle"
+apply from: "gradle/test.gradle"
+apply from: "gradle/core.gradle"
+apply from: "gradle/sonar.gradle"
+apply from: "gradle/kotlin.gradle"
+apply from: "gradle/spring.gradle"
+apply from: "gradle/protobuf.gradle"
