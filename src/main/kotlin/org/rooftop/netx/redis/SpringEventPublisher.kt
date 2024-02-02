@@ -6,7 +6,7 @@ import org.springframework.context.ApplicationEventPublisher
 
 class SpringEventPublisher(private val eventPublisher: ApplicationEventPublisher) : EventPublisher {
 
-    override fun publish(event: SubscribeTransactionEvent) {
+    override fun publish(event: Any) {
         eventPublisher.publishEvent(event)
     }
 }

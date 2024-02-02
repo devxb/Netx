@@ -2,5 +2,5 @@ package org.rooftop.netx.engine
 
 fun interface EventPublisher {
 
-    fun publish(event: SubscribeTransactionEvent)
+    fun publish(event: Any)
 }
