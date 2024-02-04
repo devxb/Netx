@@ -15,23 +15,11 @@ class RedisStreamTransactionManager(
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
 ) : AbstractTransactionManager(nodeId, nodeName, SpringEventPublisher(applicationEventPublisher)) {
 
-    override fun exists(transactionId: String): Mono<String> {
+    override fun findAnyTransaction(transactionId: String): Mono<Transaction> {
         return reactiveRedisTemplate.opsForStream<String, ByteArray>()
             .range(transactionId, Range.open("-", "+"))
             .map { Transaction.parseFrom(it.value[DATA].toString().toByteArray()) }
             .next()
-            .switchIfEmpty(
-                Mono.error {
-                    IllegalStateException("Cannot find exists transaction id \"$transactionId\"")
-                }
-            )
-            .transformTransactionId()
-    }
-
-    private fun Mono<*>.transformTransactionId(): Mono<String> {
-        return this.flatMap {
-            Mono.deferContextual { Mono.just(it["transactionId"]) }
-        }
     }
 
     override fun publishTransaction(transactionId: String, transaction: Transaction): Mono<String> {

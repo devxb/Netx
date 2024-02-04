@@ -13,7 +13,7 @@ abstract class AbstractTransactionManager(
     private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
 ) : TransactionManager {
 
-    override fun start(replay: String): Mono<String> {
+    final override fun start(replay: String): Mono<String> {
         return startTransaction(replay)
             .subscribeTransaction()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
@@ -31,7 +31,7 @@ abstract class AbstractTransactionManager(
             }
     }
 
-    override fun join(transactionId: String, replay: String): Mono<String> {
+    final override fun join(transactionId: String, replay: String): Mono<String> {
         return exists(transactionId)
             .joinTransaction(replay)
             .subscribeTransaction()
@@ -40,13 +40,13 @@ abstract class AbstractTransactionManager(
 
     private fun Mono<String>.joinTransaction(replay: String): Mono<String> {
         return flatMap { transactionId ->
-                publishTransaction(transactionId, transaction {
-                    id = transactionId
-                    serverId = nodeName
-                    this.replay = replay
-                    state = TransactionState.TRANSACTION_STATE_JOIN
-                })
-            }
+            publishTransaction(transactionId, transaction {
+                id = transactionId
+                serverId = nodeName
+                this.replay = replay
+                state = TransactionState.TRANSACTION_STATE_JOIN
+            })
+        }
     }
 
     private fun Mono<String>.subscribeTransaction(): Mono<String> {
@@ -55,7 +55,7 @@ abstract class AbstractTransactionManager(
         }
     }
 
-    override fun rollback(transactionId: String, cause: String): Mono<String> {
+    final override fun rollback(transactionId: String, cause: String): Mono<String> {
         return exists(transactionId)
             .publishTransaction(transaction {
                 id = transactionId
@@ -66,7 +66,7 @@ abstract class AbstractTransactionManager(
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
-    override fun commit(transactionId: String): Mono<String> {
+    final override fun commit(transactionId: String): Mono<String> {
         return exists(transactionId)
             .publishTransaction(transaction {
                 id = transactionId
@@ -76,13 +76,34 @@ abstract class AbstractTransactionManager(
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
+    final override fun exists(transactionId: String): Mono<String> {
+        return findAnyTransaction(transactionId)
+            .switchIfEmpty(
+                Mono.error {
+                    IllegalStateException("Cannot find exists transaction id \"$transactionId\"")
+                }
+            ).transformTransactionId()
+            .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
+    }
+
+    protected abstract fun findAnyTransaction(transactionId: String): Mono<Transaction>
+
+    protected fun Mono<*>.transformTransactionId(): Mono<String> {
+        return this.flatMap {
+            Mono.deferContextual { Mono.just(it["transactionId"]) }
+        }
+    }
+
     private fun Mono<String>.publishTransaction(transaction: Transaction): Mono<String> {
         return this.flatMap {
             publishTransaction(it, transaction)
         }
     }
 
-    abstract fun publishTransaction(transactionId: String, transaction: Transaction): Mono<String>
+    protected abstract fun publishTransaction(
+        transactionId: String,
+        transaction: Transaction,
+    ): Mono<String>
 
     private companion object {
         private const val CONTEXT_TX_KEY = "transactionId"
