@@ -8,6 +8,7 @@ plugins {
     id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
     id "org.sonarqube" version "${sonarcloudVersion}"
     id "com.google.protobuf" version "${protobufPluginVersion}"
+    id "maven-publish"
 }
 
 group = "${group}"
@@ -20,6 +21,14 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom SpringBootPlugin.BOM_COORDINATES
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
     }
 }
 
