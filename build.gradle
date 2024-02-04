@@ -14,6 +14,9 @@ plugins {
 group = "${group}"
 version = "${version}"
 
+sourceCompatibility = "${compatibility}"
+targetCompatibility = "${compatibility}"
+
 repositories {
     mavenCentral()
 }
@@ -39,3 +42,8 @@ apply from: "gradle/sonar.gradle"
 apply from: "gradle/kotlin.gradle"
 apply from: "gradle/spring.gradle"
 apply from: "gradle/protobuf.gradle"
+
+wrapper {
+    gradleVersion = "7.6.1"
+    distributionType = Wrapper.DistributionType.ALL
+}
