@@ -28,7 +28,7 @@ class RedisStreamTransactionManager(
                 Record.of<String?, String?, ByteArray?>(mapOf(DATA to transaction.toByteArray()))
                     .withStreamKey(transactionId)
             )
-            .transformTransactionId()
+            .mapTransactionId()
     }
 
     private companion object {

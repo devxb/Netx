@@ -82,13 +82,13 @@ abstract class AbstractTransactionManager(
                 Mono.error {
                     IllegalStateException("Cannot find exists transaction id \"$transactionId\"")
                 }
-            ).transformTransactionId()
+            ).mapTransactionId()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
     protected abstract fun findAnyTransaction(transactionId: String): Mono<Transaction>
 
-    protected fun Mono<*>.transformTransactionId(): Mono<String> {
+    protected fun Mono<*>.mapTransactionId(): Mono<String> {
         return this.flatMap {
             Mono.deferContextual { Mono.just(it["transactionId"]) }
         }
