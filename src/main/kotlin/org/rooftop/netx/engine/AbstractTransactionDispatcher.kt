@@ -39,7 +39,6 @@ abstract class AbstractTransactionDispatcher(
                 eventPublisher.publish(
                     TransactionJoinEvent(
                         it.id,
-                        it.replay,
                         it.serverId
                     )
                 )
@@ -68,7 +67,7 @@ abstract class AbstractTransactionDispatcher(
     private fun publishStart(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
             .doOnNext {
-                eventPublisher.publish(TransactionStartEvent(it.id, it.replay, it.serverId))
+                eventPublisher.publish(TransactionStartEvent(it.id, it.serverId))
             }
     }
 }
