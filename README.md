@@ -4,6 +4,8 @@
 
 ![version 0.1.0](https://img.shields.io/badge/version-0.1.0-black?labelColor=black&style=flat-square)
 
+<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/5082ef20-10ad-4b6b-bff8-7e78a0f9e01f" width="500" align="right"/>
+
 Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
 `Netx` 는 다음 기능을 제공합니다.   
 1. [Reactor](https://projectreactor.io/) 기반의 완전한 비동기 트랜잭션 관리
