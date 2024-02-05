@@ -1,6 +1,7 @@
 package org.rooftop.netx.redis
 
 import org.rooftop.netx.engine.AbstractTransactionManager
+import org.rooftop.netx.engine.UndoManager
 import org.rooftop.netx.idl.Transaction
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Range
@@ -12,8 +13,14 @@ class RedisStreamTransactionManager(
     nodeId: Int,
     nodeName: String,
     applicationEventPublisher: ApplicationEventPublisher,
+    undoManager: UndoManager,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
-) : AbstractTransactionManager(nodeId, nodeName, SpringEventPublisher(applicationEventPublisher)) {
+) : AbstractTransactionManager(
+    nodeId,
+    nodeName,
+    SpringEventPublisher(applicationEventPublisher),
+    undoManager = undoManager
+) {
 
     override fun findAnyTransaction(transactionId: String): Mono<Transaction> {
         return reactiveRedisTemplate.opsForStream<String, ByteArray>()

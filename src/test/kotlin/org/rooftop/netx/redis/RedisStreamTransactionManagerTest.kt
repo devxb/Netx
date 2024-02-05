@@ -10,6 +10,7 @@ import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
 import kotlin.time.Duration.Companion.minutes
 
+@AutoConfigureRedisUndo
 @AutoConfigureRedisTransaction
 @ContextConfiguration(
     classes = [

@@ -2,6 +2,7 @@ package org.rooftop.netx.redis
 
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.SubscribeTransactionEvent
+import org.rooftop.netx.engine.UndoManager
 import org.rooftop.netx.idl.Transaction
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
@@ -18,10 +19,11 @@ import kotlin.time.toJavaDuration
 class RedisStreamTransactionDispatcher(
     eventPublisher: ApplicationEventPublisher,
     connectionFactory: ReactiveRedisConnectionFactory,
+    undoManager: UndoManager,
     private val streamGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
-) : AbstractTransactionDispatcher(SpringEventPublisher(eventPublisher)) {
+) : AbstractTransactionDispatcher(undoManager, SpringEventPublisher(eventPublisher)) {
 
     private val options = StreamReceiver.StreamReceiverOptions.builder()
         .pollTimeout(1.hours.toJavaDuration())
