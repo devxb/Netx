@@ -11,13 +11,11 @@ abstract class AbstractTransactionManager(
     private val nodeName: String,
     private val eventPublisher: EventPublisher,
     private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
-    private val undoManager: UndoManager,
 ) : TransactionManager {
 
     final override fun start(undo: String): Mono<String> {
         return startTransaction()
             .subscribeTransaction()
-            .saveUndoState(undo)
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
     }
 
@@ -36,7 +34,6 @@ abstract class AbstractTransactionManager(
         return exists(transactionId)
             .joinTransaction()
             .subscribeTransaction()
-            .saveUndoState(undo)
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
@@ -54,10 +51,6 @@ abstract class AbstractTransactionManager(
         return this.doOnSuccess {
             eventPublisher.publish(SubscribeTransactionEvent(it))
         }
-    }
-
-    private fun Mono<String>.saveUndoState(undo: String): Mono<String> {
-        return this.flatMap { undoManager.save(it, undo) }
     }
 
     final override fun rollback(transactionId: String, cause: String): Mono<String> {

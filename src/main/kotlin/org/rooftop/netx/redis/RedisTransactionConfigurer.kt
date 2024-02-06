@@ -1,7 +1,6 @@
 package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.TransactionManager
-import org.rooftop.netx.engine.UndoManager
 import org.rooftop.pay.infra.transaction.ByteArrayRedisSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -22,7 +21,6 @@ class RedisTransactionConfigurer(
     @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
     private val applicationEventPublisher: ApplicationEventPublisher,
-    private val undoManager: UndoManager,
 ) {
 
     @Bean
@@ -32,7 +30,6 @@ class RedisTransactionConfigurer(
             nodeId,
             nodeName,
             applicationEventPublisher,
-            undoManager,
             reactiveRedisTemplate()
         )
 
@@ -42,7 +39,6 @@ class RedisTransactionConfigurer(
         RedisStreamTransactionDispatcher(
             applicationEventPublisher,
             reactiveRedisConnectionFactory(),
-            undoManager,
             group,
             nodeName,
             reactiveRedisTemplate()

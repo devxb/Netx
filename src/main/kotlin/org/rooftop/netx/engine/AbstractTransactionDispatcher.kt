@@ -11,7 +11,6 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 abstract class AbstractTransactionDispatcher(
-    private val undoManager: UndoManager,
     private val eventPublisher: EventPublisher,
 ) {
 
@@ -53,20 +52,21 @@ abstract class AbstractTransactionDispatcher(
     }
 
     private fun publishRollback(transaction: Transaction): Mono<Transaction> {
-        return undoManager.find(transaction.id)
+        return findOwnTransaction(transaction)
             .doOnNext {
                 eventPublisher.publish(
                     TransactionRollbackEvent(
                         transaction.id,
                         transaction.serverId,
                         transaction.cause,
-                        it
+                        it.undo
                     )
                 )
             }
-            .flatMap { undoManager.delete(transaction.id) }
             .map { transaction }
     }
+
+    protected abstract fun findOwnTransaction(transaction: Transaction): Mono<Transaction>
 
     private fun publishStart(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
