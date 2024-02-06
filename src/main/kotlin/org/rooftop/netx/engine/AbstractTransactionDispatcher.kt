@@ -11,12 +11,14 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 abstract class AbstractTransactionDispatcher(
+    private val undoManager: UndoManager,
     private val eventPublisher: EventPublisher,
 ) {
 
     @EventListener(SubscribeTransactionEvent::class)
     fun subscribeStream(event: SubscribeTransactionEvent): Flux<Transaction> {
-        return receive(event).dispatch()
+        return receive(event)
+            .dispatch()
     }
 
     protected abstract fun receive(event: SubscribeTransactionEvent): Flux<Transaction>
@@ -50,18 +52,20 @@ abstract class AbstractTransactionDispatcher(
             .doOnNext { eventPublisher.publish(TransactionCommitEvent(it.id, it.serverId)) }
     }
 
-    private fun publishRollback(it: Transaction): Mono<Transaction> {
-        return Mono.just(it)
+    private fun publishRollback(transaction: Transaction): Mono<Transaction> {
+        return undoManager.find(transaction.id)
             .doOnNext {
                 eventPublisher.publish(
                     TransactionRollbackEvent(
-                        it.id,
-                        it.replay,
-                        it.serverId,
-                        it.cause,
+                        transaction.id,
+                        transaction.serverId,
+                        transaction.cause,
+                        it
                     )
                 )
             }
+            .flatMap { undoManager.delete(transaction.id) }
+            .map { transaction }
     }
 
     private fun publishStart(it: Transaction): Mono<Transaction> {
