@@ -5,13 +5,13 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.*
+import org.rooftop.netx.autoconfig.AutoConfigureDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
 import kotlin.time.Duration.Companion.minutes
 
-@AutoConfigureRedisUndo
-@AutoConfigureRedisTransaction
+@AutoConfigureDistributedTransaction
 @ContextConfiguration(
     classes = [
         EventCapture::class,

@@ -2,12 +2,13 @@ package org.rooftop.netx.redis
 
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import org.rooftop.netx.autoconfig.AutoConfigureDistributedTransaction
 import org.rooftop.netx.engine.UndoManager
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
 
-@AutoConfigureRedisUndo
+@AutoConfigureDistributedTransaction
 @ContextConfiguration(classes = [RedisContainer::class])
 @TestPropertySource("classpath:application.properties")
 internal class RedisUndoManagerTest(

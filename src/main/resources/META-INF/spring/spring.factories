@@ -1,5 +1,0 @@
-org.rooftop.netx.redis.AutoConfigureRedisTransaction=\
-org.rooftop.netx.redis.RedisTransactionConfigurer
-
-org.rooftop.netx.redis.AutoConfigureRedisUndo=\
-org.rooftop.netx.redis.RedisUndoConfigurer

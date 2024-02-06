@@ -1,6 +1,7 @@
 package org.rooftop.netx.redis
 
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
@@ -17,9 +18,11 @@ class RedisUndoConfigurer(
 ) {
 
     @Bean
+    @ConditionalOnProperty(prefix = "netx.undo", name = ["mode"], havingValue = "redis")
     fun redisUndoManager(): RedisUndoManager = RedisUndoManager(group, redisUndoServer())
 
     @Bean
+    @ConditionalOnProperty(prefix = "netx.undo", name = ["mode"], havingValue = "redis")
     fun redisUndoServer(): ReactiveRedisTemplate<String, String> {
         val stringRedisSerializer = StringRedisSerializer()
 
@@ -32,6 +35,7 @@ class RedisUndoConfigurer(
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "netx.undo", name = ["mode"], havingValue = "redis")
     fun undoServerConnectionFactory(): ReactiveRedisConnectionFactory {
         val undoServerPort: String = System.getProperty("netx.undo.port") ?: netxUndoPort
 
