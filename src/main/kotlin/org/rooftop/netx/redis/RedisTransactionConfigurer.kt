@@ -1,5 +1,8 @@
 package org.rooftop.netx.redis
 
+import org.redisson.Redisson
+import org.redisson.api.RedissonReactiveClient
+import org.redisson.config.Config
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.pay.infra.transaction.ByteArrayRedisSerializer
 import org.springframework.beans.factory.annotation.Value
@@ -17,9 +20,11 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 class RedisTransactionConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
-    @Value("\${netx.group}") private val group: String,
+    @Value("\${netx.group}") private val nodeGroup: String,
     @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
+    @Value("\${netx.recovery-milli:60000}") private val recoveryMilli: Long,
+    @Value("\${netx.orphan-milli:10000}") private val orphanMilli: Long,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
@@ -27,21 +32,36 @@ class RedisTransactionConfigurer(
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisStreamTransactionManager(): TransactionManager =
         RedisStreamTransactionManager(
-            nodeId,
-            nodeName,
-            applicationEventPublisher,
-            reactiveRedisTemplate()
+            nodeId = nodeId,
+            nodeName = nodeName,
+            nodeGroup = nodeGroup,
+            transactionDispatcher = redisStreamTransactionDispatcher(),
+            transactionRetrySupporter = redisTransactionRetrySupporter(),
+            reactiveRedisTemplate = reactiveRedisTemplate(),
         )
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisStreamTransactionDispatcher(): RedisStreamTransactionDispatcher =
         RedisStreamTransactionDispatcher(
-            applicationEventPublisher,
-            reactiveRedisConnectionFactory(),
-            group,
-            nodeName,
-            reactiveRedisTemplate()
+            eventPublisher = applicationEventPublisher,
+            connectionFactory = reactiveRedisConnectionFactory(),
+            nodeGroup = nodeGroup,
+            nodeName = nodeName,
+            reactiveRedisTemplate = reactiveRedisTemplate()
+        )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisTransactionRetrySupporter(): RedisTransactionRetrySupporter =
+        RedisTransactionRetrySupporter(
+            nodeGroup = nodeGroup,
+            nodeName = nodeName,
+            reactiveRedisTemplate = reactiveRedisTemplate(),
+            redissonReactiveClient = redissonReactiveClient(),
+            transactionDispatcher = redisStreamTransactionDispatcher(),
+            orphanMilli = orphanMilli,
+            recoveryMilli = recoveryMilli,
         )
 
     @Bean
@@ -54,6 +74,18 @@ class RedisTransactionConfigurer(
         val context = builder.value(byteArrayRedisSerializer()).build()
 
         return ReactiveRedisTemplate(reactiveRedisConnectionFactory(), context)
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redissonReactiveClient(): RedissonReactiveClient {
+        val port: String = System.getProperty("netx.port") ?: port
+
+        return Redisson.create(Config()
+            .also {
+                it.useSingleServer()
+                    .setAddress("redis://$host:$port")
+            }).reactive()
     }
 
     @Bean

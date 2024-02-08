@@ -35,7 +35,7 @@ publishing {
     }
 }
 
-apply from: "gradle/mq.gradle"
+apply from: "gradle/db.gradle"
 apply from: "gradle/test.gradle"
 apply from: "gradle/core.gradle"
 apply from: "gradle/sonar.gradle"

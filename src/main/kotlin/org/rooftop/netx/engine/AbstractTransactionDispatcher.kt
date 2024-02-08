@@ -6,38 +6,43 @@ import org.rooftop.netx.api.TransactionRollbackEvent
 import org.rooftop.netx.api.TransactionStartEvent
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
-import org.springframework.context.event.EventListener
+import org.springframework.context.ApplicationEventPublisher
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 abstract class AbstractTransactionDispatcher(
-    private val eventPublisher: EventPublisher,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
-    @EventListener(SubscribeTransactionEvent::class)
-    fun subscribeStream(event: SubscribeTransactionEvent): Flux<Transaction> {
-        return receive(event)
-            .dispatch()
+    fun subscribeStream(transactionId: String): Flux<Pair<Transaction, String>> {
+        return receive(transactionId)
+            .flatMap { dispatchAndAck(it.first, it.second) }
     }
 
-    protected abstract fun receive(event: SubscribeTransactionEvent): Flux<Transaction>
+    protected abstract fun receive(transactionId: String): Flux<Pair<Transaction, String>>
 
-    private fun Flux<Transaction>.dispatch(): Flux<Transaction> {
-        return this.flatMap {
-            when (it.state) {
-                TransactionState.TRANSACTION_STATE_JOIN -> publishJoin(it)
-                TransactionState.TRANSACTION_STATE_COMMIT -> publishCommit(it)
-                TransactionState.TRANSACTION_STATE_ROLLBACK -> publishRollback(it)
-                TransactionState.TRANSACTION_STATE_START -> publishStart(it)
-                else -> error("Cannot find matched transaction state \"${it.state}\"")
-            }
+    fun dispatchAndAck(transaction: Transaction, messageId: String): Flux<Pair<Transaction, String>> {
+        return Flux.just(transaction to messageId)
+            .dispatch()
+            .ack()
+    }
+
+    private fun Flux<Pair<Transaction, String>>.dispatch(): Flux<Pair<Transaction, String>> {
+        return this.flatMap { (transaction, messageId) ->
+            when (transaction.state) {
+                TransactionState.TRANSACTION_STATE_JOIN -> publishJoin(transaction)
+                TransactionState.TRANSACTION_STATE_COMMIT -> publishCommit(transaction)
+                TransactionState.TRANSACTION_STATE_ROLLBACK -> publishRollback(transaction)
+                TransactionState.TRANSACTION_STATE_START -> publishStart(transaction)
+                else -> error("Cannot find matched transaction state \"${transaction.state}\"")
+            }.map { transaction to messageId }
         }
     }
 
     private fun publishJoin(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
             .doOnNext {
-                eventPublisher.publish(
+                eventPublisher.publishEvent(
                     TransactionJoinEvent(
                         it.id,
                         it.serverId
@@ -48,13 +53,13 @@ abstract class AbstractTransactionDispatcher(
 
     private fun publishCommit(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
-            .doOnNext { eventPublisher.publish(TransactionCommitEvent(it.id, it.serverId)) }
+            .doOnNext { eventPublisher.publishEvent(TransactionCommitEvent(it.id, it.serverId)) }
     }
 
     private fun publishRollback(transaction: Transaction): Mono<Transaction> {
         return findOwnTransaction(transaction)
             .doOnNext {
-                eventPublisher.publish(
+                eventPublisher.publishEvent(
                     TransactionRollbackEvent(
                         transaction.id,
                         transaction.serverId,
@@ -71,7 +76,9 @@ abstract class AbstractTransactionDispatcher(
     private fun publishStart(it: Transaction): Mono<Transaction> {
         return Mono.just(it)
             .doOnNext {
-                eventPublisher.publish(TransactionStartEvent(it.id, it.serverId))
+                eventPublisher.publishEvent(TransactionStartEvent(it.id, it.serverId))
             }
     }
+
+    protected abstract fun Flux<Pair<Transaction, String>>.ack(): Flux<Pair<Transaction, String>>
 }

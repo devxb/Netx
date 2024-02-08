@@ -2,7 +2,6 @@ package org.rooftop.netx.redis
 
 import org.rooftop.netx.engine.AbstractTransactionManager
 import org.rooftop.netx.idl.Transaction
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Range
 import org.springframework.data.redis.connection.stream.Record
 import org.springframework.data.redis.core.ReactiveRedisTemplate
@@ -11,12 +10,16 @@ import reactor.core.publisher.Mono
 class RedisStreamTransactionManager(
     nodeId: Int,
     nodeName: String,
-    applicationEventPublisher: ApplicationEventPublisher,
+    nodeGroup: String,
+    transactionDispatcher: RedisStreamTransactionDispatcher,
+    transactionRetrySupporter: RedisTransactionRetrySupporter,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
 ) : AbstractTransactionManager(
-    nodeId,
-    nodeName,
-    SpringEventPublisher(applicationEventPublisher),
+    nodeId = nodeId,
+    nodeName = nodeName,
+    nodeGroup = nodeGroup,
+    transactionDispatcher = transactionDispatcher,
+    transactionRetrySupporter = transactionRetrySupporter,
 ) {
 
     override fun findAnyTransaction(transactionId: String): Mono<Transaction> {
