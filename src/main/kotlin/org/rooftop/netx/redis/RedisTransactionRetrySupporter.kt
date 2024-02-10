@@ -56,7 +56,7 @@ class RedisTransactionRetrySupporter(
             .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.toString() }
             .flatMap { transactionWithMessageId ->
                 redissonReactiveClient.getLock("$nodeGroup-key")
-                    .unlock()
+                    .forceUnlock()
                     .flatMapMany { Flux.just(transactionWithMessageId) }
             }
             .doOnError {

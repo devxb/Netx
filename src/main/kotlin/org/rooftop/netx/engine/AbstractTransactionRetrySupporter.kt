@@ -14,11 +14,11 @@ abstract class AbstractTransactionRetrySupporter(
     init {
         Flux.interval(recoveryMilli.milliseconds.toJavaDuration())
             .publishOn(Schedulers.parallel())
-            .flatMap { claimOrphanTransaction() }
+            .flatMap { handleOrphanTransaction() }
             .subscribe()
     }
 
     abstract fun watchTransaction(transactionId: String): Mono<String>
 
-    abstract fun claimOrphanTransaction(): Flux<Pair<Transaction, String>>
+    protected abstract fun handleOrphanTransaction(): Flux<Pair<Transaction, String>>
 }
