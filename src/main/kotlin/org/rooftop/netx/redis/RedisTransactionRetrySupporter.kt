@@ -1,6 +1,7 @@
 package org.rooftop.netx.redis
 
 import org.redisson.api.RedissonReactiveClient
+import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.AbstractTransactionRetrySupporter
 import org.rooftop.netx.idl.Transaction
 import org.springframework.data.domain.Range
@@ -16,7 +17,7 @@ class RedisTransactionRetrySupporter(
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
     private val redissonReactiveClient: RedissonReactiveClient,
-    private val transactionDispatcher: RedisStreamTransactionDispatcher,
+    private val transactionDispatcher: AbstractTransactionDispatcher,
     private val orphanMilli: Long,
     recoveryMilli: Long,
 ) : AbstractTransactionRetrySupporter(recoveryMilli) {
@@ -27,7 +28,7 @@ class RedisTransactionRetrySupporter(
             .map { transactionId }
     }
 
-    override fun claimOrphanTransaction(): Flux<Pair<Transaction, String>> {
+    override fun handleOrphanTransaction(): Flux<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForSet()
             .members(nodeGroup)
             .flatMap { claimTransactions(String(it)) }
@@ -45,18 +46,24 @@ class RedisTransactionRetrySupporter(
                     .map { pendingMessage }
             }
             .flatMapMany {
-                reactiveRedisTemplate.opsForStream<String, ByteArray>()
+                reactiveRedisTemplate.opsForStream<String, String>()
                     .claim(
                         transactionId, nodeGroup, nodeName, XClaimOptions
                             .minIdleMs(orphanMilli)
-                            .ids(it.get().toList())
+                            .ids(it.get().map { eachMessage -> eachMessage.id.value }.toList())
                     )
             }
-            .map { Transaction.parseFrom(it.value["data"]) to it.id.toString() }
-            .flatMap {
+            .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.toString() }
+            .flatMap { transactionWithMessageId ->
                 redissonReactiveClient.getLock("$nodeGroup-key")
                     .unlock()
-                    .thenMany { it }
+                    .flatMapMany { Flux.just(transactionWithMessageId) }
+            }
+            .doOnError {
+                redissonReactiveClient.getLock("$nodeGroup-key")
+                    .unlock()
+                    .subscribeOn(Schedulers.parallel())
+                    .subscribe()
             }
     }
 }
