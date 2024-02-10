@@ -7,17 +7,17 @@ import org.rooftop.netx.api.TransactionManager
 import org.rooftop.pay.infra.transaction.ByteArrayRedisSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.serializer.RedisSerializationContext
 import org.springframework.data.redis.serializer.StringRedisSerializer
 
-@Configuration
-class RedisTransactionConfigurer(
+@TestConfiguration
+class NoAckRedisTransactionConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
     @Value("\${netx.group}") private val nodeGroup: String,
@@ -35,7 +35,7 @@ class RedisTransactionConfigurer(
             nodeId = nodeId,
             nodeName = nodeName,
             nodeGroup = nodeGroup,
-            transactionDispatcher = redisStreamTransactionDispatcher(),
+            transactionDispatcher = noAckRedisStreamTransactionDispatcher(),
             transactionRetrySupporter = redisTransactionRetrySupporter(),
             reactiveRedisTemplate = reactiveRedisTemplate(),
         )
@@ -44,6 +44,17 @@ class RedisTransactionConfigurer(
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisStreamTransactionDispatcher(): RedisStreamTransactionDispatcher =
         RedisStreamTransactionDispatcher(
+            eventPublisher = applicationEventPublisher,
+            connectionFactory = reactiveRedisConnectionFactory(),
+            nodeGroup = nodeGroup,
+            nodeName = nodeName,
+            reactiveRedisTemplate = reactiveRedisTemplate()
+        )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun noAckRedisStreamTransactionDispatcher(): NoAckRedisStreamTransactionDispatcher =
+        NoAckRedisStreamTransactionDispatcher(
             eventPublisher = applicationEventPublisher,
             connectionFactory = reactiveRedisConnectionFactory(),
             nodeGroup = nodeGroup,
@@ -81,11 +92,12 @@ class RedisTransactionConfigurer(
     fun redissonReactiveClient(): RedissonReactiveClient {
         val port: String = System.getProperty("netx.port") ?: port
 
-        return Redisson.create(Config()
-            .also {
-                it.useSingleServer()
-                    .setAddress("redis://$host:$port")
-            }).reactive()
+        return Redisson.create(
+            Config()
+                .also {
+                    it.useSingleServer()
+                        .setAddress("redis://$host:$port")
+                }).reactive()
     }
 
     @Bean
@@ -102,3 +114,4 @@ class RedisTransactionConfigurer(
         return LettuceConnectionFactory(host, port.toInt())
     }
 }
+

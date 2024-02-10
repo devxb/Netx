@@ -131,6 +131,8 @@ internal class RedisStreamTransactionManagerTest(
                 eventually(5.minutes) {
                     eventCapture.capturedCount(TransactionRollbackEvent::class)
                 }
+
+                Thread.sleep(10.minutes.inWholeMilliseconds)
             }
         }
 

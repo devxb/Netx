@@ -16,7 +16,7 @@ import reactor.core.scheduler.Schedulers
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.toJavaDuration
 
-class RedisStreamTransactionDispatcher(
+class NoAckRedisStreamTransactionDispatcher(
     eventPublisher: ApplicationEventPublisher,
     connectionFactory: ReactiveRedisConnectionFactory,
     private val nodeGroup: String,
@@ -68,11 +68,6 @@ class RedisStreamTransactionDispatcher(
         transaction.state == TransactionState.TRANSACTION_STATE_JOIN
                 || transaction.state == TransactionState.TRANSACTION_STATE_START
 
-    override fun Flux<Pair<Transaction, String>>.ack(): Flux<Pair<Transaction, String>> {
-        return this.flatMap { (transaction, messageId) ->
-            reactiveRedisTemplate.opsForStream<String, ByteArray>()
-                .acknowledge(transaction.id, nodeGroup, messageId)
-                .flatMapMany { Flux.just(transaction to messageId) }
-        }
-    }
+    override fun Flux<Pair<Transaction, String>>.ack(): Flux<Pair<Transaction, String>> = this
 }
+
