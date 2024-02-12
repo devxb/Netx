@@ -129,10 +129,8 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.rollback(transactionId, "rollback occured for test").block()
 
                 eventually(5.minutes) {
-                    eventCapture.capturedCount(TransactionRollbackEvent::class)
+                    eventCapture.capturedCount(TransactionRollbackEvent::class) shouldBe 1
                 }
-
-                Thread.sleep(10.minutes.inWholeMilliseconds)
             }
         }
 

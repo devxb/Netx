@@ -1,4 +1,4 @@
-package org.rooftop.pay.infra.transaction
+package org.rooftop.netx.redis
 
 import org.springframework.data.redis.serializer.RedisSerializer
 
