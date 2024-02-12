@@ -13,13 +13,14 @@ import reactor.core.scheduler.Schedulers
 import java.util.concurrent.TimeUnit
 
 class RedisTransactionRetrySupporter(
+    recoveryMilli: Long,
     private val nodeGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
     private val redissonReactiveClient: RedissonReactiveClient,
     private val transactionDispatcher: AbstractTransactionDispatcher,
     private val orphanMilli: Long,
-    recoveryMilli: Long,
+    private val lockKey: String = "$nodeGroup-key",
 ) : AbstractTransactionRetrySupporter(recoveryMilli) {
 
     override fun watchTransaction(transactionId: String): Mono<String> {
@@ -41,7 +42,7 @@ class RedisTransactionRetrySupporter(
             .pending(transactionId, nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
             .filter { it.get().toList().isNotEmpty() }
             .flatMap { pendingMessage ->
-                redissonReactiveClient.getLock("$nodeGroup-key")
+                redissonReactiveClient.getLock(lockKey)
                     .tryLock(0, orphanMilli, TimeUnit.MILLISECONDS)
                     .map { pendingMessage }
             }
@@ -55,12 +56,12 @@ class RedisTransactionRetrySupporter(
             }
             .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.toString() }
             .flatMap { transactionWithMessageId ->
-                redissonReactiveClient.getLock("$nodeGroup-key")
+                redissonReactiveClient.getLock(lockKey)
                     .forceUnlock()
                     .flatMapMany { Flux.just(transactionWithMessageId) }
             }
             .doOnError {
-                redissonReactiveClient.getLock("$nodeGroup-key")
+                redissonReactiveClient.getLock(lockKey)
                     .unlock()
                     .subscribeOn(Schedulers.parallel())
                     .subscribe()

@@ -4,7 +4,6 @@ import org.redisson.Redisson
 import org.redisson.api.RedissonReactiveClient
 import org.redisson.config.Config
 import org.rooftop.netx.api.TransactionManager
-import org.rooftop.pay.infra.transaction.ByteArrayRedisSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.test.context.TestConfiguration

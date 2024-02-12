@@ -38,14 +38,6 @@ class RedisStreamTransactionDispatcher(
                     StreamOffset.create(transactionId, ReadOffset.from(">"))
                 ).publishOn(Schedulers.parallel())
                     .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.value }
-                    .flatMap { (transaction, messageId) ->
-                        when (transaction.state) {
-                            TransactionState.TRANSACTION_STATE_ROLLBACK ->
-                                findOwnTransaction(transaction).map { it to messageId }
-
-                            else -> Mono.just(transaction to messageId)
-                        }
-                    }
             }
     }
 

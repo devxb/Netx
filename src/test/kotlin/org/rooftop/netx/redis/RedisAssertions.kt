@@ -20,4 +20,14 @@ internal class RedisAssertions(
 
         pendingMessageCount shouldBe count
     }
+
+    fun retryTransactionShouldBeNotExists(transactionId: String) {
+        val retryTransaction = reactiveRedisOperations.opsForSet()
+            .members(nodeGroup)
+            .map { String(it) }
+            .any {  it == transactionId  }
+            .block()
+
+        retryTransaction shouldBe false
+    }
 }
