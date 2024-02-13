@@ -17,6 +17,16 @@ version = "${version}"
 sourceCompatibility = "${compatibility}"
 targetCompatibility = "${compatibility}"
 
+jar {
+    enabled = true
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 repositories {
     mavenCentral()
 }

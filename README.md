@@ -5,7 +5,7 @@
 <br>
 
 
-![version 0.1.2](https://img.shields.io/badge/version-0.1.2-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/jdk-17-orange?labelColor=black&style=flat-square)
+![version 0.1.4](https://img.shields.io/badge/version-0.1.2-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/jdk-17-orange?labelColor=black&style=flat-square)
 
 <img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/5082ef20-10ad-4b6b-bff8-7e78a0f9e01f" width="500" align="right"/>
 
@@ -19,11 +19,11 @@ Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니�
 
 ## How to use
 
-Netx는 스프링 환경에서 사용할 수 있으며, 아래와 같이 `@AutoConfigureRedisTransaction` 어노테이션을 붙이는것으로 손쉽게 사용할 수 있습니다.
+Netx는 스프링 환경에서 사용할 수 있으며, 아래와 같이 `@EnableDistributedTransaciton` 어노테이션을 붙이는것으로 손쉽게 사용할 수 있습니다.
 
 ```kotlin
 @SpringBootApplication
-@AutoConfigureDistributedTransaction
+@EnableDistributedTransaciton
 @EnableAutoConfiguration(exclude = [RedisReactiveAutoConfiguration::class])
 class Application {
 
@@ -36,7 +36,7 @@ class Application {
 }
 ```
 
-`@AutoConfigureDistributedTransaction` 어노테이션으로 자동 구성할 경우 netx는 아래 프로퍼티를 사용해 메시지 큐와 커넥션을 맺습니다.
+`@EnableDistributedTransaciton` 어노테이션으로 자동 구성할 경우 netx는 아래 프로퍼티를 사용해 메시지 큐와 커넥션을 맺습니다.
 
 #### Properties
 
@@ -131,7 +131,6 @@ fun handleTransactionRollbackEvent(event: TransactionRollbackEvent) {
 ## Download
 
 ```groovy
-
 repositories {
     maven { url "https://jitpack.io" }
 }
