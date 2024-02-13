@@ -1,0 +1,2 @@
+org.rooftop.netx.autoconfig.EnableDistributedTransaction=\
+org.rooftop.netx.redis.RedisTransactionConfigurer

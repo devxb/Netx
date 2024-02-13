@@ -7,13 +7,13 @@ import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.TransactionCommitEvent
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.api.TransactionRollbackEvent
-import org.rooftop.netx.autoconfig.AutoConfigureDistributedTransaction
+import org.rooftop.netx.autoconfig.EnableDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import reactor.core.scheduler.Schedulers
 import kotlin.time.Duration.Companion.seconds
 
-@AutoConfigureDistributedTransaction
+@EnableDistributedTransaction
 @ContextConfiguration(
     classes = [
         RedisContainer::class,
