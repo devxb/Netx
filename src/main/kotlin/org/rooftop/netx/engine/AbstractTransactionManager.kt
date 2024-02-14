@@ -12,7 +12,7 @@ abstract class AbstractTransactionManager(
     private val nodeGroup: String,
     private val nodeName: String,
     private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
-    private val transactionDispatcher: AbstractTransactionDispatcher,
+    private val transactionListener: AbstractTransactionListener,
     private val transactionRetrySupporter: AbstractTransactionRetrySupporter,
 ) : TransactionManager {
 
@@ -58,7 +58,7 @@ abstract class AbstractTransactionManager(
 
     private fun Mono<String>.subscribeTransaction(): Mono<String> {
         return this.doOnSuccess {
-            transactionDispatcher.subscribeStream(it)
+            transactionListener.subscribeStream(it)
                 .subscribeOn(Schedulers.parallel())
                 .subscribe()
         }

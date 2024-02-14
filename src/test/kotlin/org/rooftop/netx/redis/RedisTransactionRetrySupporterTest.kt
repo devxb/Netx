@@ -13,6 +13,7 @@ import kotlin.time.Duration.Companion.minutes
         RedisContainer::class,
         RedisAssertions::class,
         NoAckRedisTransactionConfigurer::class,
+        TransactionHandlerAssertions::class,
     ]
 )
 @TestPropertySource("classpath:application.properties")
@@ -20,7 +21,12 @@ import kotlin.time.Duration.Companion.minutes
 internal class RedisTransactionRetrySupporterTest(
     private val redisAssertions: RedisAssertions,
     private val transactionManager: TransactionManager,
+    private val transactionHandlerAssertions: TransactionHandlerAssertions,
 ) : DescribeSpec({
+
+    beforeEach {
+        transactionHandlerAssertions.clear()
+    }
 
     describe("handleOrphanTransaction 메소드는") {
         context("pending되었지만, ack되지 않은 트랜잭션이 있다면,") {
@@ -30,6 +36,7 @@ internal class RedisTransactionRetrySupporterTest(
                 Thread.sleep(3_000)
 
                 eventually(10.minutes) {
+                    transactionHandlerAssertions.startCountShouldBe(1)
                     redisAssertions.pendingMessageCountShouldBe(transactionId, 0)
                 }
             }

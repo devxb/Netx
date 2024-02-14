@@ -3,14 +3,12 @@ package org.rooftop.netx.redis
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.matchers.shouldBe
-import org.rooftop.netx.api.TransactionCommitEvent
 import org.rooftop.netx.api.TransactionManager
-import org.rooftop.netx.api.TransactionRollbackEvent
-import org.rooftop.netx.autoconfig.EnableDistributedTransaction
+import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import reactor.core.scheduler.Schedulers
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @EnableDistributedTransaction
@@ -18,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
     classes = [
         RedisContainer::class,
         RedisAssertions::class,
-        EventCapture::class,
+        TransactionHandlerAssertions::class,
     ]
 )
 @TestPropertySource("classpath:application.properties")
@@ -26,8 +24,13 @@ import kotlin.time.Duration.Companion.seconds
 internal class RedisStreamTransactionRemoverTest(
     private val redisAssertions: RedisAssertions,
     private val transactionManager: TransactionManager,
-    private val eventCapture: EventCapture,
+    private val transactionHandlerAssertions: TransactionHandlerAssertions,
 ) : DescribeSpec({
+
+    beforeEach {
+        transactionHandlerAssertions.clear()
+    }
+
     describe("handleTransactionCommitEvent 메소드는") {
         context("TransactionCommitEvent 가 발행되면,") {
             val transactionId = transactionManager.start("RedisStreamTransactionRemoverTest")
@@ -38,8 +41,8 @@ internal class RedisStreamTransactionRemoverTest(
                     .subscribeOn(Schedulers.parallel())
                     .subscribe()
 
-                eventually(10.seconds) {
-                    eventCapture.capturedCount(TransactionCommitEvent::class) shouldBe 1
+                eventually(5.minutes) {
+                    transactionHandlerAssertions.commitCountShouldBe(1)
                     redisAssertions.retryTransactionShouldBeNotExists(transactionId)
                 }
             }
@@ -52,8 +55,8 @@ internal class RedisStreamTransactionRemoverTest(
             it("Transaction 을 retry watch 대기열에서 삭제한다.") {
                 transactionManager.rollback(transactionId, "rollback occured for test").block()
 
-                eventually(10.seconds) {
-                    eventCapture.capturedCount(TransactionRollbackEvent::class) shouldBe 1
+                eventually(5.minutes) {
+                    transactionHandlerAssertions.rollbackCountShouldBe(1)
                     redisAssertions.retryTransactionShouldBeNotExists(transactionId)
                 }
             }

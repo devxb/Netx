@@ -7,7 +7,7 @@ import org.rooftop.netx.api.TransactionManager
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
@@ -24,7 +24,7 @@ class NoAckRedisTransactionConfigurer(
     @Value("\${netx.node-name}") private val nodeName: String,
     @Value("\${netx.recovery-milli:60000}") private val recoveryMilli: Long,
     @Value("\${netx.orphan-milli:10000}") private val orphanMilli: Long,
-    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val applicationContext: ApplicationContext,
 ) {
 
     @Bean
@@ -34,16 +34,16 @@ class NoAckRedisTransactionConfigurer(
             nodeId = nodeId,
             nodeName = nodeName,
             nodeGroup = nodeGroup,
-            transactionDispatcher = noAckRedisStreamTransactionDispatcher(),
+            transactionListener = redisStreamTransactionListener(),
             transactionRetrySupporter = redisTransactionRetrySupporter(),
             reactiveRedisTemplate = reactiveRedisTemplate(),
         )
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisStreamTransactionDispatcher(): RedisStreamTransactionDispatcher =
-        RedisStreamTransactionDispatcher(
-            eventPublisher = applicationEventPublisher,
+    fun redisStreamTransactionListener(): RedisStreamTransactionListener =
+        RedisStreamTransactionListener(
+            transactionDispatcher = noAckRedisStreamTransactionDispatcher(),
             connectionFactory = reactiveRedisConnectionFactory(),
             nodeGroup = nodeGroup,
             nodeName = nodeName,
@@ -54,10 +54,8 @@ class NoAckRedisTransactionConfigurer(
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun noAckRedisStreamTransactionDispatcher(): NoAckRedisStreamTransactionDispatcher =
         NoAckRedisStreamTransactionDispatcher(
-            eventPublisher = applicationEventPublisher,
-            connectionFactory = reactiveRedisConnectionFactory(),
+            applicationContext = applicationContext,
             nodeGroup = nodeGroup,
-            nodeName = nodeName,
             reactiveRedisTemplate = reactiveRedisTemplate()
         )
 
@@ -72,6 +70,24 @@ class NoAckRedisTransactionConfigurer(
             transactionDispatcher = redisStreamTransactionDispatcher(),
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
+        )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisStreamTransactionDispatcher(): RedisStreamTransactionDispatcher =
+        RedisStreamTransactionDispatcher(
+            applicationContext = applicationContext,
+            reactiveRedisTemplate = reactiveRedisTemplate(),
+            redisStreamTransactionRemover = redisStreamTransactionRemover(),
+            nodeGroup = nodeGroup,
+        )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisStreamTransactionRemover(): RedisStreamTransactionRemover =
+        RedisStreamTransactionRemover(
+            nodeGroup = nodeGroup,
+            reactiveRedisTemplate = reactiveRedisTemplate(),
         )
 
     @Bean
