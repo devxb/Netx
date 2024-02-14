@@ -69,7 +69,7 @@ abstract class AbstractTransactionDispatcher {
                         transaction.serverId,
                         transaction.group,
                         transaction.cause,
-                        transaction.undo,
+                        it.undo,
                     )
                 }
 
