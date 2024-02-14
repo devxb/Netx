@@ -1,84 +1,99 @@
 package org.rooftop.netx.engine
 
-import org.rooftop.netx.api.TransactionCommitEvent
-import org.rooftop.netx.api.TransactionJoinEvent
-import org.rooftop.netx.api.TransactionRollbackEvent
-import org.rooftop.netx.api.TransactionStartEvent
+import org.rooftop.netx.api.*
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
-import org.springframework.context.ApplicationEventPublisher
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
+import kotlin.reflect.KFunction
 
-abstract class AbstractTransactionDispatcher(
-    private val eventPublisher: ApplicationEventPublisher,
-) {
+abstract class AbstractTransactionDispatcher {
 
-    fun subscribeStream(transactionId: String): Flux<Pair<Transaction, String>> {
-        return receive(transactionId)
-            .flatMap { dispatchAndAck(it.first, it.second) }
-    }
+    protected val transactionHandlerFunctions =
+        mutableMapOf<TransactionState, MutableList<Pair<KFunction<Mono<Any>>, Any>>>()
 
-    protected abstract fun receive(transactionId: String): Flux<Pair<Transaction, String>>
+    protected abstract fun initHandlers()
 
-    fun dispatchAndAck(transaction: Transaction, messageId: String): Flux<Pair<Transaction, String>> {
-        return Flux.just(transaction to messageId)
-            .dispatch()
-            .ack()
-    }
-
-    private fun Flux<Pair<Transaction, String>>.dispatch(): Flux<Pair<Transaction, String>> {
-        return this.flatMap { (transaction, messageId) ->
-            when (transaction.state) {
-                TransactionState.TRANSACTION_STATE_JOIN -> publishJoin(transaction)
-                TransactionState.TRANSACTION_STATE_COMMIT -> publishCommit(transaction)
-                TransactionState.TRANSACTION_STATE_ROLLBACK -> publishRollback(transaction)
-                TransactionState.TRANSACTION_STATE_START -> publishStart(transaction)
-                else -> error("Cannot find matched transaction state \"${transaction.state}\"")
-            }.map { transaction to messageId }
-        }
-    }
-
-    private fun publishJoin(it: Transaction): Mono<Transaction> {
-        return Mono.just(it)
-            .doOnNext {
-                eventPublisher.publishEvent(
-                    TransactionJoinEvent(
-                        it.id,
-                        it.serverId
-                    )
+    fun dispatch(transaction: Transaction, messageId: String): Flux<Any> {
+        return Mono.just(transaction.state)
+            .filter { state -> transactionHandlerFunctions.containsKey(state) }
+            .flatMapMany { state ->
+                Flux.fromIterable(
+                    transactionHandlerFunctions[state]
+                        ?: throw cannotFindMatchedHandlerFunctionException
                 )
+            }
+            .flatMap { (function, instance) ->
+                mapToTransactionEvent(transaction)
+                    .doOnNext { beforeInvokeHook(transaction, messageId) }
+                    .flatMap { function.call(instance, it) }
+            }
+            .doOnComplete {
+                ack(transaction, messageId)
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe()
             }
     }
 
-    private fun publishCommit(it: Transaction): Mono<Transaction> {
-        return Mono.just(it)
-            .doOnNext { eventPublisher.publishEvent(TransactionCommitEvent(it.id, it.serverId)) }
-    }
+    private fun mapToTransactionEvent(transaction: Transaction): Mono<TransactionEvent> {
+        return when (transaction.state) {
+            TransactionState.TRANSACTION_STATE_START -> Mono.just(
+                TransactionStartEvent(
+                    transaction.id,
+                    transaction.serverId,
+                    transaction.group
+                )
+            )
 
-    private fun publishRollback(transaction: Transaction): Mono<Transaction> {
-        return findOwnTransaction(transaction)
-            .doOnNext {
-                eventPublisher.publishEvent(
+            TransactionState.TRANSACTION_STATE_COMMIT -> Mono.just(
+                TransactionCommitEvent(
+                    transaction.id,
+                    transaction.serverId,
+                    transaction.group,
+                )
+            )
+
+            TransactionState.TRANSACTION_STATE_JOIN -> Mono.just(
+                TransactionJoinEvent(
+                    transaction.id,
+                    transaction.serverId,
+                    transaction.group,
+                )
+            )
+
+            TransactionState.TRANSACTION_STATE_ROLLBACK -> findOwnTransaction(transaction)
+                .map {
                     TransactionRollbackEvent(
                         transaction.id,
                         transaction.serverId,
+                        transaction.group,
                         transaction.cause,
-                        it.undo
+                        transaction.undo,
                     )
-                )
-            }
-            .map { transaction }
+                }
+
+            else -> throw cannotFindMatchedTransactionEventException
+        }
     }
 
     protected abstract fun findOwnTransaction(transaction: Transaction): Mono<Transaction>
 
-    private fun publishStart(it: Transaction): Mono<Transaction> {
-        return Mono.just(it)
-            .doOnNext {
-                eventPublisher.publishEvent(TransactionStartEvent(it.id, it.serverId))
-            }
-    }
+    protected abstract fun ack(
+        transaction: Transaction,
+        messageId: String
+    ): Mono<Pair<Transaction, String>>
 
-    protected abstract fun Flux<Pair<Transaction, String>>.ack(): Flux<Pair<Transaction, String>>
+    protected abstract fun beforeInvokeHook(
+        transaction: Transaction,
+        messageId: String
+    )
+
+    private companion object {
+        private val cannotFindMatchedTransactionEventException =
+            java.lang.IllegalStateException("Cannot find matched transaction event")
+
+        private val cannotFindMatchedHandlerFunctionException =
+            IllegalStateException("Cannot find matched handler function")
+    }
 }

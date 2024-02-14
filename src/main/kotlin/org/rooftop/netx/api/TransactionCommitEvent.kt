@@ -1,6 +1,7 @@
 package org.rooftop.netx.api
 
-data class TransactionCommitEvent(
-    val transactionId: String,
-    val nodeName: String,
-)
+class TransactionCommitEvent(
+    transactionId: String,
+    nodeName: String,
+    group: String,
+): TransactionEvent(transactionId, nodeName, group)

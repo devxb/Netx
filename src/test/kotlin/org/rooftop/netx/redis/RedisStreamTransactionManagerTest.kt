@@ -5,7 +5,7 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.*
-import org.rooftop.netx.autoconfig.EnableDistributedTransaction
+import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
@@ -14,19 +14,19 @@ import kotlin.time.Duration.Companion.minutes
 @EnableDistributedTransaction
 @ContextConfiguration(
     classes = [
-        EventCapture::class,
         RedisContainer::class,
+        TransactionHandlerAssertions::class,
     ]
 )
 @DisplayName("RedisStreamTransactionManager 클래스의")
 @TestPropertySource("classpath:application.properties")
 internal class RedisStreamTransactionManagerTest(
-    private val eventCapture: EventCapture,
     private val transactionManager: TransactionManager,
+    private val transactionHandlerAssertions: TransactionHandlerAssertions,
 ) : DescribeSpec({
 
     beforeEach {
-        eventCapture.clear()
+        transactionHandlerAssertions.clear()
     }
 
     describe("start 메소드는") {
@@ -35,7 +35,7 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.start(REPLAY).subscribe()
 
                 eventually(5.minutes) {
-                    eventCapture.capturedCount(TransactionStartEvent::class) shouldBe 1
+                    transactionHandlerAssertions.startCountShouldBe(1)
                 }
             }
         }
@@ -46,7 +46,7 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.start(REPLAY).block()
 
                 eventually(5.minutes) {
-                    eventCapture.capturedCount(TransactionStartEvent::class) shouldBe 2
+                    transactionHandlerAssertions.startCountShouldBe(2)
                 }
             }
         }
@@ -60,7 +60,8 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.join(transactionId, REPLAY).subscribe()
 
                 eventually(5.minutes) {
-                    eventCapture.capturedCount(TransactionJoinEvent::class) shouldBe 1
+                    transactionHandlerAssertions.startCountShouldBe(1)
+                    transactionHandlerAssertions.joinCountShouldBe(1)
                 }
             }
         }
@@ -106,7 +107,8 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.commit(transactionId).block()
 
                 eventually(5.minutes) {
-                    eventCapture.capturedCount(TransactionCommitEvent::class)
+                    transactionHandlerAssertions.startCountShouldBe(1)
+                    transactionHandlerAssertions.commitCountShouldBe(1)
                 }
             }
         }
@@ -129,7 +131,8 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.rollback(transactionId, "rollback occured for test").block()
 
                 eventually(5.minutes) {
-                    eventCapture.capturedCount(TransactionRollbackEvent::class) shouldBe 1
+                    transactionHandlerAssertions.startCountShouldBe(1)
+                    transactionHandlerAssertions.rollbackCountShouldBe(1)
                 }
             }
         }

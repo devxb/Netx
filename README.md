@@ -5,7 +5,7 @@
 <br>
 
 
-![version 0.1.4](https://img.shields.io/badge/version-0.1.4-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/jdk-17-orange?labelColor=black&style=flat-square)
+![version 0.1.5](https://img.shields.io/badge/version-0.1.5-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)
 
 <img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/5082ef20-10ad-4b6b-bff8-7e78a0f9e01f" width="500" align="right"/>
 
@@ -102,29 +102,30 @@ fun exists(param: Any): Mono<Any> {
 
 #### Scenario4. Handle transaction event
 
-다른 분산서버가 (혹은 자기자신이) transactionManager를 통해서 트랜잭션을 시작하거나 트랜잭션 상태를 변경했을때, 호출한 메소드에 맞는 트랜잭션 이벤트를
-발행합니다.   
-이 이벤트들을 핸들링 함으로써, 다른서버에서 발생한 에러등을 수신하고 롤백할 수 있습니다.   
-_롤백은 TransactionRollbackEvent로 전달되는 `undo` 필드를 사용합니다._
- 
+다른 분산서버가 (혹은 자기자신이) transactionManager를 통해서 트랜잭션을 시작하거나 트랜잭션 상태를 변경했을때, 트랜잭션 상태에 맞는 핸들러를 호출합니다.
+이 핸들러를 구현함으로써, 트랜잭션별 상태를 처리할 수 있습니다. (롤백등)
+_롤백은 TransactionRollbackEvent로 전달되는 `undo` 필드를 사용합니다._   
+> [!WARNING]   
+> 트랜잭션 핸들러는 반드시 핸들러에 맞는 `TransactionEvent` **하나**만을 파라미터로 받아야 합니다. 
+
 ```kotlin
 
-@EventListener(TransactionStartEvent::class)
+@TransactionStartHandler
 fun handleTransactionStartEvent(event: TransactionStartEvent) {
     // ...
 }
 
-@EventListener(TransactionJoinEvent::class)
+@TransactionJoinHandler
 fun handleTransactionJoinEvent(event: TransactionJoinEvent) {
     // ...
 }
 
-@EventListener(TransactionCommitEvent::class)
+@TransactionCommitHandler
 fun handleTransactionCommitEvent(event: TransactionCommitEvent) {
     // ...
 }
 
-@EventListener(TransactionRollbackEvent::class)
+@TransactionRollbackHandler
 fun handleTransactionRollbackEvent(event: TransactionRollbackEvent) {
     // ...
 }

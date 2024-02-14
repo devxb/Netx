@@ -1,4 +1,4 @@
-package org.rooftop.netx.autoconfig
+package org.rooftop.netx.meta
 
 import org.rooftop.netx.redis.RedisTransactionConfigurer
 import org.springframework.context.annotation.Import

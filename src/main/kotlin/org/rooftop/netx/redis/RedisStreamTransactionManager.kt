@@ -1,6 +1,6 @@
 package org.rooftop.netx.redis
 
-import org.rooftop.netx.engine.AbstractTransactionDispatcher
+import org.rooftop.netx.engine.AbstractTransactionListener
 import org.rooftop.netx.engine.AbstractTransactionManager
 import org.rooftop.netx.engine.AbstractTransactionRetrySupporter
 import org.rooftop.netx.idl.Transaction
@@ -13,14 +13,14 @@ class RedisStreamTransactionManager(
     nodeId: Int,
     nodeName: String,
     nodeGroup: String,
-    transactionDispatcher: AbstractTransactionDispatcher,
+    transactionListener: AbstractTransactionListener,
     transactionRetrySupporter: AbstractTransactionRetrySupporter,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
 ) : AbstractTransactionManager(
     nodeId = nodeId,
     nodeName = nodeName,
     nodeGroup = nodeGroup,
-    transactionDispatcher = transactionDispatcher,
+    transactionListener = transactionListener,
     transactionRetrySupporter = transactionRetrySupporter,
 ) {
 

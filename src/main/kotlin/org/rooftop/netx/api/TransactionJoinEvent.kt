@@ -1,6 +1,7 @@
 package org.rooftop.netx.api
 
-data class TransactionJoinEvent(
-    val transactionId: String,
-    val nodeName: String,
-)
+class TransactionJoinEvent(
+    transactionId: String,
+    nodeName: String,
+    group: String,
+): TransactionEvent(transactionId, nodeName, group)
