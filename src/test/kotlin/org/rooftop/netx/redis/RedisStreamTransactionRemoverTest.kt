@@ -26,6 +26,11 @@ internal class RedisStreamTransactionRemoverTest(
     private val transactionManager: TransactionManager,
     private val transactionHandlerAssertions: TransactionHandlerAssertions,
 ) : DescribeSpec({
+
+    beforeEach {
+        transactionHandlerAssertions.clear()
+    }
+
     describe("handleTransactionCommitEvent 메소드는") {
         context("TransactionCommitEvent 가 발행되면,") {
             val transactionId = transactionManager.start("RedisStreamTransactionRemoverTest")

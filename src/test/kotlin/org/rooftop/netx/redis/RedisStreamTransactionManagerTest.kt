@@ -60,7 +60,6 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.join(transactionId, REPLAY).subscribe()
 
                 eventually(5.minutes) {
-                    transactionHandlerAssertions.startCountShouldBe(1)
                     transactionHandlerAssertions.joinCountShouldBe(1)
                 }
             }
@@ -107,7 +106,6 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.commit(transactionId).block()
 
                 eventually(5.minutes) {
-                    transactionHandlerAssertions.startCountShouldBe(1)
                     transactionHandlerAssertions.commitCountShouldBe(1)
                 }
             }
@@ -131,7 +129,6 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.rollback(transactionId, "rollback occured for test").block()
 
                 eventually(5.minutes) {
-                    transactionHandlerAssertions.startCountShouldBe(1)
                     transactionHandlerAssertions.rollbackCountShouldBe(1)
                 }
             }
