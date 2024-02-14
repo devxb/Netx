@@ -34,7 +34,10 @@ class RedisTransactionRetrySupporter(
             .members(nodeGroup)
             .flatMap { claimTransactions(String(it)) }
             .publishOn(Schedulers.parallel())
-            .flatMap { transactionDispatcher.dispatchAndAck(it.first, it.second) }
+            .flatMap { (transaction, messageId) ->
+                transactionDispatcher.dispatch(transaction, messageId)
+                    .map { transaction to messageId }
+            }
     }
 
     private fun claimTransactions(transactionId: String): Flux<Pair<Transaction, String>> {

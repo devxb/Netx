@@ -13,6 +13,7 @@ import kotlin.time.Duration.Companion.minutes
         RedisContainer::class,
         RedisAssertions::class,
         NoAckRedisTransactionConfigurer::class,
+        TransactionHandlerAssertions::class,
     ]
 )
 @TestPropertySource("classpath:application.properties")
