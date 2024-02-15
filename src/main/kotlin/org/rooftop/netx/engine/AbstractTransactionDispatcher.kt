@@ -17,6 +17,7 @@ abstract class AbstractTransactionDispatcher {
 
     fun dispatch(transaction: Transaction, messageId: String): Flux<Any> {
         return Mono.just(transaction.state)
+            .doOnNext { deleteElastic(transaction, messageId) }
             .filter { state -> transactionHandlerFunctions.containsKey(state) }
             .flatMapMany { state ->
                 Flux.fromIterable(
@@ -26,7 +27,6 @@ abstract class AbstractTransactionDispatcher {
             }
             .flatMap { (function, instance) ->
                 mapToTransactionEvent(transaction)
-                    .doOnNext { beforeInvokeHook(transaction, messageId) }
                     .flatMap { function.call(instance, it) }
             }
             .doOnComplete {
@@ -84,7 +84,7 @@ abstract class AbstractTransactionDispatcher {
         messageId: String
     ): Mono<Pair<Transaction, String>>
 
-    protected abstract fun beforeInvokeHook(
+    protected abstract fun deleteElastic(
         transaction: Transaction,
         messageId: String
     )

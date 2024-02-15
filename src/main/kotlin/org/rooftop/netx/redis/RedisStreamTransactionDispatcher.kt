@@ -89,7 +89,7 @@ class RedisStreamTransactionDispatcher(
             )
     }
 
-    override fun beforeInvokeHook(
+    override fun deleteElastic(
         transaction: Transaction,
         messageId: String
     ) = redisStreamTransactionRemover.deleteElastic(transaction)
