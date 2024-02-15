@@ -77,7 +77,7 @@ class NoAckRedisStreamTransactionDispatcher(
     override fun ack(transaction: Transaction, messageId: String): Mono<Pair<Transaction, String>> =
         Mono.just(transaction to messageId)
 
-    override fun beforeInvokeHook(
+    override fun deleteElastic(
         transaction: Transaction,
         messageId: String
     ) {
