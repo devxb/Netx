@@ -5,7 +5,7 @@
 <br>
 
 
-![version 0.1.6](https://img.shields.io/badge/version-0.1.6-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)
+![version 0.1.7](https://img.shields.io/badge/version-0.1.7-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)
 
 <img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/5082ef20-10ad-4b6b-bff8-7e78a0f9e01f" width="500" align="right"/>
 
