@@ -61,14 +61,14 @@ abstract class AbstractTransactionDispatcher {
                 )
             )
 
-            TransactionState.TRANSACTION_STATE_ROLLBACK -> findOwnTransaction(transaction)
+            TransactionState.TRANSACTION_STATE_ROLLBACK -> findOwnUndo(transaction)
                 .map {
                     TransactionRollbackEvent(
                         transaction.id,
                         transaction.serverId,
                         transaction.group,
                         transaction.cause,
-                        it.undo,
+                        it,
                     )
                 }
 
@@ -76,7 +76,7 @@ abstract class AbstractTransactionDispatcher {
         }
     }
 
-    protected abstract fun findOwnTransaction(transaction: Transaction): Mono<Transaction>
+    protected abstract fun findOwnUndo(transaction: Transaction): Mono<String>
 
     protected abstract fun ack(
         transaction: Transaction,
