@@ -8,7 +8,6 @@ import org.springframework.data.domain.Range
 import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.TimeUnit
 
@@ -23,16 +22,8 @@ class RedisTransactionRetrySupporter(
     private val lockKey: String = "$nodeGroup-key",
 ) : AbstractTransactionRetrySupporter(recoveryMilli) {
 
-    override fun watchTransaction(transactionId: String): Mono<String> {
-        return reactiveRedisTemplate.opsForSet()
-            .add(nodeGroup, transactionId.toByteArray())
-            .map { transactionId }
-    }
-
     override fun handleOrphanTransaction(): Flux<Pair<Transaction, String>> {
-        return reactiveRedisTemplate.opsForSet()
-            .members(nodeGroup)
-            .flatMap { claimTransactions(String(it)) }
+        return claimTransactions()
             .publishOn(Schedulers.parallel())
             .flatMap { (transaction, messageId) ->
                 transactionDispatcher.dispatch(transaction, messageId)
@@ -40,9 +31,9 @@ class RedisTransactionRetrySupporter(
             }
     }
 
-    private fun claimTransactions(transactionId: String): Flux<Pair<Transaction, String>> {
+    private fun claimTransactions(): Flux<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForStream<String, String>()
-            .pending(transactionId, nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
+            .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
             .filter { it.get().toList().isNotEmpty() }
             .flatMap { pendingMessage ->
                 redissonReactiveClient.getLock(lockKey)
@@ -52,8 +43,10 @@ class RedisTransactionRetrySupporter(
             .flatMapMany {
                 reactiveRedisTemplate.opsForStream<String, String>()
                     .claim(
-                        transactionId, nodeGroup, nodeName, XClaimOptions
-                            .minIdleMs(orphanMilli)
+                        STREAM_KEY,
+                        nodeGroup,
+                        nodeName,
+                        XClaimOptions.minIdleMs(orphanMilli)
                             .ids(it.get().map { eachMessage -> eachMessage.id.value }.toList())
                     )
             }
@@ -69,5 +62,9 @@ class RedisTransactionRetrySupporter(
                     .subscribeOn(Schedulers.parallel())
                     .subscribe()
             }
+    }
+
+    private companion object {
+        private const val STREAM_KEY = "NETX_STREAM"
     }
 }

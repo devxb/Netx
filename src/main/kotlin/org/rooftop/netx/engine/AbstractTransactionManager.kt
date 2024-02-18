@@ -5,21 +5,16 @@ import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
 import org.rooftop.netx.idl.transaction
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 
 abstract class AbstractTransactionManager(
     nodeId: Int,
     private val nodeGroup: String,
     private val nodeName: String,
     private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
-    private val transactionListener: AbstractTransactionListener,
-    private val transactionRetrySupporter: AbstractTransactionRetrySupporter,
 ) : TransactionManager {
 
     final override fun start(undo: String): Mono<String> {
         return startTransaction(undo)
-            .subscribeTransaction()
-            .watchTransaction()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
     }
 
@@ -37,10 +32,16 @@ abstract class AbstractTransactionManager(
     }
 
     final override fun join(transactionId: String, undo: String): Mono<String> {
-        return exists(transactionId)
+        return findAnyTransaction(transactionId)
+            .map {
+                if (it == TransactionState.TRANSACTION_STATE_ROLLBACK ||
+                    it == TransactionState.TRANSACTION_STATE_COMMIT
+                ) {
+                    error("Cannot join transaction cause, transaction \"$transactionId\" already ${it.name}")
+                }
+                transactionId
+            }
             .joinTransaction(undo)
-            .subscribeTransaction()
-            .watchTransaction()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
@@ -54,18 +55,6 @@ abstract class AbstractTransactionManager(
                 this.undo = undo
             })
         }
-    }
-
-    private fun Mono<String>.subscribeTransaction(): Mono<String> {
-        return this.doOnSuccess {
-            transactionListener.subscribeStream(it)
-                .subscribeOn(Schedulers.parallel())
-                .subscribe()
-        }
-    }
-
-    private fun Mono<String>.watchTransaction(): Mono<String> {
-        return this.flatMap { transactionRetrySupporter.watchTransaction(it) }
     }
 
     final override fun rollback(transactionId: String, cause: String): Mono<String> {
@@ -93,17 +82,13 @@ abstract class AbstractTransactionManager(
 
     final override fun exists(transactionId: String): Mono<String> {
         return findAnyTransaction(transactionId)
-            .switchIfEmpty(
-                Mono.error {
-                    IllegalStateException("Cannot find exists transaction id \"$transactionId\"")
-                }
-            ).mapTransactionId()
+            .mapTransactionId()
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
-    protected abstract fun findAnyTransaction(transactionId: String): Mono<Transaction>
+    protected abstract fun findAnyTransaction(transactionId: String): Mono<TransactionState>
 
-    protected fun Mono<*>.mapTransactionId(): Mono<String> {
+    private fun Mono<*>.mapTransactionId(): Mono<String> {
         return this.flatMap {
             Mono.deferContextual { Mono.just(it["transactionId"]) }
         }

@@ -34,9 +34,9 @@ class NoAckRedisTransactionConfigurer(
             nodeId = nodeId,
             nodeName = nodeName,
             nodeGroup = nodeGroup,
-            transactionListener = redisStreamTransactionListener(),
             transactionRetrySupporter = redisTransactionRetrySupporter(),
             reactiveRedisTemplate = reactiveRedisTemplate(),
+            redissonReactiveClient = redissonReactiveClient(),
         )
 
     @Bean
@@ -48,7 +48,7 @@ class NoAckRedisTransactionConfigurer(
             nodeGroup = nodeGroup,
             nodeName = nodeName,
             reactiveRedisTemplate = reactiveRedisTemplate()
-        )
+        ).also { it.subscribeStream() }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -78,16 +78,7 @@ class NoAckRedisTransactionConfigurer(
         RedisStreamTransactionDispatcher(
             applicationContext = applicationContext,
             reactiveRedisTemplate = reactiveRedisTemplate(),
-            redisStreamTransactionRemover = redisStreamTransactionRemover(),
             nodeGroup = nodeGroup,
-        )
-
-    @Bean
-    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisStreamTransactionRemover(): RedisStreamTransactionRemover =
-        RedisStreamTransactionRemover(
-            nodeGroup = nodeGroup,
-            reactiveRedisTemplate = reactiveRedisTemplate(),
         )
 
     @Bean
@@ -108,11 +99,10 @@ class NoAckRedisTransactionConfigurer(
         val port: String = System.getProperty("netx.port") ?: port
 
         return Redisson.create(
-            Config()
-                .also {
-                    it.useSingleServer()
-                        .setAddress("redis://$host:$port")
-                }).reactive()
+            Config().also {
+                it.useSingleServer()
+                    .setAddress("redis://$host:$port")
+            }).reactive()
     }
 
     @Bean

@@ -21,7 +21,6 @@ import kotlin.reflect.full.declaredMemberFunctions
 class RedisStreamTransactionDispatcher(
     private val applicationContext: ApplicationContext,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
-    private val redisStreamTransactionRemover: RedisStreamTransactionRemover,
     private val nodeGroup: String,
 ) : AbstractTransactionDispatcher() {
 
@@ -67,7 +66,7 @@ class RedisStreamTransactionDispatcher(
 
     override fun findOwnTransaction(transaction: Transaction): Mono<Transaction> {
         return reactiveRedisTemplate.opsForStream<String, String>()
-            .read(StreamOffset.create(transaction.id, ReadOffset.from("0")))
+            .read(StreamOffset.create(STREAM_KEY, ReadOffset.from("0")))
             .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) }
             .filter { it.group == nodeGroup }
             .filter { hasUndo(it) }
@@ -80,7 +79,7 @@ class RedisStreamTransactionDispatcher(
 
     override fun ack(transaction: Transaction, messageId: String): Mono<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForStream<String, ByteArray>()
-            .acknowledge(transaction.id, nodeGroup, messageId)
+            .acknowledge(STREAM_KEY, nodeGroup, messageId)
             .map { transaction to messageId }
             .switchIfEmpty(
                 Mono.error {
@@ -89,12 +88,9 @@ class RedisStreamTransactionDispatcher(
             )
     }
 
-    override fun deleteElastic(
-        transaction: Transaction,
-        messageId: String
-    ) = redisStreamTransactionRemover.deleteElastic(transaction)
-
     private companion object {
+        private const val STREAM_KEY = "NETX_STREAM"
+
         private val notMatchedTransactionHandlerException =
             IllegalStateException("Cannot find matched Transaction handler")
     }

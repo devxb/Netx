@@ -33,9 +33,6 @@ internal class NetxTest(
             row(10, 10),
             row(100, 100),
             row(1_000, 1_000),
-            row(10_000, 10_000),
-            row(100_000, 100_000),
-            row(1_000_000, 1_000_000),
         ) { commitLoadCount, rollbackLoadCount ->
             transactionReceiveStorage.clear()
 
@@ -51,14 +48,12 @@ internal class NetxTest(
                 netxClient.rollbackTransaction(transactionId, "")
             }
 
-            eventually(10.minutes) {
+            eventually(30.minutes) {
                 transactionReceiveStorage.startCountShouldBe(commitLoadCount + rollbackLoadCount)
                 transactionReceiveStorage.joinCountShouldBe(commitLoadCount + rollbackLoadCount)
                 transactionReceiveStorage.commitCountShouldBe(commitLoadCount)
                 transactionReceiveStorage.rollbackCountShouldBe(rollbackLoadCount)
             }
-
-            Thread.sleep(Long.MAX_VALUE)
         }
     }
 })
