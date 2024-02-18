@@ -77,12 +77,6 @@ class NoAckRedisStreamTransactionDispatcher(
     override fun ack(transaction: Transaction, messageId: String): Mono<Pair<Transaction, String>> =
         Mono.just(transaction to messageId)
 
-    override fun deleteElastic(
-        transaction: Transaction,
-        messageId: String
-    ) {
-    }
-
     private companion object {
         private val notMatchedTransactionHandlerException =
             IllegalStateException("Cannot find matched Transaction handler")

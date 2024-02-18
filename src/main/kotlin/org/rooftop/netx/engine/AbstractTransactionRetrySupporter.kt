@@ -21,7 +21,5 @@ abstract class AbstractTransactionRetrySupporter(
             .subscribe()
     }
 
-    abstract fun watchTransaction(transactionId: String): Mono<String>
-
     protected abstract fun handleOrphanTransaction(): Flux<Pair<Transaction, String>>
 }

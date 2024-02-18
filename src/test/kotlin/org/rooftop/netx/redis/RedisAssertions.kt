@@ -14,7 +14,7 @@ internal class RedisAssertions(
 
     fun pendingMessageCountShouldBe(transactionId: String, count: Long) {
         val pendingMessageCount = reactiveRedisOperations.opsForStream<String, String>()
-            .pending(transactionId, nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
+            .pending("NETX_STREAM", nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
             .map { it.get().toList().size }
             .block()
 

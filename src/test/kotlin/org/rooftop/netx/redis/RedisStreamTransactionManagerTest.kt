@@ -3,7 +3,6 @@ package org.rooftop.netx.redis
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.*
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
