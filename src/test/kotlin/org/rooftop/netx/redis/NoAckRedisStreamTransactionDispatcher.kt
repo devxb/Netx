@@ -70,10 +70,6 @@ class NoAckRedisStreamTransactionDispatcher(
             )
     }
 
-    private fun hasUndo(transaction: Transaction): Boolean =
-        transaction.state == TransactionState.TRANSACTION_STATE_JOIN
-                || transaction.state == TransactionState.TRANSACTION_STATE_START
-
     override fun ack(transaction: Transaction, messageId: String): Mono<Pair<Transaction, String>> =
         Mono.just(transaction to messageId)
 
