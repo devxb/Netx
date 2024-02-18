@@ -61,13 +61,13 @@ class NoAckRedisStreamTransactionDispatcher(
         }
     }
 
-    override fun findOwnTransaction(transaction: Transaction): Mono<Transaction> {
-        return reactiveRedisTemplate.opsForStream<String, String>()
-            .read(StreamOffset.create(transaction.id, ReadOffset.from("0")))
-            .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) }
-            .filter { it.group == nodeGroup }
-            .filter { hasUndo(it) }
-            .next()
+    override fun findOwnUndo(transaction: Transaction): Mono<String> {
+        return reactiveRedisTemplate.opsForHash<String, String>()[transaction.id, nodeGroup]
+            .switchIfEmpty(
+                Mono.error {
+                    error("Cannot find undo state in transaction hashes key \"${transaction.id}\"")
+                }
+            )
     }
 
     private fun hasUndo(transaction: Transaction): Boolean =

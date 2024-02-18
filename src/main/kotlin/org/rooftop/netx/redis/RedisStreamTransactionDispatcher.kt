@@ -10,8 +10,6 @@ import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
 import org.rooftop.netx.meta.TransactionHandler
 import org.springframework.context.ApplicationContext
-import org.springframework.data.redis.connection.stream.ReadOffset
-import org.springframework.data.redis.connection.stream.StreamOffset
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
 import kotlin.reflect.KClass
@@ -64,18 +62,14 @@ class RedisStreamTransactionDispatcher(
         }
     }
 
-    override fun findOwnTransaction(transaction: Transaction): Mono<Transaction> {
-        return reactiveRedisTemplate.opsForStream<String, String>()
-            .read(StreamOffset.create(STREAM_KEY, ReadOffset.from("0")))
-            .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) }
-            .filter { it.group == nodeGroup }
-            .filter { hasUndo(it) }
-            .next()
+    override fun findOwnUndo(transaction: Transaction): Mono<String> {
+        return reactiveRedisTemplate.opsForHash<String, String>()[transaction.id, nodeGroup]
+            .switchIfEmpty(
+                Mono.error {
+                    error("Cannot find undo state in transaction hashes key \"${transaction.id}\"")
+                }
+            )
     }
-
-    private fun hasUndo(transaction: Transaction): Boolean =
-        transaction.state == TransactionState.TRANSACTION_STATE_JOIN
-                || transaction.state == TransactionState.TRANSACTION_STATE_START
 
     override fun ack(transaction: Transaction, messageId: String): Mono<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForStream<String, ByteArray>()

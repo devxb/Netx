@@ -34,9 +34,7 @@ class NoAckRedisTransactionConfigurer(
             nodeId = nodeId,
             nodeName = nodeName,
             nodeGroup = nodeGroup,
-            transactionRetrySupporter = redisTransactionRetrySupporter(),
             reactiveRedisTemplate = reactiveRedisTemplate(),
-            redissonReactiveClient = redissonReactiveClient(),
         )
 
     @Bean
