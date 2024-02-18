@@ -1,5 +1,6 @@
 package org.rooftop.netx.redis
 
+import io.lettuce.core.RedisBusyException
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.AbstractTransactionListener
 import org.rooftop.netx.idl.Transaction
@@ -10,8 +11,10 @@ import org.springframework.data.redis.connection.stream.StreamOffset
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.stream.StreamReceiver
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
 class RedisStreamTransactionListener(
@@ -42,6 +45,12 @@ class RedisStreamTransactionListener(
     private fun createGroupIfNotExists(transactionId: String): Flux<String> {
         return reactiveRedisTemplate.opsForStream<String, ByteArray>()
             .createGroup(transactionId, ReadOffset.from("0"), nodeGroup)
+            .onErrorResume {
+                if (it.cause is RedisBusyException) {
+                    return@onErrorResume Mono.just(transactionId)
+                }
+                throw it
+            }
             .flatMapMany { Flux.just(it) }
     }
 }
