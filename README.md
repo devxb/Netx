@@ -4,10 +4,9 @@
 
 <br>
 
+<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="305" align="right"/>
 
 ![version 0.1.9](https://img.shields.io/badge/version-0.1.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)
-
-<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/5082ef20-10ad-4b6b-bff8-7e78a0f9e01f" width="500" align="right"/>
 
 Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
 `Netx` 는 다음 기능을 제공합니다.
