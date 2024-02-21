@@ -6,13 +6,13 @@
 
 <br>
 
-![version 0.1.9](https://img.shields.io/badge/version-0.1.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)
+![version 0.1.9](https://img.shields.io/badge/version-0.1.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)   
+![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
 `Netx` 는 다음 기능을 제공합니다.
 
 1. [Reactor](https://projectreactor.io/) 기반의 완전한 비동기 트랜잭션 관리
-2. Redis-stream 기반의 트랜잭션 관리
 3. 여러 노드가 중복 트랜잭션 이벤트를 수신하는 문제 방지
 4. `At Least Once` 방식의 메시지 전달 보장
 5. 처리되지 않은 메시지를 자동으로 재실행
