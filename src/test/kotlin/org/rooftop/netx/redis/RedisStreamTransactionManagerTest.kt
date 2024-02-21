@@ -8,24 +8,27 @@ import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @EnableDistributedTransaction
 @ContextConfiguration(
     classes = [
         RedisContainer::class,
-        TransactionHandlerAssertions::class,
+        MonoTransactionHandlerAssertions::class,
+        NoPublisherTransactionHandlerAssertions::class,
     ]
 )
 @DisplayName("RedisStreamTransactionManager 클래스의")
 @TestPropertySource("classpath:application.properties")
 internal class RedisStreamTransactionManagerTest(
     private val transactionManager: TransactionManager,
-    private val transactionHandlerAssertions: TransactionHandlerAssertions,
+    private val monoTransactionHandlerAssertions: MonoTransactionHandlerAssertions,
+    private val noPublisherTransactionHandlerAssertions: NoPublisherTransactionHandlerAssertions,
 ) : DescribeSpec({
 
     beforeEach {
-        transactionHandlerAssertions.clear()
+        monoTransactionHandlerAssertions.clear()
+        noPublisherTransactionHandlerAssertions.clear()
     }
 
     describe("start 메소드는") {
@@ -33,8 +36,9 @@ internal class RedisStreamTransactionManagerTest(
             it("트랜잭션을 시작하고 transaction-id를 반환한다.") {
                 transactionManager.start(REPLAY).subscribe()
 
-                eventually(5.minutes) {
-                    transactionHandlerAssertions.startCountShouldBe(1)
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.startCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.startCountShouldBe(1)
                 }
             }
         }
@@ -44,8 +48,9 @@ internal class RedisStreamTransactionManagerTest(
                 transactionManager.start(REPLAY).block()
                 transactionManager.start(REPLAY).block()
 
-                eventually(5.minutes) {
-                    transactionHandlerAssertions.startCountShouldBe(2)
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.startCountShouldBe(2)
+                    noPublisherTransactionHandlerAssertions.startCountShouldBe(2)
                 }
             }
         }
@@ -58,8 +63,9 @@ internal class RedisStreamTransactionManagerTest(
             it("트랜잭션에 참여한다.") {
                 transactionManager.join(transactionId, REPLAY).subscribe()
 
-                eventually(5.minutes) {
-                    transactionHandlerAssertions.joinCountShouldBe(1)
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.joinCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.joinCountShouldBe(1)
                 }
             }
         }
@@ -104,8 +110,9 @@ internal class RedisStreamTransactionManagerTest(
             it("commit 메시지를 publish 한다") {
                 transactionManager.commit(transactionId).block()
 
-                eventually(5.minutes) {
-                    transactionHandlerAssertions.commitCountShouldBe(1)
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.commitCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.commitCountShouldBe(1)
                 }
             }
         }
@@ -127,8 +134,9 @@ internal class RedisStreamTransactionManagerTest(
             it("rollback 메시지를 publish 한다") {
                 transactionManager.rollback(transactionId, "rollback occured for test").block()
 
-                eventually(5.minutes) {
-                    transactionHandlerAssertions.rollbackCountShouldBe(1)
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.rollbackCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.rollbackCountShouldBe(1)
                 }
             }
         }
