@@ -1,8 +1,10 @@
 package org.rooftop.netx.redis
 
 import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldThrowMessage
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.*
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.springframework.test.context.ContextConfiguration
@@ -32,9 +34,9 @@ internal class RedisStreamTransactionManagerTest(
     }
 
     describe("start 메소드는") {
-        context("replay 를 입력받으면,") {
+        context("UNDO 를 입력받으면,") {
             it("트랜잭션을 시작하고 transaction-id를 반환한다.") {
-                transactionManager.start(REPLAY).subscribe()
+                transactionManager.start(UNDO).subscribe()
 
                 eventually(5.seconds) {
                     monoTransactionHandlerAssertions.startCountShouldBe(1)
@@ -45,8 +47,33 @@ internal class RedisStreamTransactionManagerTest(
 
         context("서로 다른 id의 트랜잭션이 여러번 시작되어도") {
             it("모두 읽을 수 있다.") {
-                transactionManager.start(REPLAY).block()
-                transactionManager.start(REPLAY).block()
+                transactionManager.start(UNDO).block()
+                transactionManager.start(UNDO).block()
+
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.startCountShouldBe(2)
+                    noPublisherTransactionHandlerAssertions.startCountShouldBe(2)
+                }
+            }
+        }
+    }
+
+    describe("syncStart 메소드는") {
+        context("UNDO 를 입력받으면,") {
+            it("트랜잭션을 시작하고 transaction-id를 반환한다.") {
+                transactionManager.syncStart(UNDO)
+
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.startCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.startCountShouldBe(1)
+                }
+            }
+        }
+
+        context("서로 다른 id의 트랜잭션이 여러번 시작되어도") {
+            it("모두 읽을 수 있다.") {
+                transactionManager.syncStart(UNDO)
+                transactionManager.syncStart(UNDO)
 
                 eventually(5.seconds) {
                     monoTransactionHandlerAssertions.startCountShouldBe(2)
@@ -58,10 +85,10 @@ internal class RedisStreamTransactionManagerTest(
 
     describe("join 메소드는") {
         context("존재하는 transactionId를 입력받으면,") {
-            val transactionId = transactionManager.start(REPLAY).block()!!
+            val transactionId = transactionManager.start(UNDO).block()!!
 
             it("트랜잭션에 참여한다.") {
-                transactionManager.join(transactionId, REPLAY).subscribe()
+                transactionManager.join(transactionId, UNDO).subscribe()
 
                 eventually(5.seconds) {
                     monoTransactionHandlerAssertions.joinCountShouldBe(1)
@@ -72,7 +99,7 @@ internal class RedisStreamTransactionManagerTest(
 
         context("존재하지 않는 transactionId를 입력받으면,") {
             it("IllegalStateException 을 던진다.") {
-                val result = transactionManager.join(NOT_EXIST_TX_ID, REPLAY)
+                val result = transactionManager.join(NOT_EXIST_TX_ID, UNDO)
 
                 StepVerifier.create(result)
                     .verifyErrorMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"")
@@ -80,9 +107,32 @@ internal class RedisStreamTransactionManagerTest(
         }
     }
 
+    describe("syncJoin 메소드는") {
+        context("존재하는 transactionId를 입력받으면,") {
+            val transactionId = transactionManager.syncStart(UNDO)
+
+            it("트랜잭션에 참여한다.") {
+                transactionManager.syncJoin(transactionId, UNDO)
+
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.joinCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.joinCountShouldBe(1)
+                }
+            }
+        }
+
+        context("존재하지 않는 transactionId를 입력받으면,") {
+            it("IllegalStateException 을 던진다.") {
+                shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
+                    transactionManager.syncJoin(NOT_EXIST_TX_ID, UNDO)
+                }
+            }
+        }
+    }
+
     describe("exists 메소드는") {
         context("존재하는 transactionId를 입력받으면,") {
-            val transactionId = transactionManager.start(REPLAY).block()!!
+            val transactionId = transactionManager.start(UNDO).block()!!
 
             it("트랜잭션 id를 반환한다.") {
                 val result = transactionManager.exists(transactionId)
@@ -103,9 +153,29 @@ internal class RedisStreamTransactionManagerTest(
         }
     }
 
+    describe("syncExists 메소드는") {
+        context("존재하는 transactionId를 입력받으면,") {
+            val transactionId = transactionManager.syncStart(UNDO)
+
+            it("트랜잭션 id를 반환한다.") {
+                val result = transactionManager.syncExists(transactionId)
+
+                result shouldBe transactionId
+            }
+        }
+
+        context("존재하지 않는 transactionId를 입력받으면,") {
+            it("IllegalStateException 을 던진다.") {
+                shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
+                    transactionManager.syncExists(NOT_EXIST_TX_ID)
+                }
+            }
+        }
+    }
+
     describe("commit 메소드는") {
         context("존재하는 transactionId를 입력받으면,") {
-            val transactionId = transactionManager.start(REPLAY).block()!!
+            val transactionId = transactionManager.start(UNDO).block()!!
 
             it("commit 메시지를 publish 한다") {
                 transactionManager.commit(transactionId).block()
@@ -127,12 +197,35 @@ internal class RedisStreamTransactionManagerTest(
         }
     }
 
+    describe("syncCommit 메소드는") {
+        context("존재하는 transactionId를 입력받으면,") {
+            val transactionId = transactionManager.syncStart(UNDO)
+
+            it("commit 메시지를 publish 한다") {
+                transactionManager.syncCommit(transactionId)
+
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.commitCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.commitCountShouldBe(1)
+                }
+            }
+        }
+
+        context("존재하지 않는 transactionId를 입력받으면,") {
+            it("IllegalStateException 을 던진다.") {
+                shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
+                    transactionManager.syncCommit(NOT_EXIST_TX_ID)
+                }
+            }
+        }
+    }
+
     describe("rollback 메소드는") {
         context("존재하는 transactionId를 입력받으면,") {
-            val transactionId = transactionManager.start(REPLAY).block()!!
+            val transactionId = transactionManager.start(UNDO).block()!!
 
             it("rollback 메시지를 publish 한다") {
-                transactionManager.rollback(transactionId, "rollback occured for test").block()
+                transactionManager.rollback(transactionId, "rollback for test").block()
 
                 eventually(5.seconds) {
                     monoTransactionHandlerAssertions.rollbackCountShouldBe(1)
@@ -143,17 +236,40 @@ internal class RedisStreamTransactionManagerTest(
 
         context("존재하지 않는 transactionId를 입력받으면,") {
             it("IllegalStateException 을 던진다.") {
-                val result = transactionManager.commit(NOT_EXIST_TX_ID)
+                val result = transactionManager.rollback(NOT_EXIST_TX_ID, "rollback for test")
 
                 StepVerifier.create(result)
                     .verifyErrorMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"")
             }
         }
     }
+
+    describe("syncRollback 메소드는") {
+        context("존재하는 transactionId를 입력받으면,") {
+            val transactionId = transactionManager.syncStart(UNDO)
+
+            it("rollback 메시지를 publish 한다") {
+                transactionManager.syncRollback(transactionId, "rollback for test")
+
+                eventually(5.seconds) {
+                    monoTransactionHandlerAssertions.rollbackCountShouldBe(1)
+                    noPublisherTransactionHandlerAssertions.rollbackCountShouldBe(1)
+                }
+            }
+        }
+
+        context("존재하지 않는 transactionId를 입력받으면,") {
+            it("IllegalStateException 을 던진다.") {
+                shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
+                    transactionManager.syncRollback(NOT_EXIST_TX_ID, "rollback for test")
+                }
+            }
+        }
+    }
 }) {
 
     private companion object {
-        private const val REPLAY = "REPLAY"
+        private const val UNDO = "UNDO"
         private const val NOT_EXIST_TX_ID = "NOT_EXISTS_TX_ID"
     }
 }

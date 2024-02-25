@@ -13,6 +13,30 @@ abstract class AbstractTransactionManager(
     private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
 ) : TransactionManager {
 
+    override fun syncStart(undo: String): String {
+        return start(undo).block() ?: error("Cannot start transaction")
+    }
+
+    override fun syncJoin(transactionId: String, undo: String): String {
+        return join(transactionId, undo).block()
+            ?: error("Cannot join transaction \"$transactionId\", \"$undo\"")
+    }
+
+    override fun syncExists(transactionId: String): String {
+        return exists(transactionId).block()
+            ?: error("Cannot exists transaction \"$transactionId\"")
+    }
+
+    override fun syncCommit(transactionId: String): String {
+        return commit(transactionId).block()
+            ?: error("Cannot commit transaction \"$transactionId\"")
+    }
+
+    override fun syncRollback(transactionId: String, cause: String): String {
+        return rollback(transactionId, cause).block()
+            ?: error("Cannot rollback transaction \"$transactionId\", \"$cause\"")
+    }
+
     final override fun start(undo: String): Mono<String> {
         return startTransaction(undo)
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }

@@ -2,20 +2,21 @@
 
 > Distributed transaction library based on Choreography
 
-<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="330" align="right"/>
+<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="360" align="right"/>
 
 <br>
 
-![version 0.1.9](https://img.shields.io/badge/version-0.1.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)   
+![version 0.2.0](https://img.shields.io/badge/version-0.2.0-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square)   
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
 `Netx` 는 다음 기능을 제공합니다.
 
 1. [Reactor](https://projectreactor.io/) 기반의 완전한 비동기 트랜잭션 관리
+2. 처리되지 않은 트랜잭션을 찾아 자동으로 재실행
 3. 여러 노드가 중복 트랜잭션 이벤트를 수신하는 문제 방지
 4. `At Least Once` 방식의 메시지 전달 보장
-5. 처리되지 않은 메시지를 자동으로 재실행
+5. 비동기 API와 동기 API 지원
 
 ## How to use
 
@@ -56,6 +57,20 @@ class Application {
 #### Scenario1. Start pay transaction
 
 ```kotlin
+// Sync
+fun pay(param: Any): Any {
+    val transactionId = transactionManager.syncStart("paid=1000") // start transaction
+    
+    runCatching { // This is kotlin try catch, not netx library spec
+        // Do your bussiness logic
+    }.fold(
+        onSuccess = { transactionManager.syncCommit(transactionId) }, // commit transaction
+        onFailure = { transactionManager.syncRollback(transactionId, it.message) } // rollback transaction
+    )
+}
+
+
+// Async
 fun pay(param: Any): Mono<Any> {
     return transactionManager.start("paid=1000") // Start distributed transaction and publish transaction start event
         .flatMap { transactionId ->
@@ -75,6 +90,19 @@ fun pay(param: Any): Mono<Any> {
 #### Scenario2. Join order transaction
 
 ```kotlin
+//Sync
+fun order(param: Any): Any {
+    val transactionId = transactionManager.syncJoin(param.transactionId, "orderId=1:state=PENDING") // join transaction
+
+    runCatching { // This is kotlin try catch, not netx library spec
+        // Do your bussiness logic
+    }.fold(
+        onSuccess = { transactionManager.syncCommit(transactionId) }, // commit transaction
+        onFailure = { transactionManager.syncRollback(transactionId, it.message) } // rollback transaction
+    )
+}
+
+// Async
 fun order(param: Any): Mono<Any> {
     return transactionManager.join(
         param.transactionId,
@@ -94,6 +122,12 @@ fun order(param: Any): Mono<Any> {
 #### Scenario3. Check exists transaction
 
 ```kotlin
+// Sync
+fun exists(param: Any): Any {
+    return transactionManager.syncExists(param.transactionId)
+}
+
+// Async
 fun exists(param: Any): Mono<Any> {
     return transactionManager.exists(param.transactionId) // Find any transaction has ever been started 
 }
