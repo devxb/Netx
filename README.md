@@ -57,6 +57,20 @@ class Application {
 #### Scenario1. Start pay transaction
 
 ```kotlin
+// Sync
+fun pay(param: Any): Any {
+    val transactionId = transactionManager.syncStart("paid=1000") // start transaction
+    
+    runCatching { // This is kotlin try catch, not netx library spec
+        // Do your bussiness logic
+    }.fold(
+        onSuccess = { transactionManager.syncCommit(transactionId) }, // commit transaction
+        onFailure = { transactionManager.syncRollback(transactionId, it.message) } // rollback transaction
+    )
+}
+
+
+// Async
 fun pay(param: Any): Mono<Any> {
     return transactionManager.start("paid=1000") // Start distributed transaction and publish transaction start event
         .flatMap { transactionId ->
@@ -76,6 +90,19 @@ fun pay(param: Any): Mono<Any> {
 #### Scenario2. Join order transaction
 
 ```kotlin
+//Sync
+fun order(param: Any): Any {
+    val transactionId = transactionManager.syncJoin(param.transactionId, "orderId=1:state=PENDING") // join transaction
+
+    runCatching { // This is kotlin try catch, not netx library spec
+        // Do your bussiness logic
+    }.fold(
+        onSuccess = { transactionManager.syncCommit(transactionId) }, // commit transaction
+        onFailure = { transactionManager.syncRollback(transactionId, it.message) } // rollback transaction
+    )
+}
+
+// Async
 fun order(param: Any): Mono<Any> {
     return transactionManager.join(
         param.transactionId,
@@ -95,6 +122,12 @@ fun order(param: Any): Mono<Any> {
 #### Scenario3. Check exists transaction
 
 ```kotlin
+// Sync
+fun exists(param: Any): Any {
+    return transactionManager.syncExists(param.transactionId)
+}
+
+// Async
 fun exists(param: Any): Mono<Any> {
     return transactionManager.exists(param.transactionId) // Find any transaction has ever been started 
 }
