@@ -2,7 +2,7 @@
 
 > Distributed transaction library based on Choreography
 
-<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="330" align="right"/>
+<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="365" align="right"/>
 
 <br>
 
