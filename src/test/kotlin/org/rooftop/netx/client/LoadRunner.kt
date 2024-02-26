@@ -13,7 +13,7 @@ class LoadRunner {
             iter.add(behavior)
         }
         Flux.fromIterable(iter)
-            .publishOn(Schedulers.boundedElastic())
+            .parallel(200)
             .map { it.run() }
             .subscribe()
     }
