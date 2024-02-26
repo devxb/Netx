@@ -25,7 +25,7 @@ abstract class AbstractTransactionDispatcher {
             .flatMap { dispatchToNotPublisherHandler(transaction) }
             .doOnComplete {
                 ack(transaction, messageId)
-                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribeOn(Schedulers.parallel())
                     .subscribe()
             }
     }

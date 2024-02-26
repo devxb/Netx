@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.stream.StreamReceiver
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.toJavaDuration
 

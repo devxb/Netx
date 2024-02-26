@@ -8,7 +8,6 @@ import org.springframework.data.domain.Range
 import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.TimeUnit
 
@@ -26,7 +25,7 @@ class RedisTransactionRetrySupporter(
 
     override fun handleOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>> {
         return claimTransactions(backpressureSize)
-            .publishOn(Schedulers.parallel())
+            .publishOn(Schedulers.boundedElastic())
             .flatMap { (transaction, messageId) ->
                 transactionDispatcher.dispatch(transaction, messageId)
                     .map { transaction to messageId }
