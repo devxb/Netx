@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 
 class RedisTransactionRetrySupporter(
     recoveryMilli: Long,
+    backpressureSize: Int,
     private val nodeGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
@@ -20,20 +21,20 @@ class RedisTransactionRetrySupporter(
     private val transactionDispatcher: AbstractTransactionDispatcher,
     private val orphanMilli: Long,
     private val lockKey: String = "$nodeGroup-key",
-) : AbstractTransactionRetrySupporter(recoveryMilli) {
+) : AbstractTransactionRetrySupporter(backpressureSize, recoveryMilli) {
 
-    override fun handleOrphanTransaction(): Flux<Pair<Transaction, String>> {
-        return claimTransactions()
-            .publishOn(Schedulers.parallel())
+    override fun handleOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>> {
+        return claimTransactions(backpressureSize)
+            .publishOn(Schedulers.boundedElastic())
             .flatMap { (transaction, messageId) ->
                 transactionDispatcher.dispatch(transaction, messageId)
                     .map { transaction to messageId }
             }
     }
 
-    private fun claimTransactions(): Flux<Pair<Transaction, String>> {
+    private fun claimTransactions(backpressureSize: Int): Flux<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForStream<String, String>()
-            .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
+            .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), backpressureSize.toLong())
             .filter { it.get().toList().isNotEmpty() }
             .flatMap { pendingMessage ->
                 redissonReactiveClient.getLock(lockKey)

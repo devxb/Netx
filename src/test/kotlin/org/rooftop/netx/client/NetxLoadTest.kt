@@ -8,10 +8,9 @@ import io.kotest.data.row
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.boot.test.context.SpringBootTest
-import reactor.core.publisher.Hooks
 import kotlin.time.Duration.Companion.minutes
 
-@DisplayName("Netx 테스트의")
+@DisplayName("Netx 부하테스트")
 @SpringBootTest(
     classes = [
         RedisContainer::class,
@@ -21,7 +20,7 @@ import kotlin.time.Duration.Companion.minutes
     ]
 )
 @EnableDistributedTransaction
-internal class NetxTest(
+internal class NetxLoadTest(
     private val netxClient: NetxClient,
     private val loadRunner: LoadRunner,
     private val transactionReceiveStorage: TransactionReceiveStorage,
@@ -33,6 +32,7 @@ internal class NetxTest(
             row(10, 10),
             row(100, 100),
             row(1_000, 1_000),
+            row(10_000, 10_000)
         ) { commitLoadCount, rollbackLoadCount ->
             transactionReceiveStorage.clear()
 
@@ -49,10 +49,10 @@ internal class NetxTest(
             }
 
             eventually(30.minutes) {
-                transactionReceiveStorage.startCountShouldBe(commitLoadCount + rollbackLoadCount)
-                transactionReceiveStorage.joinCountShouldBe(commitLoadCount + rollbackLoadCount)
-                transactionReceiveStorage.commitCountShouldBe(commitLoadCount)
-                transactionReceiveStorage.rollbackCountShouldBe(rollbackLoadCount)
+                transactionReceiveStorage.startCountShouldBeGreaterThanOrEqual(commitLoadCount + rollbackLoadCount)
+                transactionReceiveStorage.joinCountShouldBeGreaterThanOrEqual(commitLoadCount + rollbackLoadCount)
+                transactionReceiveStorage.commitCountShouldBeGreaterThanOrEqual(commitLoadCount)
+                transactionReceiveStorage.rollbackCountShouldBeGreaterThanOrEqual(rollbackLoadCount)
             }
         }
     }

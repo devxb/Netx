@@ -12,17 +12,17 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.stream.StreamReceiver
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.toJavaDuration
 
 class RedisStreamTransactionListener(
+    backpressureSize: Int,
     transactionDispatcher: AbstractTransactionDispatcher,
     connectionFactory: ReactiveRedisConnectionFactory,
     private val nodeGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
-) : AbstractTransactionListener(transactionDispatcher) {
+) : AbstractTransactionListener(backpressureSize, transactionDispatcher) {
 
     private val options = StreamReceiver.StreamReceiverOptions.builder()
         .pollTimeout(1.hours.toJavaDuration())
@@ -36,8 +36,7 @@ class RedisStreamTransactionListener(
                 receiver.receive(
                     Consumer.from(nodeGroup, nodeName),
                     StreamOffset.create(STREAM_KEY, ReadOffset.from(">"))
-                ).publishOn(Schedulers.parallel())
-                    .map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.value }
+                ).map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.value }
             }
     }
 

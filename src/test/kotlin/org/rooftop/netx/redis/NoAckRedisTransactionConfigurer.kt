@@ -24,6 +24,7 @@ class NoAckRedisTransactionConfigurer(
     @Value("\${netx.node-name}") private val nodeName: String,
     @Value("\${netx.recovery-milli:60000}") private val recoveryMilli: Long,
     @Value("\${netx.orphan-milli:10000}") private val orphanMilli: Long,
+    @Value("\${netx.backpressure:10}") private val backpressureSize: Int,
     private val applicationContext: ApplicationContext,
 ) {
 
@@ -41,6 +42,7 @@ class NoAckRedisTransactionConfigurer(
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisStreamTransactionListener(): RedisStreamTransactionListener =
         RedisStreamTransactionListener(
+            backpressureSize = backpressureSize,
             transactionDispatcher = noAckRedisStreamTransactionDispatcher(),
             connectionFactory = reactiveRedisConnectionFactory(),
             nodeGroup = nodeGroup,
@@ -68,7 +70,8 @@ class NoAckRedisTransactionConfigurer(
             transactionDispatcher = redisStreamTransactionDispatcher(),
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
-        )
+            backpressureSize = backpressureSize,
+        ).also { it.handleLostTransactions() }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
