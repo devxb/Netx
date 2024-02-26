@@ -4,6 +4,7 @@ import org.rooftop.netx.idl.Transaction
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+import java.util.concurrent.Executors
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
@@ -13,12 +14,14 @@ abstract class AbstractTransactionRetrySupporter(
 ) {
 
     fun handleLostTransactions() {
-        Flux.interval(recoveryMilli.milliseconds.toJavaDuration())
+        Flux.interval(
+            recoveryMilli.milliseconds.toJavaDuration(),
+            Schedulers.fromExecutor(Executors.newSingleThreadScheduledExecutor())
+        ).publishOn(Schedulers.boundedElastic())
             .flatMap {
                 handleOrphanTransaction(backpressureSize)
                     .onErrorResume { Mono.empty() }
             }
-            .subscribeOn(Schedulers.boundedElastic())
             .restartWhenTerminated()
             .subscribe()
     }

@@ -2,7 +2,6 @@ package org.rooftop.netx.client
 
 import org.springframework.boot.test.context.TestComponent
 import reactor.core.publisher.Flux
-import reactor.core.scheduler.Schedulers
 
 @TestComponent
 class LoadRunner {
@@ -13,7 +12,7 @@ class LoadRunner {
             iter.add(behavior)
         }
         Flux.fromIterable(iter)
-            .publishOn(Schedulers.boundedElastic())
+            .parallel(200)
             .map { it.run() }
             .subscribe()
     }
