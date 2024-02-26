@@ -8,11 +8,13 @@ import org.springframework.data.domain.Range
 import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.TimeUnit
 
 class RedisTransactionRetrySupporter(
     recoveryMilli: Long,
+    backpressureSize: Int,
     private val nodeGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
@@ -20,10 +22,10 @@ class RedisTransactionRetrySupporter(
     private val transactionDispatcher: AbstractTransactionDispatcher,
     private val orphanMilli: Long,
     private val lockKey: String = "$nodeGroup-key",
-) : AbstractTransactionRetrySupporter(recoveryMilli) {
+) : AbstractTransactionRetrySupporter(backpressureSize, recoveryMilli) {
 
-    override fun handleOrphanTransaction(): Flux<Pair<Transaction, String>> {
-        return claimTransactions()
+    override fun handleOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>> {
+        return claimTransactions(backpressureSize)
             .publishOn(Schedulers.parallel())
             .flatMap { (transaction, messageId) ->
                 transactionDispatcher.dispatch(transaction, messageId)
@@ -31,9 +33,9 @@ class RedisTransactionRetrySupporter(
             }
     }
 
-    private fun claimTransactions(): Flux<Pair<Transaction, String>> {
+    private fun claimTransactions(backpressureSize: Int): Flux<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForStream<String, String>()
-            .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
+            .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), backpressureSize.toLong())
             .filter { it.get().toList().isNotEmpty() }
             .flatMap { pendingMessage ->
                 redissonReactiveClient.getLock(lockKey)

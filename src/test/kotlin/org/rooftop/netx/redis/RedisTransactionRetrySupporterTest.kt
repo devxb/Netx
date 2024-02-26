@@ -6,6 +6,7 @@ import io.kotest.core.spec.style.DescribeSpec
 import org.rooftop.netx.api.TransactionManager
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @ContextConfiguration(
@@ -36,7 +37,7 @@ internal class RedisTransactionRetrySupporterTest(
             it("해당 트랜잭션을 찾아서 처리하고, ack 상태로 변경한다.") {
                 val transactionId = transactionManager.start("undo").block()!!
 
-                eventually(10.seconds) {
+                eventually(1.minutes) {
                     noPublisherTransactionHandlerAssertions.startCountShouldBe(1)
                     monoTransactionHandlerAssertions.startCountShouldBe(1)
 

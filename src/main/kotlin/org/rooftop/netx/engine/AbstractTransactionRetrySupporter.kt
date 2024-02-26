@@ -8,18 +8,26 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
 abstract class AbstractTransactionRetrySupporter(
-    recoveryMilli: Long,
+    private val backpressureSize: Int,
+    private val recoveryMilli: Long,
 ) {
 
-    init {
+    fun handleLostTransactions() {
         Flux.interval(recoveryMilli.milliseconds.toJavaDuration())
             .flatMap {
-                handleOrphanTransaction()
+                handleOrphanTransaction(backpressureSize)
                     .onErrorResume { Mono.empty() }
             }
-            .subscribeOn(Schedulers.parallel())
+            .subscribeOn(Schedulers.boundedElastic())
+            .restartWhenTerminated()
             .subscribe()
     }
 
-    protected abstract fun handleOrphanTransaction(): Flux<Pair<Transaction, String>>
+    protected abstract fun handleOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>>
+
+    private fun <T> Flux<T>.restartWhenTerminated(): Flux<T> {
+        return this.doOnTerminate {
+            handleLostTransactions()
+        }
+    }
 }
