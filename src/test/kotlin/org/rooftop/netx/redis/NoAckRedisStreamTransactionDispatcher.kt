@@ -27,6 +27,8 @@ class NoAckRedisStreamTransactionDispatcher(
     }
 
     override fun ack(transaction: Transaction, messageId: String): Mono<Pair<Transaction, String>> =
-        Mono.just(transaction to messageId)
+        Mono.error {
+            error("Cannot ack transaction")
+        }
 }
 

@@ -4,6 +4,8 @@ import org.redisson.Redisson
 import org.redisson.api.RedissonReactiveClient
 import org.redisson.config.Config
 import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.engine.logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.test.context.TestConfiguration
@@ -25,8 +27,13 @@ class NoAckRedisTransactionConfigurer(
     @Value("\${netx.recovery-milli:60000}") private val recoveryMilli: Long,
     @Value("\${netx.orphan-milli:10000}") private val orphanMilli: Long,
     @Value("\${netx.backpressure:10}") private val backpressureSize: Int,
+    @Value("\${netx.logging.level:off}") loggingLevel: String,
     private val applicationContext: ApplicationContext,
 ) {
+
+    init {
+        logger = LoggerFactory.getLogger("org.rooftop.netx.logger.$loggingLevel")
+    }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -71,7 +78,7 @@ class NoAckRedisTransactionConfigurer(
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
             backpressureSize = backpressureSize,
-        ).also { it.handleLostTransactions() }
+        ).also { it.watchOrphanTransaction() }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")

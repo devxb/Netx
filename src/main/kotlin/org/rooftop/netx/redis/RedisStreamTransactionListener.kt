@@ -3,6 +3,7 @@ package org.rooftop.netx.redis
 import io.lettuce.core.RedisBusyException
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.AbstractTransactionListener
+import org.rooftop.netx.engine.info
 import org.rooftop.netx.idl.Transaction
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.connection.stream.Consumer
@@ -43,6 +44,7 @@ class RedisStreamTransactionListener(
     private fun createGroupIfNotExists(): Flux<String> {
         return reactiveRedisTemplate.opsForStream<String, ByteArray>()
             .createGroup(STREAM_KEY, ReadOffset.from("0"), nodeGroup)
+            .info("Redis stream group created key \"$STREAM_KEY\" group \"$nodeGroup\"")
             .onErrorResume {
                 if (it.cause is RedisBusyException) {
                     return@onErrorResume Mono.just("OK")

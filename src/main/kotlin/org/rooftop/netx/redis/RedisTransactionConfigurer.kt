@@ -4,6 +4,9 @@ import org.redisson.Redisson
 import org.redisson.api.RedissonReactiveClient
 import org.redisson.config.Config
 import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.engine.info
+import org.rooftop.netx.engine.logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationContext
@@ -22,11 +25,16 @@ class RedisTransactionConfigurer(
     @Value("\${netx.group}") private val nodeGroup: String,
     @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
-    @Value("\${netx.recovery-milli:60000}") private val recoveryMilli: Long,
-    @Value("\${netx.orphan-milli:10000}") private val orphanMilli: Long,
+    @Value("\${netx.recovery-milli:1000}") private val recoveryMilli: Long,
+    @Value("\${netx.orphan-milli:60000}") private val orphanMilli: Long,
     @Value("\${netx.backpressure:40}") private val backpressureSize: Int,
+    @Value("\${netx.logging.level:off}") loggingLevel: String,
     private val applicationContext: ApplicationContext,
 ) {
+
+    init {
+        logger = LoggerFactory.getLogger("org.rooftop.netx.logger.$loggingLevel")
+    }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -36,7 +44,9 @@ class RedisTransactionConfigurer(
             nodeName = nodeName,
             nodeGroup = nodeGroup,
             reactiveRedisTemplate = reactiveRedisTemplate(),
-        )
+        ).also {
+            info("RedisStreamTransactionManager connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\"")
+        }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -48,7 +58,10 @@ class RedisTransactionConfigurer(
             nodeGroup = nodeGroup,
             nodeName = nodeName,
             reactiveRedisTemplate = reactiveRedisTemplate()
-        ).also { it.subscribeStream() }
+        ).also {
+            info("RedisStreamTransactionListener connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\" backpressureSize : \"$backpressureSize\"")
+            it.subscribeStream()
+        }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -62,7 +75,10 @@ class RedisTransactionConfigurer(
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
             backpressureSize = backpressureSize,
-        ).also { it.handleLostTransactions() }
+        ).also {
+            info("RedisTransactionRetrySupporter connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\" orphanMilli : \"$orphanMilli\" recoveryMilli : \"$recoveryMilli\" backpressureSize : \"$backpressureSize\"")
+            it.watchOrphanTransaction()
+        }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -71,7 +87,9 @@ class RedisTransactionConfigurer(
             applicationContext = applicationContext,
             reactiveRedisTemplate = reactiveRedisTemplate(),
             nodeGroup = nodeGroup,
-        )
+        ).also {
+            info("RedisStreamTransactionDispatcher connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\"")
+        }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
