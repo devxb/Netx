@@ -1,36 +1,71 @@
 package org.rooftop.netx.engine
 
+import jakarta.annotation.PreDestroy
 import org.rooftop.netx.idl.Transaction
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.Executors
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.toJavaDuration
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 abstract class AbstractTransactionRetrySupporter(
     private val backpressureSize: Int,
     private val recoveryMilli: Long,
+    private val transactionDispatcher: AbstractTransactionDispatcher,
 ) {
 
-    fun handleLostTransactions() {
-        Flux.interval(
-            recoveryMilli.milliseconds.toJavaDuration(),
-            Schedulers.fromExecutor(Executors.newSingleThreadScheduledExecutor())
-        ).publishOn(Schedulers.boundedElastic())
-            .flatMap {
-                handleOrphanTransaction(backpressureSize)
-                    .onErrorResume { Mono.empty() }
-            }
-            .restartWhenTerminated()
-            .subscribe()
+    private lateinit var executor: ScheduledExecutorService;
+    private lateinit var scheduledFuture: ScheduledFuture<*>;
+
+    fun watchOrphanTransaction() {
+        this.executor = Executors.newSingleThreadScheduledExecutor()
+
+        this.scheduledFuture = executor.scheduleWithFixedDelay(
+            handleOrphanTransaction(),
+            0,
+            recoveryMilli,
+            TimeUnit.MILLISECONDS,
+        )
     }
 
-    protected abstract fun handleOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>>
+    private fun handleOrphanTransaction(): Runnable {
+        return Runnable {
+            claimOrphanTransaction(backpressureSize)
+                .doOnNext {
+                    info("Retry orphan transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
+                }
+                .flatMap { (transaction, messageId) ->
+                    transactionDispatcher.dispatch(transaction, messageId)
+                        .warningOnError("Error occurred when retry orphan transaction \n{\n$transaction}\nmessageId \"${messageId}\"")
+                        .switchIfEmpty { Mono.just("Dispatch success") }
+                        .onErrorResume { Mono.empty() }
+                }
+                .onErrorResume { Mono.empty() }
+                .subscribeOn(Schedulers.immediate())
+                .subscribe()
+        }
+    }
 
-    private fun <T> Flux<T>.restartWhenTerminated(): Flux<T> {
-        return this.doOnTerminate {
-            handleLostTransactions()
+    protected abstract fun claimOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>>
+
+    @PreDestroy
+    private fun shutdownGracefully() {
+        scheduledFuture.cancel(true)
+        executor.shutdown()
+        runCatching {
+            if (!executor.awaitTermination(10, TimeUnit.MINUTES)) {
+                executor.shutdownNow()
+                if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
+                    error("Cannot shutdown TransactionRetrySupporter thread")
+                }
+            }
+        }.onFailure {
+            executor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }.onSuccess {
+            info("Shutdown TransactionRetrySupporter gracefully")
         }
     }
 }
