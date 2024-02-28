@@ -15,20 +15,17 @@ abstract class AbstractTransactionListener(
         receive()
             .publishOn(Schedulers.boundedElastic())
             .onBackpressureBuffer(backpressureSize, BufferOverflowStrategy.DROP_LATEST)
+            .doOnNext {
+                info("Listen transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
+            }
             .flatMap { (transaction, messageId) ->
                 transactionDispatcher.dispatch(transaction, messageId)
-                    .map { transaction to messageId }
+                    .warningOnError("Error occurred when listen transaction \n{\n$transaction}\nmessageId \"$messageId\"")
                     .onErrorResume { Mono.empty() }
             }
-            .restartWhenTerminated()
+            .onErrorResume { Mono.empty() }
             .subscribe()
     }
 
     protected abstract fun receive(): Flux<Pair<Transaction, String>>
-
-    private fun <T> Flux<T>.restartWhenTerminated(): Flux<T> {
-        return this.doOnTerminate {
-            subscribeStream()
-        }
-    }
 }

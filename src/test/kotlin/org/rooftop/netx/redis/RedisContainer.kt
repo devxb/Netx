@@ -11,7 +11,13 @@ class RedisContainer {
         val redis: GenericContainer<*> = GenericContainer(DockerImageName.parse("redis:7.2.3"))
             .withExposedPorts(6379)
 
-        redis.start()
+        runCatching {
+            redis.start()
+        }.onFailure {
+            if(it is com.github.dockerjava.api.exception.InternalServerErrorException) {
+                redis.start()
+            }
+        }
 
         System.setProperty(
             "netx.port",

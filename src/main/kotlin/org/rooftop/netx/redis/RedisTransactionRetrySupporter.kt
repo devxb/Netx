@@ -8,31 +8,23 @@ import org.springframework.data.domain.Range
 import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.TimeUnit
 
 class RedisTransactionRetrySupporter(
     recoveryMilli: Long,
     backpressureSize: Int,
+    transactionDispatcher: AbstractTransactionDispatcher,
     private val nodeGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
     private val redissonReactiveClient: RedissonReactiveClient,
-    private val transactionDispatcher: AbstractTransactionDispatcher,
     private val orphanMilli: Long,
     private val lockKey: String = "$nodeGroup-key",
-) : AbstractTransactionRetrySupporter(backpressureSize, recoveryMilli) {
+) : AbstractTransactionRetrySupporter(backpressureSize, recoveryMilli, transactionDispatcher) {
 
-    override fun handleOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>> {
-        return claimTransactions(backpressureSize)
-            .publishOn(Schedulers.boundedElastic())
-            .flatMap { (transaction, messageId) ->
-                transactionDispatcher.dispatch(transaction, messageId)
-                    .map { transaction to messageId }
-            }
-    }
-
-    private fun claimTransactions(backpressureSize: Int): Flux<Pair<Transaction, String>> {
+    override fun claimOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>> {
         return reactiveRedisTemplate.opsForStream<String, String>()
             .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), backpressureSize.toLong())
             .filter { it.get().toList().isNotEmpty() }
@@ -57,9 +49,10 @@ class RedisTransactionRetrySupporter(
                     .forceUnlock()
                     .flatMapMany { Flux.just(transactionWithMessageId) }
             }
-            .doOnError {
+            .doOnTerminate {
                 redissonReactiveClient.getLock(lockKey)
-                    .unlock()
+                    .forceUnlock()
+                    .onErrorResume { Mono.empty() }
                     .subscribeOn(Schedulers.parallel())
                     .subscribe()
             }

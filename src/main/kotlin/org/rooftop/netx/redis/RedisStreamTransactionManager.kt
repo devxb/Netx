@@ -18,7 +18,7 @@ class RedisStreamTransactionManager(
     nodeGroup = nodeGroup,
 ) {
 
-    override fun findAnyTransaction(transactionId: String): Mono<TransactionState> {
+    override fun getAnyTransaction(transactionId: String): Mono<TransactionState> {
         return reactiveRedisTemplate
             .opsForHash<String, String>()[transactionId, STATE_KEY]
             .switchIfEmpty(

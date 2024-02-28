@@ -24,7 +24,12 @@ abstract class AbstractTransactionDispatcher {
         return dispatchToMonoHandler(transaction)
             .flatMap { dispatchToNotPublisherHandler(transaction) }
             .doOnComplete {
-                ack(transaction, messageId)
+                Mono.just(transaction to messageId)
+                    .info("Ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+                    .flatMap {
+                        ack(transaction, messageId)
+                            .warningOnError("Fail to ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+                    }
                     .subscribeOn(Schedulers.parallel())
                     .subscribe()
             }
@@ -41,7 +46,9 @@ abstract class AbstractTransactionDispatcher {
             }
             .flatMap { (function, instance) ->
                 mapToTransactionEvent(transaction)
+                    .info("Call Mono TransactionHandler \"${function.name}\" with transaction \n{\n$transaction}")
                     .flatMap { function.call(instance, it) }
+                    .warningOnError("Error occurred in TransactionHandler function \"${function.name}\" with transaction \n{\n$transaction}")
             }
     }
 
@@ -56,7 +63,9 @@ abstract class AbstractTransactionDispatcher {
             }
             .flatMap { (function, instance) ->
                 mapToTransactionEvent(transaction)
+                    .info("Call Not publisher TransactionHandler \"${function.name}\" with transaction \n{\n$transaction}")
                     .map { function.call(instance, it) }
+                    .warningOnError("Error occurred in TransactionHandler function \"${function.name}\" with transaction \n{\n$transaction}")
             }
     }
 
@@ -87,6 +96,7 @@ abstract class AbstractTransactionDispatcher {
             )
 
             TransactionState.TRANSACTION_STATE_ROLLBACK -> findOwnUndo(transaction)
+                .warningOnError("Error occurred when findOwnUndo transaction \n{\n$transaction}")
                 .map {
                     TransactionRollbackEvent(
                         transaction.id,
