@@ -45,7 +45,7 @@ publishing {
     }
 }
 
-apply from: "gradle/db.gradle"
+apply from: "gradle/streams.gradle"
 apply from: "gradle/test.gradle"
 apply from: "gradle/core.gradle"
 apply from: "gradle/sonar.gradle"

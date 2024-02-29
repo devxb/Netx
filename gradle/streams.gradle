@@ -1,4 +1,3 @@
 dependencies {
     implementation "io.lettuce:lettuce-core:${lettuceVersion}"
-    implementation "org.redisson:redisson:${redissonVersion}"
 }

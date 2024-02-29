@@ -1,8 +1,5 @@
 package org.rooftop.netx.redis
 
-import org.redisson.Redisson
-import org.redisson.api.RedissonReactiveClient
-import org.redisson.config.Config
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.logger
 import org.slf4j.LoggerFactory
@@ -73,7 +70,6 @@ class NoAckRedisTransactionConfigurer(
             nodeGroup = nodeGroup,
             nodeName = nodeName,
             reactiveRedisTemplate = reactiveRedisTemplate(),
-            redissonReactiveClient = redissonReactiveClient(),
             transactionDispatcher = redisStreamTransactionDispatcher(),
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
@@ -99,18 +95,6 @@ class NoAckRedisTransactionConfigurer(
         val context = builder.value(byteArrayRedisSerializer()).build()
 
         return ReactiveRedisTemplate(reactiveRedisConnectionFactory(), context)
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redissonReactiveClient(): RedissonReactiveClient {
-        val port: String = System.getProperty("netx.port") ?: port
-
-        return Redisson.create(
-            Config().also {
-                it.useSingleServer()
-                    .setAddress("redis://$host:$port")
-            }).reactive()
     }
 
     @Bean
