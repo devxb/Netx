@@ -24,8 +24,15 @@ abstract class AbstractTransactionListener(
                     .onErrorResume { Mono.empty() }
             }
             .onErrorResume { Mono.empty() }
+            .restartWhenTerminated()
             .subscribe()
     }
 
     protected abstract fun receive(): Flux<Pair<Transaction, String>>
+
+    private fun <T> Flux<T>.restartWhenTerminated(): Flux<T> {
+        return this.doAfterTerminate {
+            subscribeStream()
+        }
+    }
 }

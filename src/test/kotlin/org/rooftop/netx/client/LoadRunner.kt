@@ -12,7 +12,13 @@ class LoadRunner {
     fun load(count: Int, behavior: Callable<Any>) {
         val behaviors = mutableListOf<Callable<Any>>()
         for (i in 1..count) {
-            behaviors.add(behavior)
+            behaviors.add {
+                runCatching {
+                    behavior.call()
+                }.onFailure {
+                    it.message?.let { it1 -> org.rooftop.netx.engine.error(it1) }
+                }
+            }
         }
         executor.invokeAll(behaviors)
     }
