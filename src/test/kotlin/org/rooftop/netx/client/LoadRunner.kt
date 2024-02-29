@@ -1,19 +1,19 @@
 package org.rooftop.netx.client
 
 import org.springframework.boot.test.context.TestComponent
-import reactor.core.publisher.Flux
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 @TestComponent
 class LoadRunner {
 
-    fun load(count: Int, behavior: Runnable) {
-        val iter = mutableListOf<Runnable>()
+    private val executor = Executors.newFixedThreadPool(32)
+
+    fun load(count: Int, behavior: Callable<Any>) {
+        val behaviors = mutableListOf<Callable<Any>>()
         for (i in 1..count) {
-            iter.add(behavior)
+            behaviors.add(behavior)
         }
-        Flux.fromIterable(iter)
-            .parallel(200)
-            .map { it.run() }
-            .subscribe()
+        executor.invokeAll(behaviors)
     }
 }
