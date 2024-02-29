@@ -1,6 +1,5 @@
 package org.rooftop.netx.engine
 
-import jakarta.annotation.PreDestroy
 import org.rooftop.netx.idl.Transaction
 import reactor.core.publisher.BufferOverflowStrategy
 import reactor.core.publisher.Flux
@@ -11,8 +10,6 @@ abstract class AbstractTransactionListener(
     private val backpressureSize: Int,
     private val transactionDispatcher: AbstractTransactionDispatcher,
 ) {
-
-    private var isApplicationShutdown = false
 
     fun subscribeStream() {
         receive()
@@ -35,15 +32,7 @@ abstract class AbstractTransactionListener(
 
     private fun <T> Flux<T>.restartWhenTerminated(): Flux<T> {
         return this.doAfterTerminate {
-            if (isApplicationShutdown) {
-                return@doAfterTerminate
-            }
             subscribeStream()
         }
-    }
-
-    @PreDestroy
-    private fun shutdownHook() {
-        isApplicationShutdown = true
     }
 }

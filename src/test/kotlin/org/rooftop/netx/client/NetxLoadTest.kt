@@ -28,12 +28,13 @@ internal class NetxLoadTest(
 
     test("Netx는 부하가 가중되어도, 결과적 일관성을 보장한다.") {
         forAll(
-            row(1, 1),
-            row(10, 10),
-            row(100, 100),
-            row(1_000, 1_000),
-            row(10_000, 10_000),
-            row(100_000, 100_000),
+//            row(1, 1),
+//            row(10, 10),
+//            row(100, 100),
+//            row(1_000, 1_000),
+//            row(10_000, 10_000),
+//            row(100_000, 100_000),
+            row(1_000_000, 1_000_000),
         ) { commitLoadCount, rollbackLoadCount ->
             transactionReceiveStorage.clear()
 
