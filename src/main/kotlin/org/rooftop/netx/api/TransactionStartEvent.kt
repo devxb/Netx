@@ -4,4 +4,6 @@ class TransactionStartEvent(
     transactionId: String,
     nodeName: String,
     group: String,
-) : TransactionEvent(transactionId, nodeName, group)
+    event: String?,
+    codec: Codec,
+) : TransactionEvent(transactionId, nodeName, group, event, codec)
