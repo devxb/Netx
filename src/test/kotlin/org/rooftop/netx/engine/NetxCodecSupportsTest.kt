@@ -40,7 +40,7 @@ class NetxCodecSupportsTest(
         val rollbackEvent = rollbackEventStorage.poll()
 
         // then
-        rollbackEvent.getUndo(Foo::class) shouldBeEqualUsingFields expected
+        rollbackEvent.decodeUndo(Foo::class) shouldBeEqualUsingFields expected
     }
 
     "undo로 Map이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
@@ -50,7 +50,7 @@ class NetxCodecSupportsTest(
 
         // when
         val rollbackEvent = rollbackEventStorage.poll()
-        val result = rollbackEvent.getUndo(Map::class)
+        val result = rollbackEvent.decodeUndo(Map::class)
 
         // then
         result["name"]!! shouldBeEqual expected["name"]!!
@@ -62,7 +62,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().getUndo(Int::class)
+        val result = rollbackEventStorage.poll().decodeUndo(Int::class)
 
         // then
         result shouldBeEqual expected
@@ -74,7 +74,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().getUndo(Long::class)
+        val result = rollbackEventStorage.poll().decodeUndo(Long::class)
 
         // then
         result shouldBeEqual expected
@@ -86,7 +86,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().getUndo(String::class)
+        val result = rollbackEventStorage.poll().decodeUndo(String::class)
 
         // then
         result shouldBeEqual expected
@@ -98,7 +98,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().getUndo(Char::class)
+        val result = rollbackEventStorage.poll().decodeUndo(Char::class)
 
         // then
         result shouldBeEqual expected
@@ -110,7 +110,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().getUndo(Boolean::class)
+        val result = rollbackEventStorage.poll().decodeUndo(Boolean::class)
 
         // then
         result shouldBeEqual expected
@@ -122,7 +122,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().getUndo(Unit::class)
+        val result = rollbackEventStorage.poll().decodeUndo(Unit::class)
 
         // then
         result shouldBeEqual expected

@@ -11,5 +11,5 @@ class TransactionRollbackEvent(
     private val undo: String,
 ) : TransactionEvent(transactionId, nodeName, group) {
 
-    fun <T : Any> getUndo(type: KClass<T>): T = codec.decode(undo, type)
+    fun <T : Any> decodeUndo(type: KClass<T>): T = codec.decode(undo, type)
 }
