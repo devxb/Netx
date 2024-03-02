@@ -6,10 +6,11 @@ class TransactionRollbackEvent(
     transactionId: String,
     nodeName: String,
     group: String,
+    event: String?,
     val cause: String?,
-    private val codec: Codec,
     private val undo: String,
-) : TransactionEvent(transactionId, nodeName, group) {
+    private val codec: Codec,
+) : TransactionEvent(transactionId, nodeName, group, event, codec) {
 
     fun <T : Any> decodeUndo(type: KClass<T>): T = codec.decode(undo, type)
 }

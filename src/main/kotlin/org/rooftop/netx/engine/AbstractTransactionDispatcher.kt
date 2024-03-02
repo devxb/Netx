@@ -94,25 +94,31 @@ abstract class AbstractTransactionDispatcher(
         return when (transaction.state) {
             TransactionState.TRANSACTION_STATE_START -> Mono.just(
                 TransactionStartEvent(
-                    transaction.id,
-                    transaction.serverId,
-                    transaction.group
+                    transactionId = transaction.id,
+                    nodeName = transaction.serverId,
+                    group = transaction.group,
+                    event = extractEvent(transaction),
+                    codec = codec,
                 )
             )
 
             TransactionState.TRANSACTION_STATE_COMMIT -> Mono.just(
                 TransactionCommitEvent(
-                    transaction.id,
-                    transaction.serverId,
-                    transaction.group,
+                    transactionId = transaction.id,
+                    nodeName = transaction.serverId,
+                    group = transaction.group,
+                    event = extractEvent(transaction),
+                    codec = codec
                 )
             )
 
             TransactionState.TRANSACTION_STATE_JOIN -> Mono.just(
                 TransactionJoinEvent(
-                    transaction.id,
-                    transaction.serverId,
-                    transaction.group,
+                    transactionId = transaction.id,
+                    nodeName = transaction.serverId,
+                    group = transaction.group,
+                    event = extractEvent(transaction),
+                    codec = codec,
                 )
             )
 
@@ -120,16 +126,27 @@ abstract class AbstractTransactionDispatcher(
                 .warningOnError("Error occurred when findOwnUndo transaction \n{\n$transaction}")
                 .map {
                     TransactionRollbackEvent(
-                        transaction.id,
-                        transaction.serverId,
-                        transaction.group,
-                        transaction.cause,
-                        codec,
-                        it,
+                        transactionId = transaction.id,
+                        nodeName = transaction.serverId,
+                        group = transaction.group,
+                        event = extractEvent(transaction),
+                        cause = when (transaction.hasCause()) {
+                            true -> transaction.cause
+                            false -> null
+                        },
+                        undo = it,
+                        codec = codec,
                     )
                 }
 
             else -> throw cannotFindMatchedTransactionEventException
+        }
+    }
+
+    private fun extractEvent(transaction: Transaction): String? {
+        return when (transaction.hasEvent()) {
+            true -> transaction.event
+            false -> null
         }
     }
 

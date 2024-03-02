@@ -14,14 +14,14 @@ import org.springframework.test.context.TestPropertySource
 @ContextConfiguration(
     classes = [
         RedisContainer::class,
-        RollbackEventStorage::class,
+        TransactionReceiveStorage::class,
     ]
 )
 @DisplayName("NetxCodecSupports")
 @TestPropertySource("classpath:application.properties")
 class NetxCodecSupportsTest(
     private val transactionManager: TransactionManager,
-    private val rollbackEventStorage: RollbackEventStorage,
+    private val transactionReceiveStorage: TransactionReceiveStorage,
 ) : StringSpec({
 
     fun <T> startAndRollbackTransaction(undo: T) {
@@ -37,7 +37,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val rollbackEvent = rollbackEventStorage.poll()
+        val rollbackEvent = transactionReceiveStorage.pollRollback()
 
         // then
         rollbackEvent.decodeUndo(Foo::class) shouldBeEqualUsingFields expected
@@ -49,7 +49,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val rollbackEvent = rollbackEventStorage.poll()
+        val rollbackEvent = transactionReceiveStorage.pollRollback()
         val result = rollbackEvent.decodeUndo(Map::class)
 
         // then
@@ -62,7 +62,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().decodeUndo(Int::class)
+        val result = transactionReceiveStorage.pollRollback().decodeUndo(Int::class)
 
         // then
         result shouldBeEqual expected
@@ -74,7 +74,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().decodeUndo(Long::class)
+        val result = transactionReceiveStorage.pollRollback().decodeUndo(Long::class)
 
         // then
         result shouldBeEqual expected
@@ -86,7 +86,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().decodeUndo(String::class)
+        val result = transactionReceiveStorage.pollRollback().decodeUndo(String::class)
 
         // then
         result shouldBeEqual expected
@@ -98,7 +98,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().decodeUndo(Char::class)
+        val result = transactionReceiveStorage.pollRollback().decodeUndo(Char::class)
 
         // then
         result shouldBeEqual expected
@@ -110,7 +110,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().decodeUndo(Boolean::class)
+        val result = transactionReceiveStorage.pollRollback().decodeUndo(Boolean::class)
 
         // then
         result shouldBeEqual expected
@@ -122,7 +122,7 @@ class NetxCodecSupportsTest(
         startAndRollbackTransaction(expected)
 
         // when
-        val result = rollbackEventStorage.poll().decodeUndo(Unit::class)
+        val result = transactionReceiveStorage.pollRollback().decodeUndo(Unit::class)
 
         // then
         result shouldBeEqual expected

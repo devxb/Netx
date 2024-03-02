@@ -1,6 +1,5 @@
 package org.rooftop.netx.redis
 
-import io.mockk.InternalPlatformDsl.toStr
 import org.springframework.boot.test.context.TestConfiguration
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName

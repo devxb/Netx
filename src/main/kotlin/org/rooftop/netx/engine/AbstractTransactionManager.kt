@@ -1,7 +1,7 @@
 package org.rooftop.netx.engine
 
-import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.api.Codec
+import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.engine.logging.infoOnError
 import org.rooftop.netx.engine.logging.warningOnError
@@ -19,12 +19,21 @@ abstract class AbstractTransactionManager(
 ) : TransactionManager {
 
     final override fun <T> syncStart(undo: T): String {
-        return start(undo).block() ?: error("Cannot start transaction")
+        return start(undo).block() ?: error("Cannot start transaction \"$undo\"")
+    }
+
+    override fun <T, S> syncStart(undo: T, event: S): String {
+        return start(undo, event).block() ?: error("Cannot start transaction \"$undo\" \"$event\"")
     }
 
     final override fun <T> syncJoin(transactionId: String, undo: T): String {
         return join(transactionId, undo).block()
             ?: error("Cannot join transaction \"$transactionId\", \"$undo\"")
+    }
+
+    override fun <T, S> syncJoin(transactionId: String, undo: T, event: S): String {
+        return join(transactionId, undo, event).block()
+            ?: error("Cannot join transaction \"$transactionId\", \"$undo\", \"$event\"")
     }
 
     final override fun syncExists(transactionId: String): String {
@@ -37,21 +46,41 @@ abstract class AbstractTransactionManager(
             ?: error("Cannot commit transaction \"$transactionId\"")
     }
 
+    override fun <T> syncCommit(transactionId: String, event: T): String {
+        return commit(transactionId, event).block()
+            ?: error("Cannot commit transaction \"$transactionId\" \"$event\"")
+    }
+
     final override fun syncRollback(transactionId: String, cause: String): String {
         return rollback(transactionId, cause).block()
             ?: error("Cannot rollback transaction \"$transactionId\", \"$cause\"")
     }
 
+    override fun <T> syncRollback(transactionId: String, cause: String, event: T): String {
+        return rollback(transactionId, cause, event).block()
+            ?: error("Cannot rollback transaction \"$transactionId\", \"$cause\" \"$event\"")
+    }
+
     final override fun <T> start(undo: T): Mono<String> {
         return Mono.fromCallable { codec.encode(undo) }
             .flatMap { encodedUndo ->
-                startTransaction(encodedUndo)
+                startTransaction(encodedUndo, null)
                     .info("Start transaction undo \"$undo\"")
             }
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
     }
 
-    private fun startTransaction(undo: String): Mono<String> {
+    override fun <T, S> start(undo: T, event: S): Mono<String> {
+        return Mono.fromCallable { codec.encode(undo) }
+            .map { it to codec.encode(event) }
+            .flatMap { (encodedUndo, encodedEvent) ->
+                startTransaction(encodedUndo, encodedEvent)
+                    .info("Start transaction undo \"$undo\"")
+            }
+            .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
+    }
+
+    private fun startTransaction(undo: String, event: String?): Mono<String> {
         return Mono.deferContextual<String> { Mono.just(it[CONTEXT_TX_KEY]) }
             .flatMap { transactionId ->
                 publishTransaction(transactionId, transaction {
@@ -60,6 +89,7 @@ abstract class AbstractTransactionManager(
                     group = nodeGroup
                     this.state = TransactionState.TRANSACTION_STATE_START
                     this.undo = undo
+                    event?.let { this.event = it }
                 })
             }
     }
@@ -75,46 +105,101 @@ abstract class AbstractTransactionManager(
             .warningOnError("Cannot join transaction cause, transaction \"$transactionId\" already Rollback state")
             .map { codec.encode(undo) }
             .flatMap {
-                joinTransaction(transactionId, it)
+                joinTransaction(transactionId, it, null)
                     .info("Join transaction transactionId \"$transactionId\", undo \"$undo\"")
             }
     }
 
-    private fun joinTransaction(transactionId: String, undo: String): Mono<String> {
+    override fun <T, S> join(transactionId: String, undo: T, event: S): Mono<String> {
+        return getAnyTransaction(transactionId)
+            .map {
+                if (it == TransactionState.TRANSACTION_STATE_COMMIT) {
+                    error("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
+                }
+                transactionId
+            }
+            .warningOnError("Cannot join transaction cause, transaction \"$transactionId\" already Rollback state")
+            .map { codec.encode(undo) to codec.encode(event) }
+            .flatMap { (encodedUndo, encodedEvent) ->
+                joinTransaction(transactionId, encodedUndo, encodedEvent)
+                    .info("Join transaction transactionId \"$transactionId\", undo \"$undo\"")
+            }
+    }
+
+    private fun joinTransaction(transactionId: String, undo: String, event: String?): Mono<String> {
         return publishTransaction(transactionId, transaction {
             id = transactionId
             serverId = nodeName
             group = nodeGroup
             state = TransactionState.TRANSACTION_STATE_JOIN
             this.undo = undo
+            event?.let { this.event = it }
         })
     }
 
     final override fun rollback(transactionId: String, cause: String): Mono<String> {
         return exists(transactionId)
             .infoOnError("Cannot rollback transaction cause, transaction \"$transactionId\" is not exists")
-            .publishTransaction(transaction {
-                id = transactionId
-                serverId = nodeName
-                group = nodeGroup
-                state = TransactionState.TRANSACTION_STATE_ROLLBACK
-                this.cause = cause
-            })
+            .flatMap {
+                rollbackTransaction(transactionId, cause, null)
+            }
             .info("Rollback transaction \"$transactionId\"")
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
+    }
+
+    override fun <T> rollback(transactionId: String, cause: String, event: T): Mono<String> {
+        return exists(transactionId)
+            .infoOnError("Cannot rollback transaction cause, transaction \"$transactionId\" is not exists")
+            .map { codec.encode(event) }
+            .flatMap { encodedEvent ->
+                rollbackTransaction(transactionId, cause, encodedEvent)
+            }
+            .info("Rollback transaction \"$transactionId\"")
+            .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
+    }
+
+    private fun rollbackTransaction(
+        transactionId: String,
+        cause: String,
+        event: String?
+    ): Mono<String> {
+        return publishTransaction(transactionId, transaction {
+            id = transactionId
+            serverId = nodeName
+            group = nodeGroup
+            state = TransactionState.TRANSACTION_STATE_ROLLBACK
+            this.cause = cause
+            event?.let { this.event = it }
+        })
     }
 
     final override fun commit(transactionId: String): Mono<String> {
         return exists(transactionId)
             .infoOnError("Cannot commit transaction cause, transaction \"$transactionId\" is not exists")
-            .publishTransaction(transaction {
-                id = transactionId
-                serverId = nodeName
-                group = nodeGroup
-                state = TransactionState.TRANSACTION_STATE_COMMIT
-            })
+            .flatMap { commitTransaction(transactionId, null) }
             .info("Commit transaction \"$transactionId\"")
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
+    }
+
+    override fun <T> commit(transactionId: String, event: T): Mono<String> {
+        return exists(transactionId)
+            .infoOnError("Cannot commit transaction cause, transaction \"$transactionId\" is not exists")
+            .map { codec.encode(event) }
+            .flatMap { encodedEvent ->
+                commitTransaction(transactionId, encodedEvent)
+            }
+            .info("Commit transaction \"$transactionId\"")
+            .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
+    }
+
+    private fun commitTransaction(transactionId: String, event: String?): Mono<String> {
+        return publishTransaction(transactionId, transaction {
+            id = transactionId
+            serverId = nodeName
+            group = nodeGroup
+            state = TransactionState.TRANSACTION_STATE_COMMIT
+            event?.let { this.event = it }
+        })
     }
 
     final override fun exists(transactionId: String): Mono<String> {
@@ -129,12 +214,6 @@ abstract class AbstractTransactionManager(
     private fun Mono<*>.mapTransactionId(): Mono<String> {
         return this.flatMap {
             Mono.deferContextual { Mono.just(it["transactionId"]) }
-        }
-    }
-
-    private fun Mono<String>.publishTransaction(transaction: Transaction): Mono<String> {
-        return this.flatMap {
-            publishTransaction(it, transaction)
         }
     }
 
