@@ -38,11 +38,12 @@ abstract class AbstractTransactionRetrySupporter(
                 .doOnNext {
                     info("Retry orphan transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
                 }
-                .flatMap { (transaction, messageId) ->
-                    transactionDispatcher.dispatch(transaction, messageId)
-                        .warningOnError("Error occurred when retry orphan transaction \n{\n$transaction}\nmessageId \"${messageId}\"")
-                        .switchIfEmpty { Mono.just("Dispatch success") }
-                        .onErrorResume { Mono.empty() }
+                .map { (transaction, messageId) ->
+                    val isSuccess = transactionDispatcher.dispatch(transaction, messageId)
+                    if (!isSuccess) {
+                        warningOnError("Error occurred when retry orphan transaction \n{\n$transaction}\nmessageId \"${messageId}\"")
+                    }
+                    isSuccess
                 }
                 .onErrorResume { Mono.empty() }
                 .subscribeOn(Schedulers.immediate())

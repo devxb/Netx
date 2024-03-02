@@ -7,6 +7,7 @@ import reactor.core.publisher.BufferOverflowStrategy
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class AbstractTransactionListener(
     private val backpressureSize: Int,
@@ -20,10 +21,12 @@ abstract class AbstractTransactionListener(
             .doOnNext {
                 info("Listen transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
             }
-            .flatMap { (transaction, messageId) ->
-                transactionDispatcher.dispatch(transaction, messageId)
-                    .warningOnError("Error occurred when listen transaction \n{\n$transaction}\nmessageId \"$messageId\"")
-                    .onErrorResume { Mono.empty() }
+            .map { (transaction, messageId) ->
+                val isSuccess = transactionDispatcher.dispatch(transaction, messageId)
+                if (!isSuccess) {
+                    warningOnError("Error occurred when listen transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+                }
+                isSuccess
             }
             .onErrorResume { Mono.empty() }
             .restartWhenTerminated()

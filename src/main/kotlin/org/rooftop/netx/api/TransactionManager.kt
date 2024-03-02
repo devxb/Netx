@@ -4,13 +4,13 @@ import reactor.core.publisher.Mono
 
 interface TransactionManager {
 
-    fun start(undo: String): Mono<String>
+    fun <T> start(undo: T): Mono<String>
 
-    fun syncStart(undo: String): String
+    fun <T> syncStart(undo: T): String
 
-    fun join(transactionId: String, undo: String): Mono<String>
+    fun <T> join(transactionId: String, undo: T): Mono<String>
 
-    fun syncJoin(transactionId: String, undo: String): String
+    fun <T> syncJoin(transactionId: String, undo: T): String
 
     fun exists(transactionId: String): Mono<String>
 

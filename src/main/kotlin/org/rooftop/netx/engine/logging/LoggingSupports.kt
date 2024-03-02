@@ -12,7 +12,7 @@ internal fun warning(message: String) = logger.warn(message)
 
 internal fun infoOnError(message: String, throwable: Throwable) = logger.info(message, throwable)
 
-internal fun warningOnError(message: String, throwable: Throwable) = logger.warn(message, throwable)
+internal fun warningOnError(message: String) = logger.warn(message)
 
 internal fun error(message: String) = logger.error(message)
 

@@ -6,10 +6,11 @@ import org.rooftop.netx.meta.TransactionHandler
 import reactor.core.publisher.Mono
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 @TransactionHandler
 class TransactionReceiveStorage(
-    private val storage: ConcurrentMap<String, MutableList<TransactionEvent>> = ConcurrentHashMap(),
+    private val storage: ConcurrentMap<String, CopyOnWriteArrayList<TransactionEvent>> = ConcurrentHashMap(),
 ) {
 
     fun clear() {
@@ -53,7 +54,7 @@ class TransactionReceiveStorage(
     }
 
     private fun log(key: String, transaction: TransactionEvent) {
-        storage.putIfAbsent(key, mutableListOf())
+        storage.putIfAbsent(key, CopyOnWriteArrayList())
         storage[key]?.add(transaction)
     }
 }

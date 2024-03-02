@@ -14,7 +14,9 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.declaredMemberFunctions
 
-abstract class AbstractTransactionDispatcher {
+abstract class AbstractTransactionDispatcher(
+    private val codec: Codec,
+) {
 
     private val monoTransactionHandleFunctions =
         mutableMapOf<TransactionState, MutableList<Pair<KFunction<Mono<*>>, Any>>>()
@@ -22,30 +24,50 @@ abstract class AbstractTransactionDispatcher {
     private val notPublisherTransactionHandlerFunctions =
         mutableMapOf<TransactionState, MutableList<Pair<KFunction<*>, Any>>>()
 
-    fun dispatch(transaction: Transaction, messageId: String): Flux<Any> {
-        return dispatchToMonoHandler(transaction)
+    fun dispatch(transaction: Transaction, messageId: String): Boolean {
+        var isSuccess = true
+        if (notPublisherTransactionHandlerFunctions.isEmpty()) {
+            dispatchToMonoHandler(transaction)
+                .subscribeOn(Schedulers.boundedElastic())
+                .ackWhenComplete(transaction, messageId)
+                .subscribe({ isSuccess = true }, { isSuccess = false })
+            return isSuccess
+        }
+        if (monoTransactionHandleFunctions.isEmpty()) {
+            dispatchToNotPublisherHandler(transaction)
+                .subscribeOn(Schedulers.boundedElastic())
+                .ackWhenComplete(transaction, messageId)
+                .subscribe({ isSuccess = true }, { isSuccess = false })
+            return isSuccess
+        }
+        dispatchToMonoHandler(transaction)
             .flatMap { dispatchToNotPublisherHandler(transaction) }
-            .doOnComplete {
-                Mono.just(transaction to messageId)
-                    .info("Ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
-                    .flatMap {
-                        ack(transaction, messageId)
-                            .warningOnError("Fail to ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
-                    }
-                    .subscribeOn(Schedulers.parallel())
-                    .subscribe()
+            .subscribeOn(Schedulers.boundedElastic())
+            .ackWhenComplete(transaction, messageId)
+            .subscribe({ isSuccess = true }, { isSuccess = false })
+        return isSuccess
+    }
+
+    private fun Flux<*>.ackWhenComplete(
+        transaction: Transaction,
+        messageId: String
+    ): Flux<*> = this.doOnComplete {
+        Mono.just(transaction to messageId)
+            .info("Ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+            .flatMap {
+                ack(transaction, messageId)
+                    .warningOnError("Fail to ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
             }
+            .subscribeOn(Schedulers.parallel())
+            .subscribe()
     }
 
     private fun dispatchToMonoHandler(transaction: Transaction): Flux<Any> {
         return Mono.just(transaction.state)
-            .filter { state -> monoTransactionHandleFunctions.containsKey(state) }
             .flatMapMany { state ->
-                Flux.fromIterable(
-                    monoTransactionHandleFunctions[state]
-                        ?: throw cannotFindMatchedHandlerFunctionException
-                )
+                Flux.fromIterable(monoTransactionHandleFunctions[state] ?: listOf())
             }
+            .publishOn(Schedulers.boundedElastic())
             .flatMap { (function, instance) ->
                 mapToTransactionEvent(transaction)
                     .info("Call Mono TransactionHandler \"${function.name}\" with transaction \n{\n$transaction}")
@@ -56,13 +78,10 @@ abstract class AbstractTransactionDispatcher {
 
     private fun dispatchToNotPublisherHandler(transaction: Transaction): Flux<*> {
         return Mono.just(transaction.state)
-            .filter { state -> notPublisherTransactionHandlerFunctions.containsKey(state) }
             .flatMapMany { state ->
-                Flux.fromIterable(
-                    notPublisherTransactionHandlerFunctions[state]
-                        ?: throw cannotFindMatchedHandlerFunctionException
-                )
+                Flux.fromIterable(notPublisherTransactionHandlerFunctions[state] ?: listOf())
             }
+            .publishOn(Schedulers.boundedElastic())
             .flatMap { (function, instance) ->
                 mapToTransactionEvent(transaction)
                     .info("Call Not publisher TransactionHandler \"${function.name}\" with transaction \n{\n$transaction}")
@@ -105,6 +124,7 @@ abstract class AbstractTransactionDispatcher {
                         transaction.serverId,
                         transaction.group,
                         transaction.cause,
+                        codec,
                         it,
                     )
                 }
@@ -198,9 +218,6 @@ abstract class AbstractTransactionDispatcher {
     private companion object {
         private val cannotFindMatchedTransactionEventException =
             java.lang.IllegalStateException("Cannot find matched transaction event")
-
-        private val cannotFindMatchedHandlerFunctionException =
-            IllegalStateException("Cannot find matched handler function")
 
         private val notMatchedTransactionHandlerException =
             IllegalStateException("Cannot find matched Transaction handler")
