@@ -1,6 +1,8 @@
 package org.rooftop.netx.engine
 
 import jakarta.annotation.PreDestroy
+import org.rooftop.netx.engine.logging.info
+import org.rooftop.netx.engine.logging.warningOnError
 import org.rooftop.netx.idl.Transaction
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -58,7 +60,7 @@ abstract class AbstractTransactionRetrySupporter(
             if (!executor.awaitTermination(10, TimeUnit.MINUTES)) {
                 executor.shutdownNow()
                 if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
-                    error("Cannot shutdown TransactionRetrySupporter thread")
+                    org.rooftop.netx.engine.logging.error("Cannot shutdown TransactionRetrySupporter thread")
                 }
             }
         }.onFailure {

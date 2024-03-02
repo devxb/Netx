@@ -1,6 +1,9 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.engine.logging.info
+import org.rooftop.netx.engine.logging.infoOnError
+import org.rooftop.netx.engine.logging.warningOnError
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
 import org.rooftop.netx.idl.transaction
@@ -62,7 +65,7 @@ abstract class AbstractTransactionManager(
                 if (it == TransactionState.TRANSACTION_STATE_ROLLBACK ||
                     it == TransactionState.TRANSACTION_STATE_COMMIT
                 ) {
-                    error("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
+                    org.rooftop.netx.engine.logging.error("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
                 }
                 transactionId
             }

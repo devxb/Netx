@@ -1,7 +1,7 @@
 package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.TransactionManager
-import org.rooftop.netx.engine.logger
+import org.rooftop.netx.engine.logging.logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

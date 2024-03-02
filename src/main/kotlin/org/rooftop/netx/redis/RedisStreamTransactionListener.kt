@@ -3,7 +3,7 @@ package org.rooftop.netx.redis
 import io.lettuce.core.RedisBusyException
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.AbstractTransactionListener
-import org.rooftop.netx.engine.info
+import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.idl.Transaction
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.connection.stream.Consumer
