@@ -1,5 +1,6 @@
 package org.rooftop.netx.redis
 
+import org.rooftop.netx.api.Codec
 import org.rooftop.netx.engine.AbstractTransactionManager
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
@@ -9,6 +10,7 @@ import reactor.core.publisher.Mono
 
 class RedisStreamTransactionManager(
     nodeId: Int,
+    codec: Codec,
     nodeName: String,
     private val nodeGroup: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
@@ -16,6 +18,7 @@ class RedisStreamTransactionManager(
     nodeId = nodeId,
     nodeName = nodeName,
     nodeGroup = nodeGroup,
+    codec = codec,
 ) {
 
     override fun getAnyTransaction(transactionId: String): Mono<TransactionState> {

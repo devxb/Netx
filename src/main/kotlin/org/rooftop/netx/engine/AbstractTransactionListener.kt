@@ -1,5 +1,7 @@
 package org.rooftop.netx.engine
 
+import org.rooftop.netx.engine.logging.info
+import org.rooftop.netx.engine.logging.warningOnError
 import org.rooftop.netx.idl.Transaction
 import reactor.core.publisher.BufferOverflowStrategy
 import reactor.core.publisher.Flux
@@ -18,10 +20,12 @@ abstract class AbstractTransactionListener(
             .doOnNext {
                 info("Listen transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
             }
-            .flatMap { (transaction, messageId) ->
-                transactionDispatcher.dispatch(transaction, messageId)
-                    .warningOnError("Error occurred when listen transaction \n{\n$transaction}\nmessageId \"$messageId\"")
-                    .onErrorResume { Mono.empty() }
+            .map { (transaction, messageId) ->
+                val isSuccess = transactionDispatcher.dispatch(transaction, messageId)
+                if (!isSuccess) {
+                    warningOnError("Error occurred when listen transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+                }
+                isSuccess
             }
             .onErrorResume { Mono.empty() }
             .restartWhenTerminated()

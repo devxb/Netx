@@ -16,7 +16,7 @@ class LoadRunner {
                 runCatching {
                     behavior.call()
                 }.onFailure {
-                    it.message?.let { it1 -> org.rooftop.netx.engine.error(it1) }
+                    it.message?.let { it1 -> org.rooftop.netx.engine.logging.error(it1) }
                 }
             }
         }

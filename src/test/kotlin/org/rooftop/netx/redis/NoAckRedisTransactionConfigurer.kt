@@ -1,7 +1,8 @@
 package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.TransactionManager
-import org.rooftop.netx.engine.logger
+import org.rooftop.netx.engine.JsonCodec
+import org.rooftop.netx.engine.logging.logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -40,6 +41,7 @@ class NoAckRedisTransactionConfigurer(
             nodeName = nodeName,
             nodeGroup = nodeGroup,
             reactiveRedisTemplate = reactiveRedisTemplate(),
+            codec = jsonCodec(),
         )
 
     @Bean
@@ -58,9 +60,9 @@ class NoAckRedisTransactionConfigurer(
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun noAckRedisStreamTransactionDispatcher(): NoAckRedisStreamTransactionDispatcher =
         NoAckRedisStreamTransactionDispatcher(
-            applicationContext = applicationContext,
             nodeGroup = nodeGroup,
-            reactiveRedisTemplate = reactiveRedisTemplate()
+            reactiveRedisTemplate = reactiveRedisTemplate(),
+            codec = jsonCodec(),
         )
 
     @Bean
@@ -83,7 +85,12 @@ class NoAckRedisTransactionConfigurer(
             applicationContext = applicationContext,
             reactiveRedisTemplate = reactiveRedisTemplate(),
             nodeGroup = nodeGroup,
+            codec = jsonCodec(),
         )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun jsonCodec(): JsonCodec = JsonCodec()
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
