@@ -3,7 +3,7 @@ package org.rooftop.netx.redis
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.info
 import org.rooftop.netx.engine.logger
-import org.slf4j.LoggerFactory
+import org.rooftop.netx.logging.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationContext
@@ -30,7 +30,7 @@ class RedisTransactionConfigurer(
 ) {
 
     init {
-        logger = LoggerFactory.getLogger("org.rooftop.netx.logger.$loggingLevel")
+        logger = LoggerFactory.getLogger(loggingLevel)
     }
 
     @Bean
