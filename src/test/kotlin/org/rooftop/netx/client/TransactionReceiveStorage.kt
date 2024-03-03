@@ -33,22 +33,22 @@ class TransactionReceiveStorage(
         (storage["ROLLBACK"]?.size ?: 0) shouldBeGreaterThanOrEqual count
     }
 
-    @TransactionRollbackHandler
+    @TransactionRollbackListener
     fun logRollback(transaction: TransactionRollbackEvent): Mono<Unit> {
         return Mono.fromCallable { log("ROLLBACK", transaction) }
     }
 
-    @TransactionStartHandler
+    @TransactionStartListener
     fun logStart(transaction: TransactionStartEvent): Mono<Unit> {
         return Mono.fromCallable { log("START", transaction) }
     }
 
-    @TransactionJoinHandler
+    @TransactionJoinListener
     fun logJoin(transaction: TransactionJoinEvent): Mono<Unit> {
         return Mono.fromCallable { log("JOIN", transaction) }
     }
 
-    @TransactionCommitHandler
+    @TransactionCommitListener
     fun logCommit(transaction: TransactionCommitEvent): Mono<Unit> {
         return Mono.fromCallable { log("COMMIT", transaction) }
     }

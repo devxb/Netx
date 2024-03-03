@@ -6,24 +6,24 @@ import org.rooftop.netx.meta.TransactionHandler
 @TransactionHandler
 class NoPublisherTransactionHandlerAssertions : AbstractTransactionHandlerAssertions() {
 
-    @TransactionRollbackHandler
+    @TransactionRollbackListener
     fun handleRollback(event: TransactionRollbackEvent): Long {
         put("ROLLBACK")
         return Long.MIN_VALUE
     }
 
-    @TransactionCommitHandler
+    @TransactionCommitListener
     fun handleCommit(event: TransactionCommitEvent) {
         put("COMMIT")
     }
 
-    @TransactionStartHandler
+    @TransactionStartListener
     fun handleStart(event: TransactionStartEvent): Foo {
         put("START")
         return Foo("START")
     }
 
-    @TransactionJoinHandler
+    @TransactionJoinListener
     fun handleJoin(event: TransactionJoinEvent): Any {
         put("JOIN")
         return Any::class

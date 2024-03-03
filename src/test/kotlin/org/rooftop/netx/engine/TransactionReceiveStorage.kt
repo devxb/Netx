@@ -19,22 +19,22 @@ class TransactionReceiveStorage {
         commitEvents.clear()
     }
 
-    @TransactionStartHandler
+    @TransactionStartListener
     fun handleStart(transactionStartEvent: TransactionStartEvent) {
         startEvents.add(transactionStartEvent)
     }
 
-    @TransactionJoinHandler
+    @TransactionJoinListener
     fun handleJoin(transactionJoinEvent: TransactionJoinEvent) {
         joinEvents.add(transactionJoinEvent)
     }
 
-    @TransactionRollbackHandler
+    @TransactionRollbackListener
     fun handleRollback(transactionRollbackEvent: TransactionRollbackEvent) {
         rollbackEvents.add(transactionRollbackEvent)
     }
 
-    @TransactionCommitHandler
+    @TransactionCommitListener
     fun handleCommit(transactionCommitEvent: TransactionCommitEvent) {
         commitEvents.add(transactionCommitEvent)
     }
