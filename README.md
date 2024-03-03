@@ -6,7 +6,7 @@
 
 <br>
 
-![version 0.2.3](https://img.shields.io/badge/version-0.2.3-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
+![version 0.2.4](https://img.shields.io/badge/version-0.2.4-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
@@ -146,24 +146,29 @@ _롤백은 TransactionRollbackEvent로 전달되는 `undo` 필드를 사용합�
 
 ```kotlin
 
-@TransactionStartHandler
-fun handleTransactionStartEvent(event: TransactionStartEvent) {
-    // ...
-}
+@TransactionHandler
+class TransactionHandler {
 
-@TransactionJoinHandler
-fun handleTransactionJoinEvent(event: TransactionJoinEvent) {
-    // ...
-}
+    @TransactionStartListener(Foo::class) // Receive transaction event when event is Foo.class
+    fun handleTransactionStartEvent(event: TransactionStartEvent) {
+        val foo: Foo = event.decodeEvent(Foo::class) // Get event field to Foo.class
+        // ...
+    }
 
-@TransactionCommitHandler
-fun handleTransactionCommitEvent(event: TransactionCommitEvent) {
-    // ...
-}
+    @TransactionJoinHandler // Receive all transaction event when no type is defined.
+    fun handleTransactionJoinEvent(event: TransactionJoinEvent) {
+        // ...
+    }
 
-@TransactionRollbackHandler
-fun handleTransactionRollbackEvent(event: TransactionRollbackEvent) {
-    // ...
+    @TransactionCommitHandler
+    fun handleTransactionCommitEvent(event: TransactionCommitEvent): Mono<String> { // In Webflux framework, publisher must be returned.
+        // ...
+    }
+
+    @TransactionRollbackHandler
+    fun handleTransactionRollbackEvent(event: TransactionRollbackEvent) { // In Mvc framework, publisher must not returned.
+        val undo: Foo = event.decodeUndo(Foo::class) // Get event field to Foo.class
+    }
 }
 ```
 
