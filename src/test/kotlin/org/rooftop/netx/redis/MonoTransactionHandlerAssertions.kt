@@ -7,25 +7,25 @@ import reactor.core.publisher.Mono
 @TransactionHandler
 class MonoTransactionHandlerAssertions : AbstractTransactionHandlerAssertions() {
 
-    @TransactionRollbackHandler
+    @TransactionRollbackListener
     fun handleRollback(event: TransactionRollbackEvent): Mono<Unit> {
         put("ROLLBACK")
         return Mono.just(Unit)
     }
 
-    @TransactionCommitHandler
+    @TransactionCommitListener
     fun handleCommit(event: TransactionCommitEvent): Mono<Unit> {
         put("COMMIT")
         return Mono.just(Unit)
     }
 
-    @TransactionStartHandler
+    @TransactionStartListener
     fun handleStart(event: TransactionStartEvent): Mono<Unit> {
         put("START")
         return Mono.just(Unit)
     }
 
-    @TransactionJoinHandler
+    @TransactionJoinListener
     fun handleJoin(event: TransactionJoinEvent): Mono<Unit> {
         put("JOIN")
         return Mono.just(Unit)
