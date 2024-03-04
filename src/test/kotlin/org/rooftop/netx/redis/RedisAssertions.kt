@@ -7,12 +7,12 @@ import org.springframework.data.domain.Range
 import org.springframework.data.redis.core.ReactiveRedisOperations
 
 @TestComponent
-internal class RedisAssertions(
+class RedisAssertions(
     private val reactiveRedisOperations: ReactiveRedisOperations<String, ByteArray>,
     @Value("\${netx.group}") private val nodeGroup: String,
 ) {
 
-    fun pendingMessageCountShouldBe(transactionId: String, count: Long) {
+    fun pendingMessageCountShouldBe(count: Long) {
         val pendingMessageCount = reactiveRedisOperations.opsForStream<String, String>()
             .pending("NETX_STREAM", nodeGroup, Range.closed("-", "+"), Long.MAX_VALUE)
             .map { it.get().toList().size }

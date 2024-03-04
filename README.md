@@ -53,7 +53,7 @@ class Application {
 | **netx.recovery-milli** | 1000      | _`netx.recovery-milli`_ 마다 _`netx.orphan-milli`_ 동안 처리 되지 않는 트랜잭션을 찾아 재실행합니다.                                                                                                      | 1000    |
 | **netx.orphan-milli**   | 60000     | PENDING 상태가된 트랜잭션 중, orphan-milli가 지나도 ACK 상태가 되지 않은 트랜잭션을 찾아 재시작합니다.                                                                                                              | 60000   |
 | **netx.backpressure**   | 40        | 한번에 수신가능한 트랜잭션 수를 조절합니다. **너무 높게설정하면 서버에 부하가 올 수 있고, 낮게 설정하면 성능이 낮아질 수 있습니다.** 이 설정은 다른 서버가 발행한 트랜잭션 수신량과 처리에 실패한 트랜잭션 수신량에 영향을 미칩니다. 수신되지 못하거나, drop된 트랜잭션은 자동으로 retry 대기열에 들어갑니다. | 40      |
-| **netx.logging.level**  | info      | logging level을 지정합니다. 선택가능한 value는 다음과 같습니다. "info", "warning", "off"                                                                                                              | "off"   |
+| **netx.logging.level**  | info      | logging level을 지정합니다. 선택가능한 value는 다음과 같습니다. "info", "warn", "off"                                                                                                                 | "off"   |
 
 ### Usage example
 
@@ -160,8 +160,12 @@ class TransactionHandler {
         // ...
     }
 
-    @TransactionCommitHandler
+    @TransactionCommitHandler(
+        event = Foo::class,
+        noRetryFor = [IllegalArgumentException::class]
+    ) // Dont retry when throw IllegalArgumentException. *Retry if throw Throwable or IllegalArgumentException's super type* 
     fun handleTransactionCommitEvent(event: TransactionCommitEvent): Mono<String> { // In Webflux framework, publisher must be returned.
+        throw IllegalArgumentException("Ignore this exception")
         // ...
     }
 
