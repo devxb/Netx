@@ -102,7 +102,7 @@ abstract class AbstractTransactionManager(
                 }
                 transactionId
             }
-            .warningOnError("Cannot join transaction cause, transaction \"$transactionId\" already Rollback state")
+            .warningOnError("Cannot join transaction")
             .map { codec.encode(undo) }
             .flatMap {
                 joinTransaction(transactionId, it, null)
@@ -118,7 +118,7 @@ abstract class AbstractTransactionManager(
                 }
                 transactionId
             }
-            .warningOnError("Cannot join transaction cause, transaction \"$transactionId\" already Rollback state")
+            .warningOnError("Cannot join transaction")
             .map { codec.encode(undo) to codec.encode(event) }
             .flatMap { (encodedUndo, encodedEvent) ->
                 joinTransaction(transactionId, encodedUndo, encodedEvent)

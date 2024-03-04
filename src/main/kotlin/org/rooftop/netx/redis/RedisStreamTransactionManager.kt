@@ -33,11 +33,7 @@ class RedisStreamTransactionManager(
     }
 
     override fun publishTransaction(transactionId: String, transaction: Transaction): Mono<String> {
-        return reactiveRedisTemplate.opsForStream<String, ByteArray>()
-            .add(
-                Record.of<String?, String?, ByteArray?>(mapOf(DATA to transaction.toByteArray()))
-                    .withStreamKey(STREAM_KEY)
-            )
+        return Mono.fromCallable { hasUndo(transaction) }
             .flatMap {
                 if (hasUndo(transaction)) {
                     return@flatMap reactiveRedisTemplate.opsForHash<String, String>()
@@ -53,6 +49,13 @@ class RedisStreamTransactionManager(
                         transactionId, mapOf(
                             STATE_KEY to transaction.state.name,
                         )
+                    )
+            }
+            .flatMap {
+                reactiveRedisTemplate.opsForStream<String, ByteArray>()
+                    .add(
+                        Record.of<String?, String?, ByteArray?>(mapOf(DATA to transaction.toByteArray()))
+                            .withStreamKey(STREAM_KEY)
                     )
             }
             .map { transactionId }
