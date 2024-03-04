@@ -160,8 +160,12 @@ class TransactionHandler {
         // ...
     }
 
-    @TransactionCommitHandler
+    @TransactionCommitHandler(
+        event = Foo::class,
+        noRetryFor = [IllegalArgumentException::class]
+    ) // Dont retry when throw IllegalArgumentException. *Retry if throw Throwable or IllegalArgumentException's super type* 
     fun handleTransactionCommitEvent(event: TransactionCommitEvent): Mono<String> { // In Webflux framework, publisher must be returned.
+        throw IllegalArgumentException("Ignore this exception")
         // ...
     }
 
