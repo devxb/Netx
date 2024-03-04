@@ -7,7 +7,6 @@ import org.rooftop.netx.api.TransactionManager
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 @ContextConfiguration(
     classes = [
@@ -35,13 +34,13 @@ internal class RedisTransactionRetrySupporterTest(
     describe("handleOrphanTransaction 메소드는") {
         context("pending되었지만, ack되지 않은 트랜잭션이 있다면,") {
             it("해당 트랜잭션을 찾아서 처리하고, ack 상태로 변경한다.") {
-                val transactionId = transactionManager.start("undo").block()!!
+                transactionManager.start("undo").block()!!
 
                 eventually(1.minutes) {
                     noPublisherTransactionHandlerAssertions.startCountShouldBe(1)
                     monoTransactionHandlerAssertions.startCountShouldBe(1)
 
-                    redisAssertions.pendingMessageCountShouldBe(transactionId, 0)
+                    redisAssertions.pendingMessageCountShouldBe(0)
                 }
             }
         }

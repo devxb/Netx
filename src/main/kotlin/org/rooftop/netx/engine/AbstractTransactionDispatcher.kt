@@ -18,34 +18,29 @@ abstract class AbstractTransactionDispatcher(
     private val codec: Codec,
 ) {
 
-    private val monoTransactionHandleFunctions =
-        mutableMapOf<TransactionState, MutableList<MonoFunction>>()
+    private val functions =
+        mutableMapOf<TransactionState, MutableList<AbstractDispatchFunction<*>>>()
 
-    private val notPublisherTransactionHandlerFunctions =
-        mutableMapOf<TransactionState, MutableList<NotPublisherFunction>>()
+    fun dispatch(transaction: Transaction, messageId: String): Mono<String> {
+        return Flux.fromIterable(functions[transaction.state] ?: listOf())
+            .flatMap { function ->
+                when (function) {
+                    is MonoDispatchFunction -> {
+                        mapToTransactionEvent(transaction)
+                            .callMono(function)
+                            .warningOnError("Error occurred in TransactionHandler function \"${function.name()}\" with transaction id ${transaction.id}")
+                    }
 
-    fun dispatch(transaction: Transaction, messageId: String): Boolean {
-        var isSuccess = true
-        if (notPublisherTransactionHandlerFunctions.isEmpty()) {
-            dispatchToMonoHandler(transaction)
-                .subscribeOn(Schedulers.boundedElastic())
-                .ackWhenComplete(transaction, messageId)
-                .subscribe({ isSuccess = true }, { isSuccess = false })
-            return isSuccess
-        }
-        if (monoTransactionHandleFunctions.isEmpty()) {
-            dispatchToNotPublisherHandler(transaction)
-                .subscribeOn(Schedulers.boundedElastic())
-                .ackWhenComplete(transaction, messageId)
-                .subscribe({ isSuccess = true }, { isSuccess = false })
-            return isSuccess
-        }
-        dispatchToMonoHandler(transaction)
-            .flatMap { dispatchToNotPublisherHandler(transaction) }
+                    is NotPublishDispatchFunction -> {
+                        mapToTransactionEvent(transaction)
+                            .callNotPublish(function)
+                            .warningOnError("Error occurred in TransactionHandler function \"${function.name()}\" with transaction id ${transaction.id}")
+                    }
+                }
+            }
             .subscribeOn(Schedulers.boundedElastic())
             .ackWhenComplete(transaction, messageId)
-            .subscribe({ isSuccess = true }, { isSuccess = false })
-        return isSuccess
+            .then(Mono.just(DISPATHCED))
     }
 
     private fun Flux<*>.ackWhenComplete(
@@ -60,32 +55,6 @@ abstract class AbstractTransactionDispatcher(
             }
             .subscribeOn(Schedulers.parallel())
             .subscribe()
-    }
-
-    private fun dispatchToMonoHandler(transaction: Transaction): Flux<Any> {
-        return Mono.just(transaction.state)
-            .flatMapMany { state ->
-                Flux.fromIterable(monoTransactionHandleFunctions[state] ?: listOf())
-            }
-            .publishOn(Schedulers.boundedElastic())
-            .flatMap { monoFunction ->
-                mapToTransactionEvent(transaction)
-                    .flatMap { monoFunction.call(it) }
-                    .warningOnError("Error occurred in TransactionHandler function \"${monoFunction.name()}\" with transaction \n{\n$transaction}")
-            }
-    }
-
-    private fun dispatchToNotPublisherHandler(transaction: Transaction): Flux<*> {
-        return Mono.just(transaction.state)
-            .flatMapMany { state ->
-                Flux.fromIterable(notPublisherTransactionHandlerFunctions[state] ?: listOf())
-            }
-            .publishOn(Schedulers.boundedElastic())
-            .flatMap { notPublisherFunction ->
-                mapToTransactionEvent(transaction)
-                    .map { notPublisherFunction.call(it) }
-                    .warningOnError("Error occurred in TransactionHandler function \"${notPublisherFunction.name()}\" with transaction \n{\n$transaction}")
-            }
     }
 
     private fun mapToTransactionEvent(transaction: Transaction): Mono<TransactionEvent> {
@@ -153,19 +122,18 @@ abstract class AbstractTransactionDispatcher(
     @PostConstruct
     fun initHandler() {
         val transactionHandler = findHandlers(TransactionHandler::class)
-        val monoFunctions = getMonoFunctions(transactionHandler)
-        monoTransactionHandleFunctions.putAll(monoFunctions)
-        val notPublisherFunctions = getNotPublisherFunctions(transactionHandler)
-        notPublisherTransactionHandlerFunctions.putAll(notPublisherFunctions)
+        initMonoFunctions(transactionHandler)
+        initNotPublisherFunctions(transactionHandler)
+        functions.forEach { (_, notPublisherFunction) ->
+            val notPublisherFunctionNames = notPublisherFunction.map { it.name() }.toList()
+            info("Register functions names : \"${notPublisherFunctionNames}\"")
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getMonoFunctions(
+    private fun initMonoFunctions(
         foundHandlers: List<Any>,
-    ): MutableMap<TransactionState, MutableList<MonoFunction>> {
-        val handlers =
-            mutableMapOf<TransactionState, MutableList<MonoFunction>>()
-
+    ) {
         for (handler in foundHandlers) {
             val returnTypeMatchedHandlers = handler::class.declaredMemberFunctions
                 .filter { it.returnType.classifier == Mono::class }
@@ -176,9 +144,15 @@ abstract class AbstractTransactionDispatcher(
                         runCatching {
                             val transactionState = getMatchedTransactionState(annotation)
                             val eventType = getEventType(annotation)
-                            handlers.putIfAbsent(transactionState, mutableListOf())
-                            handlers[transactionState]?.add(
-                                MonoFunction(eventType, function as KFunction<Mono<*>>, handler)
+                            val noRetryFor = getNoRetryFor(annotation)
+                            functions.putIfAbsent(transactionState, mutableListOf())
+                            functions[transactionState]?.add(
+                                MonoDispatchFunction(
+                                    eventType,
+                                    function as KFunction<Mono<*>>,
+                                    handler,
+                                    noRetryFor,
+                                )
                             )
                         }.onFailure {
                             throw IllegalStateException("Cannot add Mono TransactionHandler", it)
@@ -186,15 +160,11 @@ abstract class AbstractTransactionDispatcher(
                     }
             }
         }
-
-        return handlers
     }
 
-    private fun getNotPublisherFunctions(
+    private fun initNotPublisherFunctions(
         foundHandlers: List<Any>
-    ): MutableMap<TransactionState, MutableList<NotPublisherFunction>> {
-        val handlers =
-            mutableMapOf<TransactionState, MutableList<NotPublisherFunction>>()
+    ) {
 
         for (handler in foundHandlers) {
             val returnTypeMatchedHandlers = handler::class.declaredMemberFunctions
@@ -206,9 +176,10 @@ abstract class AbstractTransactionDispatcher(
                         runCatching {
                             val transactionState = getMatchedTransactionState(annotation)
                             val eventType = getEventType(annotation)
-                            handlers.putIfAbsent(transactionState, mutableListOf())
-                            handlers[transactionState]?.add(
-                                NotPublisherFunction(eventType, function, handler)
+                            val noRetryFor = getNoRetryFor(annotation)
+                            functions.putIfAbsent(transactionState, mutableListOf())
+                            functions[transactionState]?.add(
+                                NotPublishDispatchFunction(eventType, function, handler, noRetryFor)
                             )
                         }.onFailure {
                             throw IllegalStateException("Cannot add TransactionHandler", it)
@@ -216,8 +187,6 @@ abstract class AbstractTransactionDispatcher(
                     }
             }
         }
-
-        return handlers
     }
 
     protected abstract fun <T : Annotation> findHandlers(type: KClass<T>): List<Any>
@@ -232,6 +201,16 @@ abstract class AbstractTransactionDispatcher(
         }
     }
 
+    private fun getNoRetryFor(annotation: Annotation): Array<KClass<out Throwable>> {
+        return when (annotation) {
+            is TransactionStartListener -> annotation.noRetryFor
+            is TransactionCommitListener -> annotation.noRetryFor
+            is TransactionJoinListener -> annotation.noRetryFor
+            is TransactionRollbackListener -> annotation.noRetryFor
+            else -> throw notMatchedTransactionHandlerException
+        }
+    }
+
     private fun getMatchedTransactionState(annotation: Annotation): TransactionState {
         return when (annotation) {
             is TransactionStartListener -> TransactionState.TRANSACTION_STATE_START
@@ -242,65 +221,14 @@ abstract class AbstractTransactionDispatcher(
         }
     }
 
-    private class MonoFunction(
-        private val eventType: KClass<*>,
-        private val function: KFunction<Mono<*>>,
-        private val handler: Any,
-    ) {
-
-        fun name(): String = function.name
-        fun call(transactionEvent: TransactionEvent): Mono<*> {
-            runCatching { transactionEvent.decodeEvent(eventType) }
-                .fold(
-                    onSuccess = {
-                        return function.call(handler, transactionEvent)
-                            .info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
-                    },
-                    onFailure = {
-                        if (it is NullPointerException && eventType == Any::class) {
-                            return function.call(handler, transactionEvent)
-                                .info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
-                        }
-                    }
-                )
-            return Mono.empty<String>()
-        }
-    }
-
-    private class NotPublisherFunction(
-        private val eventType: KClass<*>,
-        private val function: KFunction<*>,
-        private val handler: Any,
-    ) {
-        fun name(): String = function.name
-
-        fun call(transactionEvent: TransactionEvent): Any? {
-            runCatching {
-                transactionEvent.decodeEvent(eventType)
-            }.fold(
-                onSuccess = {
-                    val result = function.call(handler, transactionEvent)
-                    info("Call NotPublisher TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
-                    return result
-                },
-                onFailure = {
-                    if (it is NullPointerException && eventType == Any::class) {
-                        val result = function.call(handler, transactionEvent)
-                        info("Call NotPublisher TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
-                        return result
-                    }
-                }
-            )
-            return Unit
-        }
-    }
-
     protected abstract fun ack(
         transaction: Transaction,
         messageId: String
     ): Mono<Pair<Transaction, String>>
 
     private companion object {
+        private const val DISPATHCED = "dispatched"
+
         private val cannotFindMatchedTransactionEventException =
             java.lang.IllegalStateException("Cannot find matched transaction event")
 

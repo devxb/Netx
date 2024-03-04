@@ -5,5 +5,6 @@ import kotlin.reflect.KClass
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class TransactionRollbackListener(
-    val event: KClass<*> = Any::class
+    val event: KClass<*> = Any::class,
+    val noRetryFor: Array<KClass<out Throwable>> = [],
 )
