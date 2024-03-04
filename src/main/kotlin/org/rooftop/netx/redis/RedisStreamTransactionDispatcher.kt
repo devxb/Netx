@@ -1,6 +1,8 @@
 package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.Codec
+import org.rooftop.netx.api.FailedAckTransactionException
+import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.idl.Transaction
 import org.springframework.context.ApplicationContext
@@ -26,7 +28,7 @@ class RedisStreamTransactionDispatcher(
         return reactiveRedisTemplate.opsForHash<String, String>()[transaction.id, nodeGroup]
             .switchIfEmpty(
                 Mono.error {
-                    error("Cannot find undo state in transaction hashes key \"${transaction.id}\"")
+                    throw TransactionException("Cannot find undo state in transaction hashes key \"${transaction.id}\"")
                 }
             )
     }
@@ -37,7 +39,7 @@ class RedisStreamTransactionDispatcher(
             .map { transaction to messageId }
             .switchIfEmpty(
                 Mono.error {
-                    error("Fail to ack transaction transactionId \"${transaction.id}\" messageId \"$messageId\"")
+                    throw FailedAckTransactionException("Fail to ack transaction transactionId \"${transaction.id}\" messageId \"$messageId\"")
                 }
             )
     }

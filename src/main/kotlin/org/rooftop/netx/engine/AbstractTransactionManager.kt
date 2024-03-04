@@ -1,6 +1,7 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.Codec
+import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.engine.logging.infoOnError
@@ -19,46 +20,46 @@ abstract class AbstractTransactionManager(
 ) : TransactionManager {
 
     final override fun <T> syncStart(undo: T): String {
-        return start(undo).block() ?: error("Cannot start transaction \"$undo\"")
+        return start(undo).block() ?: throw TransactionException("Cannot start transaction \"$undo\"")
     }
 
     override fun <T, S> syncStart(undo: T, event: S): String {
-        return start(undo, event).block() ?: error("Cannot start transaction \"$undo\" \"$event\"")
+        return start(undo, event).block() ?: throw TransactionException("Cannot start transaction \"$undo\" \"$event\"")
     }
 
     final override fun <T> syncJoin(transactionId: String, undo: T): String {
         return join(transactionId, undo).block()
-            ?: error("Cannot join transaction \"$transactionId\", \"$undo\"")
+            ?: throw TransactionException("Cannot join transaction \"$transactionId\", \"$undo\"")
     }
 
     override fun <T, S> syncJoin(transactionId: String, undo: T, event: S): String {
         return join(transactionId, undo, event).block()
-            ?: error("Cannot join transaction \"$transactionId\", \"$undo\", \"$event\"")
+            ?: throw TransactionException("Cannot join transaction \"$transactionId\", \"$undo\", \"$event\"")
     }
 
     final override fun syncExists(transactionId: String): String {
         return exists(transactionId).block()
-            ?: error("Cannot exists transaction \"$transactionId\"")
+            ?: throw TransactionException("Cannot exists transaction \"$transactionId\"")
     }
 
     final override fun syncCommit(transactionId: String): String {
         return commit(transactionId).block()
-            ?: error("Cannot commit transaction \"$transactionId\"")
+            ?: throw TransactionException("Cannot commit transaction \"$transactionId\"")
     }
 
     override fun <T> syncCommit(transactionId: String, event: T): String {
         return commit(transactionId, event).block()
-            ?: error("Cannot commit transaction \"$transactionId\" \"$event\"")
+            ?: throw TransactionException("Cannot commit transaction \"$transactionId\" \"$event\"")
     }
 
     final override fun syncRollback(transactionId: String, cause: String): String {
         return rollback(transactionId, cause).block()
-            ?: error("Cannot rollback transaction \"$transactionId\", \"$cause\"")
+            ?: throw TransactionException("Cannot rollback transaction \"$transactionId\", \"$cause\"")
     }
 
     override fun <T> syncRollback(transactionId: String, cause: String, event: T): String {
         return rollback(transactionId, cause, event).block()
-            ?: error("Cannot rollback transaction \"$transactionId\", \"$cause\" \"$event\"")
+            ?: throw TransactionException("Cannot rollback transaction \"$transactionId\", \"$cause\" \"$event\"")
     }
 
     final override fun <T> start(undo: T): Mono<String> {
@@ -98,7 +99,7 @@ abstract class AbstractTransactionManager(
         return getAnyTransaction(transactionId)
             .map {
                 if (it == TransactionState.TRANSACTION_STATE_COMMIT) {
-                    error("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
+                    throw TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
                 }
                 transactionId
             }
@@ -114,7 +115,7 @@ abstract class AbstractTransactionManager(
         return getAnyTransaction(transactionId)
             .map {
                 if (it == TransactionState.TRANSACTION_STATE_COMMIT) {
-                    error("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
+                    throw TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
                 }
                 transactionId
             }
