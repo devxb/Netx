@@ -230,9 +230,9 @@ abstract class AbstractTransactionDispatcher(
         private const val DISPATHCED = "dispatched"
 
         private val cannotFindMatchedTransactionEventException =
-            java.lang.IllegalStateException("Cannot find matched transaction event")
+            NotFoundDispatchFunctionException("Cannot find matched transaction event")
 
         private val notMatchedTransactionHandlerException =
-            IllegalStateException("Cannot find matched Transaction handler")
+            NotFoundDispatchFunctionException("Cannot find matched Transaction handler")
     }
 }

@@ -98,7 +98,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 val result = transactionManager.join(NOT_EXIST_TX_ID, UNDO)
 
                 StepVerifier.create(result)
@@ -122,7 +122,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
                     transactionManager.syncJoin(NOT_EXIST_TX_ID, UNDO)
                 }
@@ -144,7 +144,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 val result = transactionManager.exists(NOT_EXIST_TX_ID)
 
                 StepVerifier.create(result)
@@ -165,7 +165,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
                     transactionManager.syncExists(NOT_EXIST_TX_ID)
                 }
@@ -188,7 +188,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 val result = transactionManager.commit(NOT_EXIST_TX_ID)
 
                 StepVerifier.create(result)
@@ -212,7 +212,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
                     transactionManager.syncCommit(NOT_EXIST_TX_ID)
                 }
@@ -235,7 +235,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 val result = transactionManager.rollback(NOT_EXIST_TX_ID, "rollback for test")
 
                 StepVerifier.create(result)
@@ -259,7 +259,7 @@ internal class RedisStreamTransactionManagerTest(
         }
 
         context("존재하지 않는 transactionId를 입력받으면,") {
-            it("IllegalStateException 을 던진다.") {
+            it("TransactionException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists transaction id \"$NOT_EXIST_TX_ID\"") {
                     transactionManager.syncRollback(NOT_EXIST_TX_ID, "rollback for test")
                 }

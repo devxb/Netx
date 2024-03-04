@@ -1,9 +1,9 @@
 package org.rooftop.netx.engine
 
+import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.equality.shouldBeEqualUsingFields
 import io.kotest.matchers.equals.shouldBeEqual
-import org.junit.jupiter.api.DisplayName
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
@@ -17,7 +17,7 @@ import org.springframework.test.context.TestPropertySource
         TransactionReceiveStorage::class,
     ]
 )
-@DisplayName("NetxCodecSupports")
+@DisplayName("NetxCodecSupportsTest")
 @TestPropertySource("classpath:application.properties")
 class NetxCodecSupportsTest(
     private val transactionManager: TransactionManager,

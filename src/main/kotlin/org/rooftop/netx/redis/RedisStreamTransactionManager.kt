@@ -1,6 +1,7 @@
 package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.Codec
+import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.engine.AbstractTransactionManager
 import org.rooftop.netx.idl.Transaction
 import org.rooftop.netx.idl.TransactionState
@@ -26,7 +27,7 @@ class RedisStreamTransactionManager(
             .opsForHash<String, String>()[transactionId, STATE_KEY]
             .switchIfEmpty(
                 Mono.error {
-                    error("Cannot find exists transaction id \"$transactionId\"")
+                    throw TransactionException("Cannot find exists transaction id \"$transactionId\"")
                 }
             )
             .map { TransactionState.valueOf(it) }
