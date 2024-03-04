@@ -26,7 +26,7 @@ internal class NotPublishDispatchFunction(
             info("Call NotPublisher TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
             return result
         }.onFailure { throwable ->
-            if (!noRetryFor.contains(throwable.cause!!::class)) {
+            if (isNoRetryFor(throwable)) {
                 throw throwable
             }
             info("Call NotPublisher TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")

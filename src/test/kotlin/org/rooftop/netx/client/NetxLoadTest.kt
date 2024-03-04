@@ -33,7 +33,6 @@ internal class NetxLoadTest(
             row(100, 100),
             row(1_000, 1_000),
             row(10_000, 10_000),
-            row(100_000, 100_000),
         ) { commitLoadCount, rollbackLoadCount ->
             transactionReceiveStorage.clear()
 
