@@ -10,4 +10,7 @@ dependencies {
     testImplementation "io.kotest.extensions:kotest-extensions-spring:${kotestExtensionSpringVersion}"
 
     testImplementation "org.testcontainers:testcontainers:${testContainerVersion}"
+
+    testImplementation "org.awaitility:awaitility:${awaitilityVersion}"
+
 }

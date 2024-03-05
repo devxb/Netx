@@ -9,6 +9,9 @@ sealed class TransactionEvent(
     private val event: String?,
     private val codec: Codec,
 ) {
+
+    fun <T : Any> decodeEvent(type: Class<T>): T = decodeEvent(type.kotlin)
+
     fun <T : Any> decodeEvent(type: KClass<T>): T =
         codec.decode(
             event ?: throw NullPointerException("Cannot decode event cause event is null"),
