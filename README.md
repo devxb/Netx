@@ -12,12 +12,11 @@
 Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
 `Netx` 는 다음 기능을 제공합니다.
 
-1. [Reactor](https://projectreactor.io/) 기반의 완전한 비동기 트랜잭션 관리
+1. 동기 API와 비동기[Reactor](https://projectreactor.io/) API 지원
 2. 처리되지 않은 트랜잭션을 찾아 자동으로 재실행
 3. Backpressure 지원으로 노드별 처리가능한 트랜잭션 수 조절
 4. 여러 노드가 중복 트랜잭션 이벤트를 수신하는 문제 방지
 5. `At Least Once` 방식의 메시지 전달 보장
-6. 비동기 API와 동기 API 지원
 
 ## How to use
 
@@ -26,7 +25,6 @@ Netx는 스프링 환경에서 사용할 수 있으며, 아래와 같이 `@Enabl
 ```kotlin
 @SpringBootApplication
 @EnableDistributedTransaciton
-@EnableAutoConfiguration(exclude = [RedisReactiveAutoConfiguration::class])
 class Application {
 
     companion object {
@@ -62,7 +60,7 @@ class Application {
 ```kotlin
 // Sync
 fun pay(param: Any): Any {
-    val transactionId = transactionManager.syncStart("paid=1000") // start transaction
+    val transactionId = transactionManager.syncStart(Pay(id = 1L, paid = 1000L)) // start transaction
     
     runCatching { // This is kotlin try catch, not netx library spec
         // Do your bussiness logic
@@ -75,7 +73,7 @@ fun pay(param: Any): Any {
 
 // Async
 fun pay(param: Any): Mono<Any> {
-    return transactionManager.start("paid=1000") // Start distributed transaction and publish transaction start event
+    return transactionManager.start(Pay(id = 1L, paid = 1000L)) // Start distributed transaction and publish transaction start event
         .flatMap { transactionId ->
             service.pay(param)
                 .doOnError { throwable ->
@@ -95,7 +93,7 @@ fun pay(param: Any): Mono<Any> {
 ```kotlin
 //Sync
 fun order(param: Any): Any {
-    val transactionId = transactionManager.syncJoin(param.transactionId, "orderId=1:state=PENDING") // join transaction
+    val transactionId = transactionManager.syncJoin(param.transactionId, Order(id = 1L, state = PENDING)) // join transaction
 
     runCatching { // This is kotlin try catch, not netx library spec
         // Do your bussiness logic
@@ -109,7 +107,7 @@ fun order(param: Any): Any {
 fun order(param: Any): Mono<Any> {
     return transactionManager.join(
         param.transactionId,
-        "orderId=1:state=PENDING"
+        Order(id = 1L, state = PENDING)
     ) // join exists distributed transaction and publish transaction join event
         .flatMap { transactionId ->
             service.order(param)
@@ -149,7 +147,7 @@ _롤백은 TransactionRollbackEvent로 전달되는 `undo` 필드를 사용합�
 @TransactionHandler
 class TransactionHandler {
 
-    @TransactionStartListener(Foo::class) // Receive transaction event when event is Foo.class
+    @TransactionStartListener(Foo::class) // Receive transaction event when event can be mapped to Foo.class
     fun handleTransactionStartEvent(event: TransactionStartEvent) {
         val foo: Foo = event.decodeEvent(Foo::class) // Get event field to Foo.class
         // ...
@@ -162,8 +160,8 @@ class TransactionHandler {
 
     @TransactionCommitHandler(
         event = Foo::class,
-        noRetryFor = [IllegalArgumentException::class]
-    ) // Dont retry when throw IllegalArgumentException. *Retry if throw Throwable or IllegalArgumentException's super type* 
+        noRetryFor = [IllegalArgumentException::class] // Dont retry when throw IllegalArgumentException. *Retry if throw Throwable or IllegalArgumentException's super type* 
+    )
     fun handleTransactionCommitEvent(event: TransactionCommitEvent): Mono<String> { // In Webflux framework, publisher must be returned.
         throw IllegalArgumentException("Ignore this exception")
         // ...
