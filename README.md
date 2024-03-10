@@ -9,7 +9,7 @@
 ![version 0.2.9](https://img.shields.io/badge/version-0.2.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
-Choreography 방식으로 구현된 분산 트랜잭션 라이브러리 입니다.   
+Saga pattern 으로 구현된 분산 트랜잭션 프레임워크 입니다.   
 `Netx` 는 다음 기능을 제공합니다.
 
 1. 동기 API와 비동기[Reactor](https://projectreactor.io/) API 지원
