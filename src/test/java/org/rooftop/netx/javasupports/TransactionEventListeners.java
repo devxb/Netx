@@ -12,7 +12,7 @@ import org.rooftop.netx.api.TransactionRollbackEvent;
 import org.rooftop.netx.api.TransactionRollbackListener;
 import org.rooftop.netx.api.TransactionStartEvent;
 import org.rooftop.netx.api.TransactionStartListener;
-import org.rooftop.netx.idl.TransactionState;
+import org.rooftop.netx.engine.core.TransactionState;
 import org.rooftop.netx.meta.TransactionHandler;
 import reactor.core.publisher.Mono;
 
@@ -35,7 +35,7 @@ public class TransactionEventListeners {
         noRetryFor = IllegalArgumentException.class
     )
     public void listenTransactionStartEvent(TransactionStartEvent transactionStartEvent) {
-        incrementTransaction(TransactionState.TRANSACTION_STATE_START);
+        incrementTransaction(TransactionState.START);
         Event event = transactionStartEvent.decodeEvent(Event.class);
         if (event.event() < 0) {
             throw new IllegalArgumentException();
@@ -47,7 +47,7 @@ public class TransactionEventListeners {
         noRetryFor = IllegalArgumentException.class
     )
     public void listenTransactionJoinEvent(TransactionJoinEvent transactionJoinEvent) {
-        incrementTransaction(TransactionState.TRANSACTION_STATE_JOIN);
+        incrementTransaction(TransactionState.JOIN);
         Event event = transactionJoinEvent.decodeEvent(Event.class);
         if (event.event() < 0) {
             throw new IllegalArgumentException();
@@ -56,13 +56,13 @@ public class TransactionEventListeners {
 
     @TransactionCommitListener
     public Mono<Long> listenTransactionCommitEvent(TransactionCommitEvent transactionCommitEvent) {
-        incrementTransaction(TransactionState.TRANSACTION_STATE_COMMIT);
+        incrementTransaction(TransactionState.COMMIT);
         return Mono.just(1L);
     }
 
     @TransactionRollbackListener(noRetryFor = DecodeException.class)
     public String listenTransactionRollbackEvent(TransactionRollbackEvent transactionRollbackEvent) {
-        incrementTransaction(TransactionState.TRANSACTION_STATE_ROLLBACK);
+        incrementTransaction(TransactionState.ROLLBACK);
         transactionRollbackEvent.decodeUndo(Undo.class);
         return "listenTransactionRollbackEvent";
     }

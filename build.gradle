@@ -7,7 +7,6 @@ plugins {
     id "org.springframework.boot" version "${springbootVersion}" apply false
     id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
     id "org.sonarqube" version "${sonarcloudVersion}"
-    id "com.google.protobuf" version "${protobufPluginVersion}"
     id "maven-publish"
 }
 
@@ -51,7 +50,6 @@ apply from: "gradle/core.gradle"
 apply from: "gradle/sonar.gradle"
 apply from: "gradle/kotlin.gradle"
 apply from: "gradle/spring.gradle"
-apply from: "gradle/protobuf.gradle"
 
 wrapper {
     gradleVersion = "7.6.1"

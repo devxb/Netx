@@ -2,18 +2,17 @@ package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.Codec
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
-import org.rooftop.netx.idl.Transaction
+import org.rooftop.netx.engine.core.Transaction
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
-import kotlin.reflect.KClass
 
 class NoAckRedisStreamTransactionDispatcher(
     codec: Codec,
-    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
+    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
     private val nodeGroup: String,
 ) : AbstractTransactionDispatcher(codec) {
 
-    override fun <T : Annotation> findHandlers(type: KClass<T>): List<Any> {
+    override fun findHandlers(): List<Any> {
         return listOf()
     }
 

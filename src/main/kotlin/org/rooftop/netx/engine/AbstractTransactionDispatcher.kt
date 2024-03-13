@@ -2,11 +2,10 @@ package org.rooftop.netx.engine
 
 import jakarta.annotation.PostConstruct
 import org.rooftop.netx.api.*
+import org.rooftop.netx.engine.core.Transaction
+import org.rooftop.netx.engine.core.TransactionState
 import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.engine.logging.warningOnError
-import org.rooftop.netx.idl.Transaction
-import org.rooftop.netx.idl.TransactionState
-import org.rooftop.netx.meta.TransactionHandler
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
@@ -59,7 +58,7 @@ abstract class AbstractTransactionDispatcher(
 
     private fun mapToTransactionEvent(transaction: Transaction): Mono<TransactionEvent> {
         return when (transaction.state) {
-            TransactionState.TRANSACTION_STATE_START -> Mono.just(
+            TransactionState.START -> Mono.just(
                 TransactionStartEvent(
                     transactionId = transaction.id,
                     nodeName = transaction.serverId,
@@ -69,7 +68,7 @@ abstract class AbstractTransactionDispatcher(
                 )
             )
 
-            TransactionState.TRANSACTION_STATE_COMMIT -> Mono.just(
+            TransactionState.COMMIT -> Mono.just(
                 TransactionCommitEvent(
                     transactionId = transaction.id,
                     nodeName = transaction.serverId,
@@ -79,7 +78,7 @@ abstract class AbstractTransactionDispatcher(
                 )
             )
 
-            TransactionState.TRANSACTION_STATE_JOIN -> Mono.just(
+            TransactionState.JOIN -> Mono.just(
                 TransactionJoinEvent(
                     transactionId = transaction.id,
                     nodeName = transaction.serverId,
@@ -89,7 +88,7 @@ abstract class AbstractTransactionDispatcher(
                 )
             )
 
-            TransactionState.TRANSACTION_STATE_ROLLBACK -> findOwnUndo(transaction)
+            TransactionState.ROLLBACK -> findOwnUndo(transaction)
                 .warningOnError("Error occurred when findOwnUndo transaction \n{\n$transaction}")
                 .map {
                     TransactionRollbackEvent(
@@ -97,7 +96,7 @@ abstract class AbstractTransactionDispatcher(
                         nodeName = transaction.serverId,
                         group = transaction.group,
                         event = extractEvent(transaction),
-                        cause = when (transaction.hasCause()) {
+                        cause = when (transaction.event != null) {
                             true -> transaction.cause
                             false -> null
                         },
@@ -111,7 +110,7 @@ abstract class AbstractTransactionDispatcher(
     }
 
     private fun extractEvent(transaction: Transaction): String? {
-        return when (transaction.hasEvent()) {
+        return when (transaction.event != null) {
             true -> transaction.event
             false -> null
         }
@@ -119,14 +118,22 @@ abstract class AbstractTransactionDispatcher(
 
     protected abstract fun findOwnUndo(transaction: Transaction): Mono<String>
 
+    internal fun addHandlers(handlers: List<Any>) {
+        initMonoFunctions(handlers)
+        initNotPublisherFunctions(handlers)
+        handlers.forEach { handler ->
+            info("Add functions : \"${handler}\"")
+        }
+    }
+
     @PostConstruct
     fun initHandler() {
-        val transactionHandler = findHandlers(TransactionHandler::class)
+        val transactionHandler = findHandlers()
         initMonoFunctions(transactionHandler)
         initNotPublisherFunctions(transactionHandler)
-        functions.forEach { (_, notPublisherFunction) ->
-            val notPublisherFunctionNames = notPublisherFunction.map { it.name() }.toList()
-            info("Register functions names : \"${notPublisherFunctionNames}\"")
+        functions.forEach { (_, function) ->
+            val functionName = function.map { it.name() }.toList()
+            info("Register functions names : \"${functionName}\"")
         }
     }
 
@@ -189,7 +196,7 @@ abstract class AbstractTransactionDispatcher(
         }
     }
 
-    protected abstract fun <T : Annotation> findHandlers(type: KClass<T>): List<Any>
+    protected abstract fun findHandlers(): List<Any>
 
     private fun getEventType(annotation: Annotation): KClass<*> {
         return when (annotation) {
@@ -213,10 +220,10 @@ abstract class AbstractTransactionDispatcher(
 
     private fun getMatchedTransactionState(annotation: Annotation): TransactionState {
         return when (annotation) {
-            is TransactionStartListener -> TransactionState.TRANSACTION_STATE_START
-            is TransactionCommitListener -> TransactionState.TRANSACTION_STATE_COMMIT
-            is TransactionJoinListener -> TransactionState.TRANSACTION_STATE_JOIN
-            is TransactionRollbackListener -> TransactionState.TRANSACTION_STATE_ROLLBACK
+            is TransactionStartListener -> TransactionState.START
+            is TransactionCommitListener -> TransactionState.COMMIT
+            is TransactionJoinListener -> TransactionState.JOIN
+            is TransactionRollbackListener -> TransactionState.ROLLBACK
             else -> throw notMatchedTransactionHandlerException
         }
     }

@@ -3,28 +3,28 @@ package org.rooftop.netx.engine
 import org.rooftop.netx.api.Codec
 import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.engine.core.Transaction
+import org.rooftop.netx.engine.core.TransactionState
 import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.engine.logging.infoOnError
 import org.rooftop.netx.engine.logging.warningOnError
-import org.rooftop.netx.idl.Transaction
-import org.rooftop.netx.idl.TransactionState
-import org.rooftop.netx.idl.transaction
 import reactor.core.publisher.Mono
 
 abstract class AbstractTransactionManager(
-    nodeId: Int,
     private val codec: Codec,
     private val nodeGroup: String,
     private val nodeName: String,
-    private val transactionIdGenerator: TransactionIdGenerator = TransactionIdGenerator(nodeId),
+    private val transactionIdGenerator: TransactionIdGenerator,
 ) : TransactionManager {
 
     final override fun <T> syncStart(undo: T): String {
-        return start(undo).block() ?: throw TransactionException("Cannot start transaction \"$undo\"")
+        return start(undo).block()
+            ?: throw TransactionException("Cannot start transaction \"$undo\"")
     }
 
     override fun <T, S> syncStart(undo: T, event: S): String {
-        return start(undo, event).block() ?: throw TransactionException("Cannot start transaction \"$undo\" \"$event\"")
+        return start(undo, event).block()
+            ?: throw TransactionException("Cannot start transaction \"$undo\" \"$event\"")
     }
 
     final override fun <T> syncJoin(transactionId: String, undo: T): String {
@@ -84,21 +84,23 @@ abstract class AbstractTransactionManager(
     private fun startTransaction(undo: String, event: String?): Mono<String> {
         return Mono.deferContextual<String> { Mono.just(it[CONTEXT_TX_KEY]) }
             .flatMap { transactionId ->
-                publishTransaction(transactionId, transaction {
-                    id = transactionId
-                    serverId = nodeName
-                    group = nodeGroup
-                    this.state = TransactionState.TRANSACTION_STATE_START
-                    this.undo = undo
-                    event?.let { this.event = it }
-                })
+                publishTransaction(
+                    transactionId, Transaction(
+                        id = transactionId,
+                        serverId = nodeName,
+                        group = nodeGroup,
+                        state = TransactionState.START,
+                        undo = undo,
+                        event = event,
+                    )
+                )
             }
     }
 
     final override fun <T> join(transactionId: String, undo: T): Mono<String> {
         return getAnyTransaction(transactionId)
             .map {
-                if (it == TransactionState.TRANSACTION_STATE_COMMIT) {
+                if (it == TransactionState.COMMIT) {
                     throw TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
                 }
                 transactionId
@@ -114,7 +116,7 @@ abstract class AbstractTransactionManager(
     override fun <T, S> join(transactionId: String, undo: T, event: S): Mono<String> {
         return getAnyTransaction(transactionId)
             .map {
-                if (it == TransactionState.TRANSACTION_STATE_COMMIT) {
+                if (it == TransactionState.COMMIT) {
                     throw TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
                 }
                 transactionId
@@ -128,14 +130,16 @@ abstract class AbstractTransactionManager(
     }
 
     private fun joinTransaction(transactionId: String, undo: String, event: String?): Mono<String> {
-        return publishTransaction(transactionId, transaction {
-            id = transactionId
-            serverId = nodeName
-            group = nodeGroup
-            state = TransactionState.TRANSACTION_STATE_JOIN
-            this.undo = undo
-            event?.let { this.event = it }
-        })
+        return publishTransaction(
+            transactionId, Transaction(
+                id = transactionId,
+                serverId = nodeName,
+                group = nodeGroup,
+                state = TransactionState.JOIN,
+                undo = undo,
+                event = event,
+            )
+        )
     }
 
     final override fun rollback(transactionId: String, cause: String): Mono<String> {
@@ -164,14 +168,16 @@ abstract class AbstractTransactionManager(
         cause: String,
         event: String?
     ): Mono<String> {
-        return publishTransaction(transactionId, transaction {
-            id = transactionId
-            serverId = nodeName
-            group = nodeGroup
-            state = TransactionState.TRANSACTION_STATE_ROLLBACK
-            this.cause = cause
-            event?.let { this.event = it }
-        })
+        return publishTransaction(
+            transactionId, Transaction(
+                id = transactionId,
+                serverId = nodeName,
+                group = nodeGroup,
+                state = TransactionState.ROLLBACK,
+                cause = cause,
+                event = event
+            )
+        )
     }
 
     final override fun commit(transactionId: String): Mono<String> {
@@ -194,13 +200,15 @@ abstract class AbstractTransactionManager(
     }
 
     private fun commitTransaction(transactionId: String, event: String?): Mono<String> {
-        return publishTransaction(transactionId, transaction {
-            id = transactionId
-            serverId = nodeName
-            group = nodeGroup
-            state = TransactionState.TRANSACTION_STATE_COMMIT
-            event?.let { this.event = it }
-        })
+        return publishTransaction(
+            transactionId, Transaction(
+                id = transactionId,
+                serverId = nodeName,
+                group = nodeGroup,
+                state = TransactionState.COMMIT,
+                event = event,
+            )
+        )
     }
 
     final override fun exists(transactionId: String): Mono<String> {
