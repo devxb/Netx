@@ -1,11 +1,8 @@
 package org.rooftop.netx.engine
 
-import org.rooftop.netx.api.Codec
-import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.api.OrchestrateResult
-import org.rooftop.netx.api.TransactionException
-import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.api.*
 import reactor.core.publisher.Mono
+import kotlin.time.Duration.Companion.milliseconds
 
 class OrchestratorManager<T : Any>(
     private val transactionManager: TransactionManager,
@@ -19,7 +16,16 @@ class OrchestratorManager<T : Any>(
             ?: throw TransactionException("Cannot start transaction \"$request\"")
     }
 
+    override fun transactionSync(timeoutMillis: Long, request: T): OrchestrateResult {
+        return transaction(timeoutMillis, request).block()
+            ?: throw TransactionException("Cannot start transaction \"$request\"")
+    }
+
     override fun transaction(request: T): Mono<OrchestrateResult> {
+        return transaction(ONE_MINUTES_TO_TIME_OUT, request)
+    }
+
+    override fun transaction(timeoutMillis: Long, request: T): Mono<OrchestrateResult> {
         return Mono.just(request)
             .map {
                 OrchestrateEvent(
@@ -28,10 +34,11 @@ class OrchestratorManager<T : Any>(
                 )
             }
             .flatMap { transactionManager.start(UNDO, it) }
-            .flatMap { orchestrateResultHolder.getResult(it) }
+            .flatMap { orchestrateResultHolder.getResult(timeoutMillis.milliseconds, it) }
     }
 
     private companion object {
         private const val UNDO = "Orchestrate mode";
+        private const val ONE_MINUTES_TO_TIME_OUT = 60000L
     }
 }

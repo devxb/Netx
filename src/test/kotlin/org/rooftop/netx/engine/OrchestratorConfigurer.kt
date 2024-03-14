@@ -95,4 +95,12 @@ class OrchestratorConfigurer : AbstractOrchestratorConfigurer() {
             it.decodeEvent(NullPointerException::class)
         }.build()
     }
+
+    @Bean(name = ["timeOutOrchestrator"])
+    fun timeOutOrchestrator(): Orchestrator<String> {
+        return newOrchestrator().startSync {
+            Thread.sleep(2000)
+            ""
+        }.build()
+    }
 }
