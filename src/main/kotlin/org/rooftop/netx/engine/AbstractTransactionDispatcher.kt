@@ -104,8 +104,6 @@ abstract class AbstractTransactionDispatcher(
                         codec = codec,
                     )
                 }
-
-            else -> throw cannotFindMatchedTransactionEventException
         }
     }
 
@@ -235,9 +233,6 @@ abstract class AbstractTransactionDispatcher(
 
     private companion object {
         private const val DISPATHCED = "dispatched"
-
-        private val cannotFindMatchedTransactionEventException =
-            NotFoundDispatchFunctionException("Cannot find matched transaction event")
 
         private val notMatchedTransactionHandlerException =
             NotFoundDispatchFunctionException("Cannot find matched Transaction handler")

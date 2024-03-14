@@ -93,6 +93,7 @@ class RedisTransactionConfigurer(
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
             backpressureSize = backpressureSize,
+            objectMapper = netxObjectMapper(),
         ).also {
             info("RedisTransactionRetrySupporter connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\" orphanMilli : \"$orphanMilli\" recoveryMilli : \"$recoveryMilli\" backpressureSize : \"$backpressureSize\"")
             it.watchOrphanTransaction()

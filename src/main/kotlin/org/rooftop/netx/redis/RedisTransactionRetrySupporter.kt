@@ -1,5 +1,6 @@
 package org.rooftop.netx.redis
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.AbstractTransactionRetrySupporter
 import org.rooftop.netx.engine.core.Transaction
@@ -16,14 +17,15 @@ class RedisTransactionRetrySupporter(
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
     private val orphanMilli: Long,
+    private val objectMapper: ObjectMapper,
 ) : AbstractTransactionRetrySupporter(backpressureSize, recoveryMilli, transactionDispatcher) {
 
     override fun claimOrphanTransaction(backpressureSize: Int): Flux<Pair<Transaction, String>> {
-        return reactiveRedisTemplate.opsForStream<String, Transaction>()
+        return reactiveRedisTemplate.opsForStream<String, String>()
             .pending(STREAM_KEY, nodeGroup, Range.closed("-", "+"), backpressureSize.toLong())
             .filter { it.get().toList().isNotEmpty() }
             .flatMapMany {
-                reactiveRedisTemplate.opsForStream<String, Transaction>()
+                reactiveRedisTemplate.opsForStream<String, String>()
                     .claim(
                         STREAM_KEY,
                         nodeGroup,
@@ -32,7 +34,12 @@ class RedisTransactionRetrySupporter(
                             .ids(it.get().map { eachMessage -> eachMessage.id.value }.toList())
                     )
             }
-            .map { it.value["data"]!! to it.id.toString() }
+            .map {
+                objectMapper.readValue(
+                    it.value["data"],
+                    Transaction::class.java
+                ) to it.id.toString()
+            }
     }
 
     private companion object {

@@ -95,6 +95,7 @@ class NoAckRedisTransactionConfigurer(
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
             backpressureSize = backpressureSize,
+            objectMapper = netxObjectMapper(),
         ).also { it.watchOrphanTransaction() }
 
     @Bean
