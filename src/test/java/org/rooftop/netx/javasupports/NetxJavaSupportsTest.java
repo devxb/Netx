@@ -1,11 +1,13 @@
 package org.rooftop.netx.javasupports;
 
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.rooftop.netx.api.Orchestrator;
 import org.rooftop.netx.api.TransactionManager;
 import org.rooftop.netx.engine.core.TransactionState;
 import org.rooftop.netx.meta.EnableDistributedTransaction;
@@ -21,9 +23,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     RedisContainer.class,
     NetxJavaSupportsTest.class,
     TransactionEventListeners.class,
+    TestOrchestratorConfigurer.class,
 })
 @DisplayName("NetxJavaSupportsTest")
-@TestPropertySource("classpath:application.properties")
+@TestPropertySource("classpath:fast-recover-mode.properties")
 class NetxJavaSupportsTest {
 
     private static final Undo NEGATIVE_UNDO = new Undo(-1L);
@@ -36,6 +39,9 @@ class NetxJavaSupportsTest {
 
     @Autowired
     private TransactionEventListeners transactionEventListeners;
+
+    @Autowired
+    private Orchestrator<Integer> javaSupportsOrchestrator;
 
     @BeforeEach
     void clear() {
@@ -70,6 +76,15 @@ class NetxJavaSupportsTest {
                 transactionEventListeners.assertTransactionCount(TransactionState.JOIN, 1);
                 transactionEventListeners.assertTransactionCount(TransactionState.ROLLBACK, 1);
             });
+    }
+
+    @Test
+    @DisplayName("Orchestrator Support Java")
+    void Orchestrator_Supports_Java() {
+        var result = javaSupportsOrchestrator.transactionSync(0);
+
+        Assertions.assertThat(result.isSuccess()).isTrue();
+        Assertions.assertThat(result.decodeResult(String.class)).isEqualTo("Complete");
     }
 
 }

@@ -17,11 +17,98 @@ class OrchestratorBuilder(
     private val joinOrchestrateHolders: MutableList<JoinOrchestrateFunctionHolder<*>> = mutableListOf(),
 ) {
 
-    fun join(function: OrchestrateFunction<Mono<Any>>): OrchestratorBuilder {
+    class OrchestratorPreBuilder(
+        private val transactionIdGenerator: TransactionIdGenerator,
+        private val transactionManager: TransactionManager,
+        private val transactionDispatcher: AbstractTransactionDispatcher,
+        private val codec: Codec,
+        private val orchestrateResultHolder: OrchestrateResultHolder,
+    ) {
+
+        fun start(function: OrchestrateFunction<Mono<Any>>): OrchestratorBuilder =
+            start(listOf(), function)
+
+        fun start(
+            noRollbackFor: List<Class<out Throwable>>,
+            function: OrchestrateFunction<Mono<Any>>
+        ): OrchestratorBuilder = OrchestratorBuilder(
+            transactionIdGenerator,
+            transactionManager,
+            transactionDispatcher,
+            codec,
+            orchestrateResultHolder,
+            StartOrchestrateFunctionHolder(
+                SupportsOrchestrateFunctionType.MONO,
+                noRollbackFor.map { it.kotlin }.toTypedArray(),
+                function,
+            )
+        )
+
+        fun start(
+            vararg noRollbackFor: KClass<out Throwable>,
+            function: OrchestrateFunction<Mono<Any>>
+        ): OrchestratorBuilder = OrchestratorBuilder(
+            transactionIdGenerator,
+            transactionManager,
+            transactionDispatcher,
+            codec,
+            orchestrateResultHolder,
+            StartOrchestrateFunctionHolder(
+                SupportsOrchestrateFunctionType.MONO,
+                noRollbackFor,
+                function,
+            )
+        )
+
+        fun startSync(function: OrchestrateFunction<Any>): OrchestratorBuilder =
+            startSync(listOf(), function)
+
+        fun startSync(
+            noRollbackFor: List<Class<out Throwable>>,
+            function: OrchestrateFunction<Any>
+        ): OrchestratorBuilder =
+            OrchestratorBuilder(
+                transactionIdGenerator,
+                transactionManager,
+                transactionDispatcher,
+                codec,
+                orchestrateResultHolder,
+                StartOrchestrateFunctionHolder(
+                    SupportsOrchestrateFunctionType.DEFAULT,
+                    noRollbackFor.map { it.kotlin }.toTypedArray(),
+                    function,
+                )
+            )
+
+        fun startSync(
+            vararg noRollbackFor: KClass<out Throwable>,
+            function: OrchestrateFunction<Any>
+        ): OrchestratorBuilder =
+            OrchestratorBuilder(
+                transactionIdGenerator,
+                transactionManager,
+                transactionDispatcher,
+                codec,
+                orchestrateResultHolder,
+                StartOrchestrateFunctionHolder(
+                    SupportsOrchestrateFunctionType.DEFAULT,
+                    noRollbackFor,
+                    function,
+                )
+            )
+    }
+
+    fun join(function: OrchestrateFunction<Mono<Any>>): OrchestratorBuilder =
+        join(listOf(), function)
+
+    fun join(
+        noRollbackFor: List<Class<out Throwable>>,
+        function: OrchestrateFunction<Mono<Any>>
+    ): OrchestratorBuilder {
         joinOrchestrateHolders.add(
             JoinOrchestrateFunctionHolder(
                 SupportsOrchestrateFunctionType.MONO,
-                arrayOf(),
+                noRollbackFor.map { it.kotlin }.toTypedArray(),
                 function,
             )
         )
@@ -42,11 +129,17 @@ class OrchestratorBuilder(
         return this
     }
 
-    fun joinSync(function: OrchestrateFunction<Any>): OrchestratorBuilder {
+    fun joinSync(function: OrchestrateFunction<Any>): OrchestratorBuilder =
+        joinSync(listOf(), function)
+
+    fun joinSync(
+        noRollbackFor: List<Class<out Throwable>>,
+        function: OrchestrateFunction<Any>
+    ): OrchestratorBuilder {
         joinOrchestrateHolders.add(
             JoinOrchestrateFunctionHolder(
                 SupportsOrchestrateFunctionType.DEFAULT,
-                arrayOf(),
+                noRollbackFor.map { it.kotlin }.toTypedArray(),
                 function,
             )
         )
@@ -67,7 +160,13 @@ class OrchestratorBuilder(
         return this
     }
 
-    fun commit(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder {
+    fun commit(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder =
+        commit(listOf(), function)
+
+    fun commit(
+        noRollbackFor: List<Class<out Throwable>>,
+        function: OrchestrateFunction<Mono<Any>>
+    ): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
             transactionManager,
@@ -77,7 +176,7 @@ class OrchestratorBuilder(
             joinOrchestrateHolders = joinOrchestrateHolders,
             commitOrchestrateHolder = CommitOrchestrateFunctionHolder(
                 SupportsOrchestrateFunctionType.MONO,
-                arrayOf(),
+                noRollbackFor.map { it.kotlin }.toTypedArray(),
                 function,
             ),
             rollbackOrchestrateHolder = defaultRollbackOrchestrateHolder,
@@ -106,7 +205,13 @@ class OrchestratorBuilder(
         )
     }
 
-    fun commitSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder {
+    fun commitSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder =
+        commitSync(listOf(), function)
+
+    fun commitSync(
+        noRollbackFor: List<Class<out Throwable>>,
+        function: OrchestrateFunction<Any>
+    ): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
             transactionManager,
@@ -116,7 +221,7 @@ class OrchestratorBuilder(
             joinOrchestrateHolders = joinOrchestrateHolders,
             commitOrchestrateHolder = CommitOrchestrateFunctionHolder(
                 SupportsOrchestrateFunctionType.DEFAULT,
-                arrayOf(),
+                noRollbackFor.map { it.kotlin }.toTypedArray(),
                 function,
             ),
             rollbackOrchestrateHolder = defaultRollbackOrchestrateHolder,
@@ -193,77 +298,6 @@ class OrchestratorBuilder(
         ).build()
     }
 
-    class OrchestratorPreBuilder(
-        private val transactionIdGenerator: TransactionIdGenerator,
-        private val transactionManager: TransactionManager,
-        private val transactionDispatcher: AbstractTransactionDispatcher,
-        private val codec: Codec,
-        private val orchestrateResultHolder: OrchestrateResultHolder,
-    ) {
-
-        fun start(function: OrchestrateFunction<Mono<Any>>): OrchestratorBuilder =
-            OrchestratorBuilder(
-                transactionIdGenerator,
-                transactionManager,
-                transactionDispatcher,
-                codec,
-                orchestrateResultHolder,
-                StartOrchestrateFunctionHolder(
-                    SupportsOrchestrateFunctionType.MONO,
-                    arrayOf(),
-                    function,
-                )
-            )
-
-        fun start(
-            vararg noRollbackFor: KClass<out Throwable>,
-            function: OrchestrateFunction<Mono<Any>>
-        ): OrchestratorBuilder =
-            OrchestratorBuilder(
-                transactionIdGenerator,
-                transactionManager,
-                transactionDispatcher,
-                codec,
-                orchestrateResultHolder,
-                StartOrchestrateFunctionHolder(
-                    SupportsOrchestrateFunctionType.MONO,
-                    noRollbackFor,
-                    function,
-                )
-            )
-
-        fun startSync(function: OrchestrateFunction<Any>): OrchestratorBuilder =
-            OrchestratorBuilder(
-                transactionIdGenerator,
-                transactionManager,
-                transactionDispatcher,
-                codec,
-                orchestrateResultHolder,
-                StartOrchestrateFunctionHolder(
-                    SupportsOrchestrateFunctionType.DEFAULT,
-                    arrayOf(),
-                    function,
-                )
-            )
-
-        fun startSync(
-            vararg noRollbackFor: KClass<out Throwable>,
-            function: OrchestrateFunction<Any>
-        ): OrchestratorBuilder =
-            OrchestratorBuilder(
-                transactionIdGenerator,
-                transactionManager,
-                transactionDispatcher,
-                codec,
-                orchestrateResultHolder,
-                StartOrchestrateFunctionHolder(
-                    SupportsOrchestrateFunctionType.DEFAULT,
-                    noRollbackFor,
-                    function,
-                )
-            )
-    }
-
     class OrchestratorRestrictBuilder(
         private val transactionIdGenerator: TransactionIdGenerator,
         private val transactionManager: TransactionManager,
@@ -276,11 +310,17 @@ class OrchestratorBuilder(
         private var rollbackOrchestrateHolder: RollbackOrchestrateFunctionHolder<*>,
     ) {
 
-        fun commit(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder {
+        fun commit(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder =
+            commit(listOf(), function)
+
+        fun commit(
+            noRollbackFor: List<Class<out Throwable>>,
+            function: OrchestrateFunction<Mono<Any>>
+        ): OrchestratorRestrictBuilder {
             commitOrchestrateHolder =
                 CommitOrchestrateFunctionHolder(
                     SupportsOrchestrateFunctionType.MONO,
-                    arrayOf(),
+                    noRollbackFor.map { it.kotlin }.toTypedArray(),
                     function,
                 )
             return this
@@ -299,11 +339,17 @@ class OrchestratorBuilder(
             return this
         }
 
-        fun commitSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder {
+        fun commitSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder =
+            commitSync(listOf(), function)
+
+        fun commitSync(
+            noRollbackFor: List<Class<out Throwable>>,
+            function: OrchestrateFunction<Any>
+        ): OrchestratorRestrictBuilder {
             commitOrchestrateHolder =
                 CommitOrchestrateFunctionHolder(
                     SupportsOrchestrateFunctionType.DEFAULT,
-                    arrayOf(),
+                    noRollbackFor.map { it.kotlin }.toTypedArray(),
                     function,
                 )
             return this
