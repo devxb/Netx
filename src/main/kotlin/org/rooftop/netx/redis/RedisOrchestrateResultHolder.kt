@@ -3,11 +3,15 @@ package org.rooftop.netx.redis
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.rooftop.netx.api.Codec
 import org.rooftop.netx.api.OrchestrateResult
+import org.rooftop.netx.api.ResultTimeoutException
 import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.core.TransactionState
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
+import java.util.concurrent.TimeoutException
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 
 class RedisOrchestrateResultHolder(
     private val codec: Codec,
@@ -17,8 +21,18 @@ class RedisOrchestrateResultHolder(
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
 ) : OrchestrateResultHolder {
 
-    override fun getResult(transactionId: String): Mono<OrchestrateResult> {
+    override fun getResult(timeout: Duration, transactionId: String): Mono<OrchestrateResult> {
         return reactiveRedisTemplate.listenToChannel(CHANNEL)
+            .timeout(timeout.toJavaDuration())
+            .onErrorMap {
+                if (it::class == TimeoutException::class) {
+                    return@onErrorMap ResultTimeoutException(
+                        "Can't get result in \"$timeout\" time",
+                        it,
+                    )
+                }
+                it
+            }
             .filter { it.message.id == transactionId }
             .map {
                 OrchestrateResult(

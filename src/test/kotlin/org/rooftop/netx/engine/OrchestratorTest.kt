@@ -1,11 +1,13 @@
 package org.rooftop.netx.engine
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.Orchestrator
+import org.rooftop.netx.api.ResultTimeoutException
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.beans.factory.annotation.Qualifier
@@ -26,6 +28,7 @@ class OrchestratorTest(
     private val homeOrchestrator: Orchestrator<Home>,
     @Qualifier("rollbackOrchestrator") private val rollbackOrchestrator: Orchestrator<String>,
     @Qualifier("noRollbackForOrchestrator") private val noRollbackForOrchestrator: Orchestrator<String>,
+    @Qualifier("timeOutOrchestrator") private val timeOutOrchestrator: Orchestrator<String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -77,6 +80,16 @@ class OrchestratorTest(
 
                 result.isSuccess shouldBe true
                 result.decodeResult(NullPointerException::class).message!! shouldBeEqual "Success no rollback for"
+            }
+        }
+    }
+
+    describe("timeOutOrchestrator 구현채는") {
+        context("1초안에 연산이 끝나지 않으면,") {
+            it("ResultTimeoutException 을 던진다.") {
+                shouldThrow<ResultTimeoutException> {
+                    timeOutOrchestrator.transactionSync(1000, "Do Timeout")
+                }
             }
         }
     }

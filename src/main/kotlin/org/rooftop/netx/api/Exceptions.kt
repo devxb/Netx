@@ -14,3 +14,6 @@ class AlreadyCommittedTransactionException(transactionId: String, state: Transac
 class NotFoundDispatchFunctionException(message: String) : RuntimeException(message)
 
 class FailedAckTransactionException(message: String) : RuntimeException(message)
+
+class ResultTimeoutException(message: String, throwable: Throwable) :
+    RuntimeException(message, throwable)
