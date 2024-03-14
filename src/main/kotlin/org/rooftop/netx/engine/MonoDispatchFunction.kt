@@ -27,10 +27,10 @@ internal class MonoDispatchFunction(
                         .flatMap { function.call(handler, transactionEvent) }
                         .onErrorResume { throwable ->
                             if (isNoRetryFor(throwable)) {
-                                throw throwable
+                                info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")
+                                return@onErrorResume Mono.empty()
                             }
-                            info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")
-                            Mono.empty()
+                            throw throwable
                         }
                         .info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
                 },
@@ -40,10 +40,10 @@ internal class MonoDispatchFunction(
                             .flatMap { function.call(handler, transactionEvent) }
                             .onErrorResume { throwable ->
                                 if (isNoRetryFor(throwable)) {
-                                    throw throwable
+                                    info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")
+                                    return@onErrorResume Mono.empty()
                                 }
-                                info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")
-                                Mono.empty()
+                                throw throwable
                             }
                             .info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
                     }

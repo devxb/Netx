@@ -8,6 +8,7 @@ import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.JsonCodec
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
+import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.logging.logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -74,6 +75,16 @@ class NoAckRedisTransactionConfigurer(
     fun netxObjectMapper(): ObjectMapper =
         ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
+        jsonCodec(),
+        nodeName,
+        nodeGroup,
+        netxObjectMapper(),
+        reactiveRedisTemplate(),
+    )
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
