@@ -36,11 +36,11 @@ abstract class AbstractTransactionRetrySupporter(
         return Runnable {
             claimOrphanTransaction(backpressureSize)
                 .doOnNext {
-                    info("Retry orphan transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
+                    info("Retry orphan transaction ${it.first}\nmessageId \"${it.second}\"")
                 }
                 .flatMap { (transaction, messageId) ->
                     transactionDispatcher.dispatch(transaction, messageId)
-                        .warningOnError("Error occurred when retry orphan transaction \n{\n$transaction}\nmessageId \"${messageId}\"")
+                        .warningOnError("Error occurred when retry orphan transaction \"${transaction.id}\"")
                 }
                 .onErrorResume { Mono.empty() }
                 .subscribeOn(Schedulers.immediate())

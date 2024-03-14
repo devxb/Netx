@@ -47,10 +47,10 @@ abstract class AbstractTransactionDispatcher(
         messageId: String
     ): Flux<*> = this.doOnComplete {
         Mono.just(transaction to messageId)
-            .info("Ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+            .info("Ack transaction \"${transaction.id}\"")
             .flatMap {
                 ack(transaction, messageId)
-                    .warningOnError("Fail to ack transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+                    .warningOnError("Fail to ack transaction \"${transaction.id}\"")
             }
             .subscribeOn(Schedulers.parallel())
             .subscribe()
@@ -89,7 +89,7 @@ abstract class AbstractTransactionDispatcher(
             )
 
             TransactionState.ROLLBACK -> findOwnUndo(transaction)
-                .warningOnError("Error occurred when findOwnUndo transaction \n{\n$transaction}")
+                .warningOnError("Error occurred when findOwnUndo transaction ${transaction.id}")
                 .map {
                     TransactionRollbackEvent(
                         transactionId = transaction.id,
