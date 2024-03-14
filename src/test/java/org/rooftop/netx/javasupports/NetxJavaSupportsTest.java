@@ -23,7 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     RedisContainer.class,
     NetxJavaSupportsTest.class,
     TransactionEventListeners.class,
-    TestOrchestratorConfigurer.class,
+    TestAbstractOrchestratorConfigurer.class,
 })
 @DisplayName("NetxJavaSupportsTest")
 @TestPropertySource("classpath:fast-recover-mode.properties")

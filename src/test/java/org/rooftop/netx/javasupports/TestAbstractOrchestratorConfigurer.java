@@ -3,11 +3,11 @@ package org.rooftop.netx.javasupports;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.rooftop.netx.api.Orchestrator;
-import org.rooftop.netx.meta.OrchestratorConfigurer;
+import org.rooftop.netx.meta.AbstractOrchestratorConfigurer;
 import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Mono;
 
-public class TestOrchestratorConfigurer extends OrchestratorConfigurer {
+public class TestAbstractOrchestratorConfigurer extends AbstractOrchestratorConfigurer {
 
     @Bean
     public Orchestrator<Integer> javaSupportsOrchestrator() {

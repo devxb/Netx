@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-abstract class OrchestratorConfigurer {
+abstract class AbstractOrchestratorConfigurer {
 
     @Autowired
     private lateinit var transactionIdGenerator: TransactionIdGenerator

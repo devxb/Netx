@@ -1,11 +1,11 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.meta.OrchestratorConfigurer
+import org.rooftop.netx.meta.AbstractOrchestratorConfigurer
 import org.springframework.context.annotation.Bean
 import reactor.core.publisher.Mono
 
-class TestOrchestratorConfigurer : OrchestratorConfigurer() {
+class TestAbstractOrchestratorConfigurer : AbstractOrchestratorConfigurer() {
 
     @Bean(name = ["numberOrchestrator"])
     fun numberOrchestrator(): Orchestrator<Int> {
