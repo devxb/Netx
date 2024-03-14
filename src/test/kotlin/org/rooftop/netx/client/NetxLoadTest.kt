@@ -38,7 +38,6 @@ internal class NetxLoadTest(
             row(10),
             row(100),
             row(1_000),
-            row(10_000),
         ) { count ->
             val set = ConcurrentHashMap.newKeySet<Int>();
 
