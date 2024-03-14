@@ -47,7 +47,7 @@ internal class NetxLoadTest(
                 set.add(result.decodeResult(Int::class))
             }
 
-            eventually(30.minutes) {
+            eventually(3.minutes) {
                 set.size shouldBeEqual count
             }
         }
@@ -75,7 +75,7 @@ internal class NetxLoadTest(
                 netxClient.rollbackTransaction(transactionId, "")
             }
 
-            eventually(30.minutes) {
+            eventually(3.minutes) {
                 transactionReceiveStorage.startCountShouldBeGreaterThanOrEqual(commitLoadCount + rollbackLoadCount)
                 transactionReceiveStorage.joinCountShouldBeGreaterThanOrEqual(commitLoadCount + rollbackLoadCount)
                 transactionReceiveStorage.commitCountShouldBeGreaterThanOrEqual(commitLoadCount)
