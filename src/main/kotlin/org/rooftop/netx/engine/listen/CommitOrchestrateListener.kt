@@ -23,7 +23,7 @@ class CommitOrchestrateListener(
             .map { it.decodeEvent(OrchestrateEvent::class) }
             .filter { it.orchestrateId == orchestrateId }
             .map { OrchestrateRequest(it.clientEvent, codec) }
-            .map { orchestrateFunction.invoke(it) }
+            .map { orchestrateFunction.orchestrate(it) }
             .flatMap {
                 orchestrateResultHolder.setResult(
                     transactionCommitEvent.transactionId,

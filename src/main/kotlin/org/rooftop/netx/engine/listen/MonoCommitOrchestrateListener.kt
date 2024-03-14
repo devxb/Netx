@@ -4,7 +4,6 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.core.TransactionState
-import org.rooftop.netx.engine.logging.info
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import kotlin.reflect.KClass
@@ -24,7 +23,7 @@ class MonoCommitOrchestrateListener(
             .map { it.decodeEvent(OrchestrateEvent::class) }
             .filter { it.orchestrateId == orchestrateId }
             .map { OrchestrateRequest(it.clientEvent, codec) }
-            .flatMap { orchestrateFunction.invoke(it) }
+            .flatMap { orchestrateFunction.orchestrate(it) }
             .flatMap {
                 orchestrateResultHolder.setResult(
                     transactionCommitEvent.transactionId,

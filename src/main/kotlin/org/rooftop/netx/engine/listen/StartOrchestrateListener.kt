@@ -26,7 +26,7 @@ class StartOrchestrateListener(
             }
             .map { OrchestrateRequest(it.clientEvent, codec) to it }
             .map { (request, event) ->
-                orchestrateFunction.invoke(request) to event
+                orchestrateFunction.orchestrate(request) to event
             }
             .onErrorResume {
                 if (isNoRollbackFor(it)) {

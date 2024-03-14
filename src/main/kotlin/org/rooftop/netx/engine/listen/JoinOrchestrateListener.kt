@@ -7,7 +7,6 @@ import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.api.OrchestrateFunction
 import org.rooftop.netx.api.OrchestrateRequest
-import org.rooftop.netx.engine.logging.info
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import kotlin.reflect.KClass
@@ -32,7 +31,7 @@ class JoinOrchestrateListener(
             }
             .map { OrchestrateRequest(it.clientEvent, codec) to it }
             .map { (request, event) ->
-                orchestrateFunction.invoke(request) to event
+                orchestrateFunction.orchestrate(request) to event
             }
             .onErrorResume {
                 if (isNoRollbackFor(it)) {

@@ -19,7 +19,7 @@ class MonoRollbackOrchestrateListener(
             .map { it.decodeEvent(OrchestrateEvent::class) }
             .filter { it.orchestrateId == orchestrateId }
             .map { OrchestrateRequest(it.clientEvent, codec) }
-            .flatMap { orchestrateFunction.invoke(it) }
+            .flatMap { orchestrateFunction.orchestrate(it) }
             .flatMap {
                 orchestrateResultHolder.setResult(
                     transactionRollbackEvent.transactionId,

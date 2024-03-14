@@ -2,7 +2,6 @@ package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.OrchestrateEvent
-import org.rooftop.netx.engine.logging.info
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import kotlin.reflect.KClass
@@ -27,7 +26,7 @@ class MonoJoinOrchestrateListener(
             }
             .map { OrchestrateRequest(it.clientEvent, codec) to it }
             .flatMap { (request, event) ->
-                orchestrateFunction.invoke(request).map {
+                orchestrateFunction.orchestrate(request).map {
                     it to event
                 }
             }
