@@ -18,11 +18,11 @@ abstract class AbstractTransactionListener(
             .publishOn(Schedulers.boundedElastic())
             .onBackpressureBuffer(backpressureSize, BufferOverflowStrategy.DROP_LATEST)
             .doOnNext {
-                info("Listen transaction \n{\n${it.first}}\nmessageId \"${it.second}\"")
+                info("Listen transaction ${it.first}\nmessageId \"${it.second}\"")
             }
             .flatMap { (transaction, messageId) ->
                 transactionDispatcher.dispatch(transaction, messageId)
-                    .warningOnError("Error occurred when listen transaction \n{\n$transaction}\nmessageId \"$messageId\"")
+                    .warningOnError("Error occurred when listen transaction ${transaction.id}")
             }
             .onErrorResume { Mono.empty() }
             .restartWhenTerminated()

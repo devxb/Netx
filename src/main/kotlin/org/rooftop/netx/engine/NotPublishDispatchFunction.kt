@@ -27,10 +27,10 @@ internal class NotPublishDispatchFunction(
             return result
         }.onFailure { throwable ->
             if (isNoRetryFor(throwable)) {
-                throw throwable
+                info("Call NotPublisher TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")
+                return SUCCESS_CAUSE_NO_RETRY_FOR
             }
-            info("Call NotPublisher TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\" no retry for mode")
-            return SUCCESS_CAUSE_NO_RETRY_FOR
+            throw throwable
         }
         throw IllegalStateException("Unreachable code")
     }

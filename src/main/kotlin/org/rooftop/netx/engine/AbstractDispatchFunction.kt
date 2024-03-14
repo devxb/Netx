@@ -14,6 +14,7 @@ internal sealed class AbstractDispatchFunction<T>(
 
     abstract fun call(transactionEvent: TransactionEvent): T
 
-    protected fun isNoRetryFor(throwable: Throwable): Boolean =
-        noRetryFor.isNotEmpty() && throwable.cause != null && !noRetryFor.contains(throwable.cause!!::class)
+    protected fun isNoRetryFor(throwable: Throwable): Boolean {
+        return noRetryFor.isNotEmpty() && throwable.cause != null && noRetryFor.contains(throwable.cause!!::class)
+    }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.JsonCodec
+import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.logging.LoggerFactory
@@ -78,6 +79,16 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
+        jsonCodec(),
+        nodeName,
+        nodeGroup,
+        netxObjectMapper(),
+        reactiveRedisTemplate(),
+    )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun netxObjectMapper(): ObjectMapper =
         ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
@@ -119,7 +130,8 @@ class RedisTransactionConfigurer(
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, Transaction> {
         val keySerializer = StringRedisSerializer()
-        val valueSerializer = Jackson2JsonRedisSerializer(Transaction::class.java)
+        val valueSerializer =
+            Jackson2JsonRedisSerializer(netxObjectMapper(), Transaction::class.java)
 
         val builder: RedisSerializationContext.RedisSerializationContextBuilder<String, Transaction> =
             RedisSerializationContext.newSerializationContext(keySerializer)

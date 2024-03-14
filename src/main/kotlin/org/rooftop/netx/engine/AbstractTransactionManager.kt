@@ -1,5 +1,6 @@
 package org.rooftop.netx.engine
 
+import org.rooftop.netx.api.AlreadyCommittedTransactionException
 import org.rooftop.netx.api.Codec
 import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.api.TransactionManager
@@ -97,11 +98,11 @@ abstract class AbstractTransactionManager(
             }
     }
 
-    final override fun <T> join(transactionId: String, undo: T): Mono<String> {
+    override fun <T> join(transactionId: String, undo: T): Mono<String> {
         return getAnyTransaction(transactionId)
             .map {
                 if (it == TransactionState.COMMIT) {
-                    throw TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
+                    throw AlreadyCommittedTransactionException(transactionId, it)
                 }
                 transactionId
             }
@@ -117,7 +118,7 @@ abstract class AbstractTransactionManager(
         return getAnyTransaction(transactionId)
             .map {
                 if (it == TransactionState.COMMIT) {
-                    throw TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"${it.name}\"")
+                    throw AlreadyCommittedTransactionException(transactionId, it)
                 }
                 transactionId
             }
