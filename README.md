@@ -6,17 +6,18 @@
 
 <br>
 
-![version 0.2.9](https://img.shields.io/badge/version-0.2.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
+![version 0.3.0](https://img.shields.io/badge/version-0.3.0-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 Saga pattern 으로 구현된 분산 트랜잭션 프레임워크 입니다.   
 `Netx` 는 다음 기능을 제공합니다.
 
 1. 동기 API와 비동기[Reactor](https://projectreactor.io/) API 지원
-2. 처리되지 않은 트랜잭션을 찾아 자동으로 재실행
-3. Backpressure 지원으로 노드별 처리가능한 트랜잭션 수 조절
-4. 여러 노드가 중복 트랜잭션 이벤트를 수신하는 문제 방지
-5. `At Least Once` 방식의 메시지 전달 보장
+2. 함수형 Orchestrator 방식과 Event 기반 Choreograph 방식 지원
+3. 처리되지 않은 트랜잭션을 찾아 자동으로 재실행
+4. Backpressure 지원으로 노드별 처리가능한 트랜잭션 수 조절
+5. 여러 노드가 중복 트랜잭션 이벤트를 수신하는 문제 방지
+6. `At Least Once` 방식의 메시지 전달 보장
 
 ## How to use
 
@@ -55,21 +56,70 @@ class Application {
 
 ### Usage example
 
-#### Scenario1. Start pay transaction
+#### Orchestrator-example.
+> [!TIP]   
+> Orchestrator 사용시, Transactional Message Pattern이 자동 적용됩니다.   
+> retry 단위는 Orchestrator의 각 연산(하나의 function) 단위이며, 모든 체인이 성공하거나 rollback이 호출됩니다.   
+ 
+```kotlin
+// Use Orchestrator
+@Service
+class OrderService(private val orderOrchestrator: Orchestrator<Order>) {
+  
+  fun order(orderRequest: Order): OrderResult {
+    val orchestrateResult = orderOrchestrator.transactionSync(orderRequest)    
+    return orchestrateResult.decodeResult(OrderResult::class)
+  }
+}
+
+// Register Orchestrator
+class OrchestratorConfigurer: AbstractOrchestartorConfigurer() {
+
+  @Bean // Generic is first request type
+  fun orderOrchestartor(): Orchestrator<Order> { 
+    return newOrchestrator()
+      .startSync { orchestrateRequet ->
+        // Start Transaction with your bussiness logic 
+        // something like ... "check seller"
+      }
+      .joinSync(noRollbackFor = OptimisiticLockingFailureException::class) {
+        // If an exception set in noRollbackFor is thrown during           
+        // business logic, This block retried until success
+      }
+      .join {
+        // Webflux supports, just return Mono.
+      }
+      .commitSync {
+         // The value returned commit chain can be retrieved as follow code.
+         // result.decodeResult(Something::class)
+      }
+      .rollbackSync {
+        // Rollback Logic to be executed when orchestrator chain fails.
+      }
+      .build()
+  }
+}
+```
+
+> [!WARNING]   
+> Event사용시 Transactional Message Pattern을 직접 적용해줘야합니다.   
+> 아래 이벤트 사용 예시는 적용된 예시가 아니며, 적용을 위해서는 transactionManager 를 호출하는 부분과 트랜잭션 이벤트를 받는부분을 분리해야합니다.   
+> 비즈니스로직을 모두 @Transaction...Listener 안으로 이동함으로써 손쉽게 적용할 수 있습니다.   
+
+#### Event-example. Start pay transaction
 
 ```kotlin
 // Sync
 fun pay(param: Any): Any {
     val transactionId = transactionManager.syncStart(Pay(id = 1L, paid = 1000L)) // start transaction
     
-    runCatching { // This is kotlin try catch, not netx library spec
+    runCatching { 
         // Do your bussiness logic
     }.fold(
         onSuccess = { transactionManager.syncCommit(transactionId) }, // commit transaction
         onFailure = { transactionManager.syncRollback(transactionId, it.message) } // rollback transaction
     )
 }
-
 
 // Async
 fun pay(param: Any): Mono<Any> {
@@ -88,7 +138,7 @@ fun pay(param: Any): Mono<Any> {
 }
 ```
 
-#### Scenario2. Join order transaction
+#### Events-Scenario2. Join order transaction
 
 ```kotlin
 //Sync
@@ -120,7 +170,7 @@ fun order(param: Any): Mono<Any> {
 }
 ```
 
-#### Scenario3. Check exists transaction
+#### Events-Scenario3. Check exists transaction
 
 ```kotlin
 // Sync
@@ -134,7 +184,7 @@ fun exists(param: Any): Mono<Any> {
 }
 ```
 
-#### Scenario4. Handle transaction event
+#### Events-Scenario4. Handle transaction event
 
 다른 분산서버가 (혹은 자기자신이) transactionManager를 통해서 트랜잭션을 시작하거나 트랜잭션 상태를 변경했을때, 트랜잭션 상태에 맞는 핸들러를 호출합니다.
 이 핸들러를 구현함으로써, 트랜잭션별 상태를 처리할 수 있습니다. (롤백등)
