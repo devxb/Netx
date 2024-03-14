@@ -1,12 +1,7 @@
 package org.rooftop.netx.engine.listen
 
-import org.rooftop.netx.api.Codec
-import org.rooftop.netx.api.TransactionJoinEvent
-import org.rooftop.netx.api.TransactionJoinListener
-import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.OrchestrateEvent
-import org.rooftop.netx.api.OrchestrateFunction
-import org.rooftop.netx.api.OrchestrateRequest
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import kotlin.reflect.KClass
@@ -34,6 +29,9 @@ class JoinOrchestrateListener(
                 orchestrateFunction.orchestrate(request) to event
             }
             .onErrorResume {
+                if (it == AlreadyCommittedTransactionException::class) {
+                    return@onErrorResume Mono.empty()
+                }
                 if (isNoRollbackFor(it)) {
                     throw it
                 }
@@ -65,6 +63,12 @@ class JoinOrchestrateListener(
                     undo = "",
                     event = it,
                 )
+            }
+            .onErrorResume {
+                if (it::class == AlreadyCommittedTransactionException::class) {
+                    return@onErrorResume Mono.empty()
+                }
+                throw it
             }
             .map { }
     }

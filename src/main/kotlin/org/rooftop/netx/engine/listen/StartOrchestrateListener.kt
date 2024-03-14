@@ -61,6 +61,12 @@ class StartOrchestrateListener(
                     event = it,
                 )
             }
+            .onErrorResume {
+                if (it::class == AlreadyCommittedTransactionException::class) {
+                    return@onErrorResume Mono.empty()
+                }
+                throw it
+            }
             .map { }
     }
 

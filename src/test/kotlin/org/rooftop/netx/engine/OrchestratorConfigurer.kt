@@ -5,7 +5,7 @@ import org.rooftop.netx.meta.AbstractOrchestratorConfigurer
 import org.springframework.context.annotation.Bean
 import reactor.core.publisher.Mono
 
-class TestAbstractOrchestratorConfigurer : AbstractOrchestratorConfigurer() {
+class OrchestratorConfigurer : AbstractOrchestratorConfigurer() {
 
     @Bean(name = ["numberOrchestrator"])
     fun numberOrchestrator(): Orchestrator<Int> {

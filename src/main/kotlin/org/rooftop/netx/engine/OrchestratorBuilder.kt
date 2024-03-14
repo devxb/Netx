@@ -25,12 +25,12 @@ class OrchestratorBuilder(
         private val orchestrateResultHolder: OrchestrateResultHolder,
     ) {
 
-        fun start(function: OrchestrateFunction<Mono<Any>>): OrchestratorBuilder =
+        fun <T : Any> start(function: OrchestrateFunction<Mono<T>>): OrchestratorBuilder =
             start(listOf(), function)
 
-        fun start(
+        fun <T : Any> start(
             noRollbackFor: List<Class<out Throwable>>,
-            function: OrchestrateFunction<Mono<Any>>
+            function: OrchestrateFunction<Mono<T>>
         ): OrchestratorBuilder = OrchestratorBuilder(
             transactionIdGenerator,
             transactionManager,
@@ -44,9 +44,9 @@ class OrchestratorBuilder(
             )
         )
 
-        fun start(
+        fun <T : Any> start(
             vararg noRollbackFor: KClass<out Throwable>,
-            function: OrchestrateFunction<Mono<Any>>
+            function: OrchestrateFunction<Mono<T>>
         ): OrchestratorBuilder = OrchestratorBuilder(
             transactionIdGenerator,
             transactionManager,
@@ -60,12 +60,12 @@ class OrchestratorBuilder(
             )
         )
 
-        fun startSync(function: OrchestrateFunction<Any>): OrchestratorBuilder =
+        fun <T : Any> startSync(function: OrchestrateFunction<T>): OrchestratorBuilder =
             startSync(listOf(), function)
 
-        fun startSync(
+        fun <T : Any> startSync(
             noRollbackFor: List<Class<out Throwable>>,
-            function: OrchestrateFunction<Any>
+            function: OrchestrateFunction<T>
         ): OrchestratorBuilder =
             OrchestratorBuilder(
                 transactionIdGenerator,
@@ -80,9 +80,9 @@ class OrchestratorBuilder(
                 )
             )
 
-        fun startSync(
+        fun <T : Any> startSync(
             vararg noRollbackFor: KClass<out Throwable>,
-            function: OrchestrateFunction<Any>
+            function: OrchestrateFunction<T>
         ): OrchestratorBuilder =
             OrchestratorBuilder(
                 transactionIdGenerator,
@@ -98,12 +98,12 @@ class OrchestratorBuilder(
             )
     }
 
-    fun join(function: OrchestrateFunction<Mono<Any>>): OrchestratorBuilder =
+    fun <T : Any> join(function: OrchestrateFunction<Mono<T>>): OrchestratorBuilder =
         join(listOf(), function)
 
-    fun join(
+    fun <T : Any> join(
         noRollbackFor: List<Class<out Throwable>>,
-        function: OrchestrateFunction<Mono<Any>>
+        function: OrchestrateFunction<Mono<T>>
     ): OrchestratorBuilder {
         joinOrchestrateHolders.add(
             JoinOrchestrateFunctionHolder(
@@ -115,9 +115,9 @@ class OrchestratorBuilder(
         return this
     }
 
-    fun join(
+    fun <T : Any> join(
         vararg noRollbackFor: KClass<out Throwable>,
-        function: OrchestrateFunction<Mono<Any>>
+        function: OrchestrateFunction<Mono<T>>
     ): OrchestratorBuilder {
         joinOrchestrateHolders.add(
             JoinOrchestrateFunctionHolder(
@@ -129,12 +129,12 @@ class OrchestratorBuilder(
         return this
     }
 
-    fun joinSync(function: OrchestrateFunction<Any>): OrchestratorBuilder =
+    fun <T : Any> joinSync(function: OrchestrateFunction<T>): OrchestratorBuilder =
         joinSync(listOf(), function)
 
-    fun joinSync(
+    fun <T : Any> joinSync(
         noRollbackFor: List<Class<out Throwable>>,
-        function: OrchestrateFunction<Any>
+        function: OrchestrateFunction<T>
     ): OrchestratorBuilder {
         joinOrchestrateHolders.add(
             JoinOrchestrateFunctionHolder(
@@ -146,9 +146,9 @@ class OrchestratorBuilder(
         return this
     }
 
-    fun joinSync(
+    fun <T : Any> joinSync(
         vararg noRollbackFor: KClass<out Throwable>,
-        function: OrchestrateFunction<Any>
+        function: OrchestrateFunction<T>
     ): OrchestratorBuilder {
         joinOrchestrateHolders.add(
             JoinOrchestrateFunctionHolder(
@@ -160,12 +160,12 @@ class OrchestratorBuilder(
         return this
     }
 
-    fun commit(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder =
+    fun <T : Any> commit(function: OrchestrateFunction<Mono<T>>): OrchestratorRestrictBuilder =
         commit(listOf(), function)
 
-    fun commit(
+    fun <T : Any> commit(
         noRollbackFor: List<Class<out Throwable>>,
-        function: OrchestrateFunction<Mono<Any>>
+        function: OrchestrateFunction<Mono<T>>
     ): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
@@ -184,9 +184,9 @@ class OrchestratorBuilder(
         )
     }
 
-    fun commit(
+    fun <T : Any> commit(
         vararg noRollbackFor: KClass<out Throwable>,
-        function: OrchestrateFunction<Mono<Any>>
+        function: OrchestrateFunction<Mono<T>>
     ): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
@@ -205,12 +205,12 @@ class OrchestratorBuilder(
         )
     }
 
-    fun commitSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder =
+    fun <T : Any> commitSync(function: OrchestrateFunction<T>): OrchestratorRestrictBuilder =
         commitSync(listOf(), function)
 
-    fun commitSync(
+    fun <T : Any> commitSync(
         noRollbackFor: List<Class<out Throwable>>,
-        function: OrchestrateFunction<Any>
+        function: OrchestrateFunction<T>
     ): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
@@ -229,9 +229,9 @@ class OrchestratorBuilder(
         )
     }
 
-    fun commitSync(
+    fun <T : Any> commitSync(
         vararg noRollbackFor: KClass<out Throwable>,
-        function: OrchestrateFunction<Any>
+        function: OrchestrateFunction<T>
     ): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
@@ -250,7 +250,7 @@ class OrchestratorBuilder(
         )
     }
 
-    fun rollback(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder {
+    fun <T : Any> rollback(function: OrchestrateFunction<Mono<T>>): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
             transactionManager,
@@ -267,7 +267,7 @@ class OrchestratorBuilder(
         )
     }
 
-    fun rollbackSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder {
+    fun <T : Any> rollbackSync(function: OrchestrateFunction<T>): OrchestratorRestrictBuilder {
         return OrchestratorRestrictBuilder(
             transactionIdGenerator,
             transactionManager,
@@ -310,12 +310,12 @@ class OrchestratorBuilder(
         private var rollbackOrchestrateHolder: RollbackOrchestrateFunctionHolder<*>,
     ) {
 
-        fun commit(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder =
+        fun <T : Any> commit(function: OrchestrateFunction<Mono<T>>): OrchestratorRestrictBuilder =
             commit(listOf(), function)
 
-        fun commit(
+        fun <T : Any> commit(
             noRollbackFor: List<Class<out Throwable>>,
-            function: OrchestrateFunction<Mono<Any>>
+            function: OrchestrateFunction<Mono<T>>
         ): OrchestratorRestrictBuilder {
             commitOrchestrateHolder =
                 CommitOrchestrateFunctionHolder(
@@ -326,9 +326,9 @@ class OrchestratorBuilder(
             return this
         }
 
-        fun commit(
+        fun <T : Any> commit(
             vararg noRollbackFor: KClass<out Throwable>,
-            function: OrchestrateFunction<Mono<Any>>
+            function: OrchestrateFunction<Mono<T>>
         ): OrchestratorRestrictBuilder {
             commitOrchestrateHolder =
                 CommitOrchestrateFunctionHolder(
@@ -339,12 +339,12 @@ class OrchestratorBuilder(
             return this
         }
 
-        fun commitSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder =
+        fun <T : Any> commitSync(function: OrchestrateFunction<T>): OrchestratorRestrictBuilder =
             commitSync(listOf(), function)
 
-        fun commitSync(
+        fun <T : Any> commitSync(
             noRollbackFor: List<Class<out Throwable>>,
-            function: OrchestrateFunction<Any>
+            function: OrchestrateFunction<T>
         ): OrchestratorRestrictBuilder {
             commitOrchestrateHolder =
                 CommitOrchestrateFunctionHolder(
@@ -355,9 +355,9 @@ class OrchestratorBuilder(
             return this
         }
 
-        fun commitSync(
+        fun <T : Any> commitSync(
             vararg noRollbackFor: KClass<out Throwable>,
-            function: OrchestrateFunction<Any>
+            function: OrchestrateFunction<T>
         ): OrchestratorRestrictBuilder {
             commitOrchestrateHolder =
                 CommitOrchestrateFunctionHolder(
@@ -368,13 +368,13 @@ class OrchestratorBuilder(
             return this
         }
 
-        fun rollback(function: OrchestrateFunction<Mono<Any>>): OrchestratorRestrictBuilder {
+        fun <T : Any> rollback(function: OrchestrateFunction<Mono<T>>): OrchestratorRestrictBuilder {
             rollbackOrchestrateHolder =
                 RollbackOrchestrateFunctionHolder(SupportsOrchestrateFunctionType.MONO, function)
             return this
         }
 
-        fun rollbackSync(function: OrchestrateFunction<Any>): OrchestratorRestrictBuilder {
+        fun <T : Any> rollbackSync(function: OrchestrateFunction<T>): OrchestratorRestrictBuilder {
             rollbackOrchestrateHolder =
                 RollbackOrchestrateFunctionHolder(SupportsOrchestrateFunctionType.DEFAULT, function)
             return this

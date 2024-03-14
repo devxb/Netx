@@ -19,6 +19,7 @@ class RedisOrchestrateResultHolder(
 
     override fun getResult(transactionId: String): Mono<OrchestrateResult> {
         return reactiveRedisTemplate.listenToChannel(CHANNEL)
+            .filter { it.message.id == transactionId }
             .map {
                 OrchestrateResult(
                     isSuccess = it.message.state == TransactionState.COMMIT,
@@ -26,7 +27,8 @@ class RedisOrchestrateResultHolder(
                     result = it.message.event
                         ?: throw NullPointerException("OrchestrateResult message cannot be null")
                 )
-            }.next()
+            }
+            .next()
     }
 
     override fun <T> setResult(transactionId: String, state: TransactionState, result: T): Mono<T> {

@@ -16,7 +16,7 @@ import org.springframework.test.context.TestPropertySource
 @ContextConfiguration(
     classes = [
         RedisContainer::class,
-        TestAbstractOrchestratorConfigurer::class,
+        OrchestratorConfigurer::class,
     ]
 )
 @DisplayName("Orchestrator 클래스의")

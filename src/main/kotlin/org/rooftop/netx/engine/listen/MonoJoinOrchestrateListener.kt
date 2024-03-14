@@ -31,6 +31,9 @@ class MonoJoinOrchestrateListener(
                 }
             }
             .onErrorResume {
+                if(it == AlreadyCommittedTransactionException::class) {
+                    return@onErrorResume Mono.empty()
+                }
                 if (isNoRollbackFor(it)) {
                     throw it
                 }
@@ -62,6 +65,12 @@ class MonoJoinOrchestrateListener(
                     undo = "",
                     event = it,
                 )
+            }
+            .onErrorResume {
+                if (it::class == AlreadyCommittedTransactionException::class) {
+                    return@onErrorResume Mono.empty()
+                }
+                throw it
             }
             .map { }
     }
