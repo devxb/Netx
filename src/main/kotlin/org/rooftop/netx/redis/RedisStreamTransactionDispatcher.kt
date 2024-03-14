@@ -4,21 +4,21 @@ import org.rooftop.netx.api.Codec
 import org.rooftop.netx.api.FailedAckTransactionException
 import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
-import org.rooftop.netx.idl.Transaction
+import org.rooftop.netx.engine.core.Transaction
+import org.rooftop.netx.meta.TransactionHandler
 import org.springframework.context.ApplicationContext
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
-import kotlin.reflect.KClass
 
 class RedisStreamTransactionDispatcher(
     codec: Codec,
     private val applicationContext: ApplicationContext,
-    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
+    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
     private val nodeGroup: String,
 ) : AbstractTransactionDispatcher(codec) {
 
-    override fun <T : Annotation> findHandlers(type: KClass<T>): List<Any> {
-        return applicationContext.getBeansWithAnnotation(type.java)
+    override fun findHandlers(): List<Any> {
+        return applicationContext.getBeansWithAnnotation(TransactionHandler::class.java)
             .entries.asSequence()
             .map { it.value }
             .toList()

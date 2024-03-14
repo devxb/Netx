@@ -1,25 +1,28 @@
 package org.rooftop.netx.redis
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.rooftop.netx.api.Codec
 import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.engine.AbstractTransactionManager
-import org.rooftop.netx.idl.Transaction
-import org.rooftop.netx.idl.TransactionState
+import org.rooftop.netx.engine.TransactionIdGenerator
+import org.rooftop.netx.engine.core.Transaction
+import org.rooftop.netx.engine.core.TransactionState
 import org.springframework.data.redis.connection.stream.Record
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import reactor.core.publisher.Mono
 
 class RedisStreamTransactionManager(
-    nodeId: Int,
     codec: Codec,
     nodeName: String,
+    transactionIdGenerator: TransactionIdGenerator,
     private val nodeGroup: String,
-    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
+    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
+    private val objectMapper: ObjectMapper,
 ) : AbstractTransactionManager(
-    nodeId = nodeId,
     nodeName = nodeName,
     nodeGroup = nodeGroup,
     codec = codec,
+    transactionIdGenerator = transactionIdGenerator
 ) {
 
     override fun getAnyTransaction(transactionId: String): Mono<TransactionState> {
@@ -52,10 +55,11 @@ class RedisStreamTransactionManager(
                         )
                     )
             }
+            .map { objectMapper.writeValueAsString(transaction) }
             .flatMap {
-                reactiveRedisTemplate.opsForStream<String, ByteArray>()
+                reactiveRedisTemplate.opsForStream<String, Transaction>()
                     .add(
-                        Record.of<String?, String?, ByteArray?>(mapOf(DATA to transaction.toByteArray()))
+                        Record.of<String, String, String>(mapOf(DATA to it))
                             .withStreamKey(STREAM_KEY)
                     )
             }
@@ -63,8 +67,7 @@ class RedisStreamTransactionManager(
     }
 
     private fun hasUndo(transaction: Transaction): Boolean =
-        transaction.state == TransactionState.TRANSACTION_STATE_JOIN
-                || transaction.state == TransactionState.TRANSACTION_STATE_START
+        transaction.state == TransactionState.JOIN || transaction.state == TransactionState.START
 
     private companion object {
         private const val DATA = "data"

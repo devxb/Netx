@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.rooftop.netx.api.TransactionManager;
-import org.rooftop.netx.idl.TransactionState;
+import org.rooftop.netx.engine.core.TransactionState;
 import org.rooftop.netx.meta.EnableDistributedTransaction;
 import org.rooftop.netx.redis.RedisContainer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +51,9 @@ class NetxJavaSupportsTest {
 
         Awaitility.waitAtMost(5, TimeUnit.SECONDS)
             .untilAsserted(() -> {
-                transactionEventListeners.assertTransactionCount(TransactionState.TRANSACTION_STATE_START, 1);
-                transactionEventListeners.assertTransactionCount(TransactionState.TRANSACTION_STATE_JOIN, 1);
-                transactionEventListeners.assertTransactionCount(TransactionState.TRANSACTION_STATE_COMMIT, 1);
+                transactionEventListeners.assertTransactionCount(TransactionState.START, 1);
+                transactionEventListeners.assertTransactionCount(TransactionState.JOIN, 1);
+                transactionEventListeners.assertTransactionCount(TransactionState.COMMIT, 1);
             });
     }
 
@@ -66,9 +66,9 @@ class NetxJavaSupportsTest {
 
         Awaitility.waitAtMost(5, TimeUnit.SECONDS)
             .untilAsserted(() -> {
-                transactionEventListeners.assertTransactionCount(TransactionState.TRANSACTION_STATE_START, 1);
-                transactionEventListeners.assertTransactionCount(TransactionState.TRANSACTION_STATE_JOIN, 1);
-                transactionEventListeners.assertTransactionCount(TransactionState.TRANSACTION_STATE_ROLLBACK, 1);
+                transactionEventListeners.assertTransactionCount(TransactionState.START, 1);
+                transactionEventListeners.assertTransactionCount(TransactionState.JOIN, 1);
+                transactionEventListeners.assertTransactionCount(TransactionState.ROLLBACK, 1);
             });
     }
 

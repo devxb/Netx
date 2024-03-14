@@ -1,10 +1,11 @@
 package org.rooftop.netx.redis
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.lettuce.core.RedisBusyException
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.AbstractTransactionListener
+import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.logging.info
-import org.rooftop.netx.idl.Transaction
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.connection.stream.Consumer
 import org.springframework.data.redis.connection.stream.ReadOffset
@@ -22,7 +23,8 @@ class RedisStreamTransactionListener(
     connectionFactory: ReactiveRedisConnectionFactory,
     private val nodeGroup: String,
     private val nodeName: String,
-    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, ByteArray>,
+    private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
+    private val objectMapper: ObjectMapper,
 ) : AbstractTransactionListener(backpressureSize, transactionDispatcher) {
 
     private val options = StreamReceiver.StreamReceiverOptions.builder()
@@ -37,7 +39,12 @@ class RedisStreamTransactionListener(
                 receiver.receive(
                     Consumer.from(nodeGroup, nodeName),
                     StreamOffset.create(STREAM_KEY, ReadOffset.from(">"))
-                ).map { Transaction.parseFrom(it.value["data"]?.toByteArray()) to it.id.value }
+                ).map {
+                    objectMapper.readValue(
+                        it.value["data"],
+                        Transaction::class.java,
+                    ) to it.id.value
+                }
             }
     }
 
