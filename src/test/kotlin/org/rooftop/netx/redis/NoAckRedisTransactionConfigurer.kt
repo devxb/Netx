@@ -6,9 +6,9 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.JsonCodec
+import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
-import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.logging.logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -34,6 +34,7 @@ class NoAckRedisTransactionConfigurer(
     @Value("\${netx.orphan-milli:10000}") private val orphanMilli: Long,
     @Value("\${netx.backpressure:10}") private val backpressureSize: Int,
     @Value("\${netx.logging.level:off}") loggingLevel: String,
+    @Value("\${netx.pool-size:100}") private val poolSize: Int,
     private val applicationContext: ApplicationContext,
 ) {
 
@@ -72,6 +73,10 @@ class NoAckRedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun jsonCodec(): JsonCodec = JsonCodec(netxObjectMapper())
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun netxObjectMapper(): ObjectMapper =
         ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
@@ -79,6 +84,7 @@ class NoAckRedisTransactionConfigurer(
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
+        poolSize,
         jsonCodec(),
         nodeName,
         nodeGroup,
@@ -118,10 +124,6 @@ class NoAckRedisTransactionConfigurer(
             nodeGroup = nodeGroup,
             codec = jsonCodec(),
         )
-
-    @Bean
-    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun jsonCodec(): JsonCodec = JsonCodec()
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")

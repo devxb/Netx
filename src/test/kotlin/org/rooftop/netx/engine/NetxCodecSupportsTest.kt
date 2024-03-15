@@ -24,7 +24,7 @@ class NetxCodecSupportsTest(
     private val transactionReceiveStorage: TransactionReceiveStorage,
 ) : StringSpec({
 
-    fun <T> startAndRollbackTransaction(undo: T) {
+    fun <T : Any> startAndRollbackTransaction(undo: T) {
         val transactionId = transactionManager.syncStart(undo)
         transactionManager.syncRollback(transactionId, "for codec test")
 

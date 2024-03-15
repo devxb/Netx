@@ -103,4 +103,14 @@ class OrchestratorConfigurer : AbstractOrchestratorConfigurer() {
             ""
         }.build()
     }
+
+    @Bean
+    fun instantOrchestrator(): Orchestrator<OrchestratorTest.InstantWrapper> {
+        return newOrchestrator()
+            .startSync {
+                it.decodeEvent(OrchestratorTest.InstantWrapper::class)
+            }.commitSync {
+                it.decodeEvent(OrchestratorTest.InstantWrapper::class)
+            }.build()
+    }
 }

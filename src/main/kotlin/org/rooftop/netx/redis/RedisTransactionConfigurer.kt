@@ -2,6 +2,7 @@ package org.rooftop.netx.redis
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import org.rooftop.netx.api.TransactionManager
@@ -18,6 +19,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
+import org.springframework.data.redis.connection.RedisPassword
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer
@@ -29,6 +32,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 class RedisTransactionConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
+    @Value("\${netx.password}") private val password: String?,
     @Value("\${netx.group}") private val nodeGroup: String,
     @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
@@ -36,6 +40,7 @@ class RedisTransactionConfigurer(
     @Value("\${netx.orphan-milli:60000}") private val orphanMilli: Long,
     @Value("\${netx.backpressure:40}") private val backpressureSize: Int,
     @Value("\${netx.logging.level:off}") loggingLevel: String,
+    @Value("\${netx.pool-size:10}") private val poolSize: Int,
     private val applicationContext: ApplicationContext,
 ) {
 
@@ -80,6 +85,7 @@ class RedisTransactionConfigurer(
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
+        poolSize,
         jsonCodec(),
         nodeName,
         nodeGroup,
@@ -89,9 +95,14 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun jsonCodec(): JsonCodec = JsonCodec(netxObjectMapper())
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun netxObjectMapper(): ObjectMapper =
         ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
+            .registerModule(JavaTimeModule())
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -124,10 +135,6 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun jsonCodec(): JsonCodec = JsonCodec()
-
-    @Bean
-    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, Transaction> {
         val keySerializer = StringRedisSerializer()
         val valueSerializer =
@@ -146,6 +153,11 @@ class RedisTransactionConfigurer(
     fun reactiveRedisConnectionFactory(): ReactiveRedisConnectionFactory {
         val port: String = System.getProperty("netx.port") ?: port
 
-        return LettuceConnectionFactory(host, port.toInt())
+        val redisStandaloneConfiguration = RedisStandaloneConfiguration()
+        redisStandaloneConfiguration.hostName = host
+        redisStandaloneConfiguration.port = port.toInt()
+        redisStandaloneConfiguration.password = RedisPassword.of(password)
+
+        return LettuceConnectionFactory(redisStandaloneConfiguration)
     }
 }

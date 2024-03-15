@@ -5,7 +5,6 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.data.forAll
 import io.kotest.data.row
-import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.boot.test.context.SpringBootTest
@@ -18,7 +17,6 @@ import kotlin.time.Duration.Companion.minutes
         LoadRunner::class,
         NetxClient::class,
         TransactionReceiveStorage::class,
-        OrchestratorConfigurer::class,
     ]
 )
 @EnableDistributedTransaction

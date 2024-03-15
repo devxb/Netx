@@ -13,6 +13,7 @@ import org.rooftop.netx.redis.RedisContainer
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
+import java.time.Instant
 
 @EnableDistributedTransaction
 @ContextConfiguration(
@@ -29,6 +30,7 @@ class OrchestratorTest(
     @Qualifier("rollbackOrchestrator") private val rollbackOrchestrator: Orchestrator<String>,
     @Qualifier("noRollbackForOrchestrator") private val noRollbackForOrchestrator: Orchestrator<String>,
     @Qualifier("timeOutOrchestrator") private val timeOutOrchestrator: Orchestrator<String>,
+    private val instantOrchestrator: Orchestrator<InstantWrapper>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -93,6 +95,17 @@ class OrchestratorTest(
             }
         }
     }
+
+    describe("instantOrchestrator 구현채는") {
+        context("InstantWrapper를 입력받아서,") {
+            val request = InstantWrapper(Instant.now())
+            it("같은 InstantWrapper를 반환한다.") {
+                val result = instantOrchestrator.transactionSync(request)
+
+                result.decodeResult(InstantWrapper::class) shouldBeEqualToComparingFields request
+            }
+        }
+    }
 }) {
     data class Home(
         val address: String,
@@ -104,4 +117,8 @@ class OrchestratorTest(
     }
 
     data class Person(val name: String)
+
+    data class InstantWrapper(
+        val time: Instant,
+    )
 }

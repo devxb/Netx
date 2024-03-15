@@ -9,5 +9,5 @@ interface OrchestrateResultHolder {
 
     fun getResult(timeout: Duration, transactionId: String): Mono<OrchestrateResult>
 
-    fun <T> setResult(transactionId: String, state: TransactionState, result: T): Mono<T>
+    fun <T: Any> setResult(transactionId: String, state: TransactionState, result: T): Mono<T>
 }
