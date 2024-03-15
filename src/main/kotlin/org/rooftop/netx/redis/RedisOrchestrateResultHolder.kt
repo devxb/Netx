@@ -24,33 +24,35 @@ class RedisOrchestrateResultHolder(
     private val objectMapper: ObjectMapper,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Transaction>,
 ) : OrchestrateResultHolder {
-    
+
     private val container =
         ReactiveRedisMessageListenerContainer(reactiveRedisTemplate.connectionFactory)
 
     override fun getResult(timeout: Duration, transactionId: String): Mono<OrchestrateResult> {
-        return container.receive(ChannelTopic.of(CHANNEL))
-            .timeout(timeout.toJavaDuration())
-            .onErrorMap {
-                if (it::class == TimeoutException::class) {
-                    return@onErrorMap ResultTimeoutException(
-                        "Can't get result in \"$timeout\" time",
-                        it,
-                    )
-                }
-                it
+        return container.receiveLater(ChannelTopic.of(CHANNEL))
+            .flatMap { message ->
+                message.timeout(timeout.toJavaDuration())
+                    .onErrorMap {
+                        if (it::class == TimeoutException::class) {
+                            return@onErrorMap ResultTimeoutException(
+                                "Can't get result in \"$timeout\" time",
+                                it,
+                            )
+                        }
+                        it
+                    }
+                    .map { objectMapper.readValue(it.message, Transaction::class.java) }
+                    .filter { it.id == transactionId }
+                    .next()
+                    .map {
+                        OrchestrateResult(
+                            isSuccess = it.state == TransactionState.COMMIT,
+                            codec = codec,
+                            result = it.event
+                                ?: throw NullPointerException("OrchestrateResult message cannot be null")
+                        )
+                    }.doOnNext { info("Get result $it") }
             }
-            .map { objectMapper.readValue(it.message, Transaction::class.java) }
-            .filter { it.id == transactionId }
-            .next()
-            .map {
-                OrchestrateResult(
-                    isSuccess = it.state == TransactionState.COMMIT,
-                    codec = codec,
-                    result = it.event
-                        ?: throw NullPointerException("OrchestrateResult message cannot be null")
-                )
-            }.doOnNext { info("Get result $it") }
     }
 
     override fun <T> setResult(transactionId: String, state: TransactionState, result: T): Mono<T> {
