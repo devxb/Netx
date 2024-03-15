@@ -18,22 +18,22 @@ abstract class AbstractTransactionManager(
     private val transactionIdGenerator: TransactionIdGenerator,
 ) : TransactionManager {
 
-    final override fun <T> syncStart(undo: T): String {
+    final override fun <T : Any> syncStart(undo: T): String {
         return start(undo).block()
             ?: throw TransactionException("Cannot start transaction \"$undo\"")
     }
 
-    override fun <T, S> syncStart(undo: T, event: S): String {
+    override fun <T : Any, S : Any> syncStart(undo: T, event: S): String {
         return start(undo, event).block()
             ?: throw TransactionException("Cannot start transaction \"$undo\" \"$event\"")
     }
 
-    final override fun <T> syncJoin(transactionId: String, undo: T): String {
+    final override fun <T : Any> syncJoin(transactionId: String, undo: T): String {
         return join(transactionId, undo).block()
             ?: throw TransactionException("Cannot join transaction \"$transactionId\", \"$undo\"")
     }
 
-    override fun <T, S> syncJoin(transactionId: String, undo: T, event: S): String {
+    override fun <T : Any, S : Any> syncJoin(transactionId: String, undo: T, event: S): String {
         return join(transactionId, undo, event).block()
             ?: throw TransactionException("Cannot join transaction \"$transactionId\", \"$undo\", \"$event\"")
     }
@@ -48,7 +48,7 @@ abstract class AbstractTransactionManager(
             ?: throw TransactionException("Cannot commit transaction \"$transactionId\"")
     }
 
-    override fun <T> syncCommit(transactionId: String, event: T): String {
+    override fun <T : Any> syncCommit(transactionId: String, event: T): String {
         return commit(transactionId, event).block()
             ?: throw TransactionException("Cannot commit transaction \"$transactionId\" \"$event\"")
     }
@@ -58,12 +58,12 @@ abstract class AbstractTransactionManager(
             ?: throw TransactionException("Cannot rollback transaction \"$transactionId\", \"$cause\"")
     }
 
-    override fun <T> syncRollback(transactionId: String, cause: String, event: T): String {
+    override fun <T : Any> syncRollback(transactionId: String, cause: String, event: T): String {
         return rollback(transactionId, cause, event).block()
             ?: throw TransactionException("Cannot rollback transaction \"$transactionId\", \"$cause\" \"$event\"")
     }
 
-    final override fun <T> start(undo: T): Mono<String> {
+    final override fun <T : Any> start(undo: T): Mono<String> {
         return Mono.fromCallable { codec.encode(undo) }
             .flatMap { encodedUndo ->
                 startTransaction(encodedUndo, null)
@@ -72,7 +72,7 @@ abstract class AbstractTransactionManager(
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionIdGenerator.generate()) }
     }
 
-    override fun <T, S> start(undo: T, event: S): Mono<String> {
+    override fun <T : Any, S : Any> start(undo: T, event: S): Mono<String> {
         return Mono.fromCallable { codec.encode(undo) }
             .map { it to codec.encode(event) }
             .flatMap { (encodedUndo, encodedEvent) ->
@@ -98,7 +98,7 @@ abstract class AbstractTransactionManager(
             }
     }
 
-    override fun <T> join(transactionId: String, undo: T): Mono<String> {
+    override fun <T : Any> join(transactionId: String, undo: T): Mono<String> {
         return getAnyTransaction(transactionId)
             .map {
                 if (it == TransactionState.COMMIT) {
@@ -114,7 +114,7 @@ abstract class AbstractTransactionManager(
             }
     }
 
-    override fun <T, S> join(transactionId: String, undo: T, event: S): Mono<String> {
+    override fun <T : Any, S : Any> join(transactionId: String, undo: T, event: S): Mono<String> {
         return getAnyTransaction(transactionId)
             .map {
                 if (it == TransactionState.COMMIT) {
@@ -153,7 +153,7 @@ abstract class AbstractTransactionManager(
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
-    override fun <T> rollback(transactionId: String, cause: String, event: T): Mono<String> {
+    override fun <T : Any> rollback(transactionId: String, cause: String, event: T): Mono<String> {
         return exists(transactionId)
             .infoOnError("Cannot rollback transaction cause, transaction \"$transactionId\" is not exists")
             .map { codec.encode(event) }
@@ -189,7 +189,7 @@ abstract class AbstractTransactionManager(
             .contextWrite { it.put(CONTEXT_TX_KEY, transactionId) }
     }
 
-    override fun <T> commit(transactionId: String, event: T): Mono<String> {
+    override fun <T : Any> commit(transactionId: String, event: T): Mono<String> {
         return exists(transactionId)
             .infoOnError("Cannot commit transaction cause, transaction \"$transactionId\" is not exists")
             .map { codec.encode(event) }
