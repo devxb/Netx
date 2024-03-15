@@ -2,7 +2,7 @@ package org.rooftop.netx.api
 
 import kotlin.reflect.KClass
 
-class OrchestrateResult(
+data class OrchestrateResult(
     val isSuccess: Boolean,
     private val codec: Codec,
     private val result: String
