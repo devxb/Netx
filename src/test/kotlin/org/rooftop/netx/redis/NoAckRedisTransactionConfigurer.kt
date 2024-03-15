@@ -6,9 +6,9 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.JsonCodec
+import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
-import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.logging.logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -72,6 +72,10 @@ class NoAckRedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun jsonCodec(): JsonCodec = JsonCodec(netxObjectMapper())
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun netxObjectMapper(): ObjectMapper =
         ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
@@ -118,10 +122,6 @@ class NoAckRedisTransactionConfigurer(
             nodeGroup = nodeGroup,
             codec = jsonCodec(),
         )
-
-    @Bean
-    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun jsonCodec(): JsonCodec = JsonCodec()
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
