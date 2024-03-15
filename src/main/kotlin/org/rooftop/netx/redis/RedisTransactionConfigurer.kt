@@ -19,6 +19,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
+import org.springframework.data.redis.connection.RedisPassword
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer
@@ -30,6 +32,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 class RedisTransactionConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
+    @Value("\${netx.password}") private val password: String?,
     @Value("\${netx.group}") private val nodeGroup: String,
     @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
@@ -148,6 +151,11 @@ class RedisTransactionConfigurer(
     fun reactiveRedisConnectionFactory(): ReactiveRedisConnectionFactory {
         val port: String = System.getProperty("netx.port") ?: port
 
-        return LettuceConnectionFactory(host, port.toInt())
+        val redisStandaloneConfiguration = RedisStandaloneConfiguration()
+        redisStandaloneConfiguration.hostName = host
+        redisStandaloneConfiguration.port = port.toInt()
+        redisStandaloneConfiguration.password = RedisPassword.of(password)
+
+        return LettuceConnectionFactory(redisStandaloneConfiguration)
     }
 }

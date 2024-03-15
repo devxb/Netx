@@ -42,7 +42,7 @@ class NetxOrchestratorLoadTest(
 
             val atomicInt = AtomicInteger(0)
             loadRunner.load(count) {
-                orchestrator.transaction(atomicInt.getAndIncrement())
+                orchestrator.transaction(THREE_MINUTES_MILLIS, atomicInt.getAndIncrement())
                     .map { resultStorage.add(it.decodeResult(Int::class)) }
                     .subscribe()
             }
@@ -52,5 +52,9 @@ class NetxOrchestratorLoadTest(
             }
         }
     }
-})
+}) {
+    private companion object {
+        private const val THREE_MINUTES_MILLIS = 1000 * 60 * 3L
+    }
+}
 

@@ -22,7 +22,7 @@ class OrchestratorManager<T : Any>(
     }
 
     override fun transaction(request: T): Mono<OrchestrateResult> {
-        return transaction(ONE_MINUTES_TO_TIME_OUT, request)
+        return transaction(TEN_SECONDS_TO_TIME_OUT, request)
     }
 
     override fun transaction(timeoutMillis: Long, request: T): Mono<OrchestrateResult> {
@@ -39,6 +39,6 @@ class OrchestratorManager<T : Any>(
 
     private companion object {
         private const val UNDO = "Orchestrate mode";
-        private const val ONE_MINUTES_TO_TIME_OUT = 60000L
+        private const val TEN_SECONDS_TO_TIME_OUT = 10000L
     }
 }
