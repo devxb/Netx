@@ -40,6 +40,7 @@ class RedisTransactionConfigurer(
     @Value("\${netx.orphan-milli:60000}") private val orphanMilli: Long,
     @Value("\${netx.backpressure:40}") private val backpressureSize: Int,
     @Value("\${netx.logging.level:off}") loggingLevel: String,
+    @Value("\${netx.pool-size:10}") private val poolSize: Int,
     private val applicationContext: ApplicationContext,
 ) {
 
@@ -84,6 +85,7 @@ class RedisTransactionConfigurer(
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
+        poolSize,
         jsonCodec(),
         nodeName,
         nodeGroup,

@@ -17,6 +17,7 @@ import kotlin.time.toJavaDuration
 
 
 class RedisOrchestrateResultHolder(
+    poolSize: Int,
     private val codec: Codec,
     private val serverId: String,
     private val group: String,
@@ -25,7 +26,7 @@ class RedisOrchestrateResultHolder(
 ) : OrchestrateResultHolder {
 
     private val pool = PoolBuilder.from(Mono.just(reactiveRedisTemplate.opsForList()))
-        .sizeBetween(1, 10)
+        .sizeBetween(1, poolSize)
         .maxPendingAcquireUnbounded()
         .buildPool()
 
