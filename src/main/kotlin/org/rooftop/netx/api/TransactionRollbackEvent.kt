@@ -7,7 +7,7 @@ class TransactionRollbackEvent(
     nodeName: String,
     group: String,
     event: String?,
-    val cause: String?,
+    val cause: String,
     private val undo: String,
     private val codec: Codec,
 ) : TransactionEvent(transactionId, nodeName, group, event, codec) {

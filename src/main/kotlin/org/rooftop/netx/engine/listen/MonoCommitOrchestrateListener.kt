@@ -1,29 +1,34 @@
 package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
+import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.core.TransactionState
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
-import kotlin.reflect.KClass
 
-class MonoCommitOrchestrateListener(
+internal class MonoCommitOrchestrateListener<T : Any, V : Any> internal constructor(
     private val codec: Codec,
-    private val transactionManager: TransactionManager,
-    private val orchestrateId: String,
-    private val orchestrateFunction: OrchestrateFunction<Mono<Any>>,
+    transactionManager: TransactionManager,
+    private val orchestratorId: String,
+    private val orchestrateSequence: Int,
+    private val orchestrateFunction: OrchestrateFunction<T, Mono<V>>,
     private val orchestrateResultHolder: OrchestrateResultHolder,
-    private val noRollbackFor: Array<out KClass<out Throwable>>,
+) : AbstractOrchestrateListener<T, V>(
+    orchestratorId,
+    orchestrateSequence,
+    codec,
+    transactionManager,
 ) {
-
     @TransactionCommitListener(OrchestrateEvent::class)
     fun listenCommitOrchestrateEvent(transactionCommitEvent: TransactionCommitEvent): Mono<Unit> {
         return Mono.just(transactionCommitEvent)
             .map { it.decodeEvent(OrchestrateEvent::class) }
-            .filter { it.orchestrateId == orchestrateId }
-            .map { OrchestrateRequest(it.clientEvent, codec) }
-            .flatMap { orchestrateFunction.orchestrate(it) }
+            .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
+            .flatMap { event ->
+                val request = codec.decode(event.clientEvent, getCastableType())
+                orchestrateFunction.orchestrate(request)
+            }
             .flatMap {
                 orchestrateResultHolder.setResult(
                     transactionCommitEvent.transactionId,
@@ -31,32 +36,10 @@ class MonoCommitOrchestrateListener(
                     it,
                 )
             }
-            .onErrorResume {
-                if (isNoRollbackFor(it)) {
-                    throw it
-                }
-                rollback(it, transactionCommitEvent)
-                Mono.empty()
-            }
+            .onErrorRollback(
+                transactionCommitEvent.transactionId,
+                transactionCommitEvent.decodeEvent(OrchestrateEvent::class)
+            )
             .map { }
     }
-
-    private fun rollback(
-        it: Throwable,
-        transactionCommitEvent: TransactionCommitEvent
-    ) {
-        val orchestrateEvent =
-            OrchestrateEvent(
-                orchestrateId = orchestrateId,
-                clientEvent = it.message ?: it.localizedMessage
-            )
-        transactionManager.rollback(
-            transactionId = transactionCommitEvent.transactionId,
-            cause = it.message ?: it.localizedMessage,
-            event = orchestrateEvent
-        ).subscribeOn(Schedulers.boundedElastic()).subscribe()
-    }
-
-    private fun isNoRollbackFor(throwable: Throwable) =
-        noRollbackFor.isNotEmpty() && noRollbackFor.contains(throwable::class)
 }

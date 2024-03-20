@@ -91,18 +91,20 @@ abstract class AbstractTransactionDispatcher(
             TransactionState.ROLLBACK -> findOwnUndo(transaction)
                 .warningOnError("Error occurred when findOwnUndo transaction ${transaction.id}")
                 .map {
-                    TransactionRollbackEvent(
-                        transactionId = transaction.id,
-                        nodeName = transaction.serverId,
-                        group = transaction.group,
-                        event = extractEvent(transaction),
-                        cause = when (transaction.event != null) {
-                            true -> transaction.cause
-                            false -> null
-                        },
-                        undo = it,
-                        codec = codec,
-                    )
+                    when (transaction.event != null) {
+                        true -> transaction.cause
+                        false -> null
+                    }?.let { it1 ->
+                        TransactionRollbackEvent(
+                            transactionId = transaction.id,
+                            nodeName = transaction.serverId,
+                            group = transaction.group,
+                            event = extractEvent(transaction),
+                            cause = it1,
+                            undo = it,
+                            codec = codec,
+                        )
+                    }
                 }
         }
     }
@@ -116,12 +118,10 @@ abstract class AbstractTransactionDispatcher(
 
     protected abstract fun findOwnUndo(transaction: Transaction): Mono<String>
 
-    internal fun addHandlers(handlers: List<Any>) {
-        initMonoFunctions(handlers)
-        initNotPublisherFunctions(handlers)
-        handlers.forEach { handler ->
-            info("Add functions : \"${handler}\"")
-        }
+    internal fun addHandler(handler: Any) {
+        initMonoFunctions(listOf(handler))
+        initNotPublisherFunctions(listOf(handler))
+        info("Add functions : \"${handler}\"")
     }
 
     @PostConstruct

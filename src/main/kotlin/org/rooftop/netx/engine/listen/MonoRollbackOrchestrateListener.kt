@@ -1,31 +1,31 @@
 package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
+import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
-import org.rooftop.netx.engine.OrchestrateResultHolder
-import org.rooftop.netx.engine.core.TransactionState
 import reactor.core.publisher.Mono
 
-class MonoRollbackOrchestrateListener(
+internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
     private val codec: Codec,
-    private val orchestrateId: String,
-    private val orchestrateFunction: OrchestrateFunction<Mono<Any>>,
-    private val orchestrateResultHolder: OrchestrateResultHolder,
+    private val orchestratorId: String,
+    private val orchestrateSequence: Int,
+    transactionManager: TransactionManager,
+    private val rollbackFunction: RollbackFunction<T, Mono<V?>>,
+) : AbstractOrchestrateListener<T, V>(
+    orchestratorId,
+    orchestrateSequence,
+    codec,
+    transactionManager
 ) {
 
     @TransactionRollbackListener(OrchestrateEvent::class)
     fun listenRollbackOrchestrateEvent(transactionRollbackEvent: TransactionRollbackEvent): Mono<Unit> {
         return Mono.just(transactionRollbackEvent)
             .map { it.decodeEvent(OrchestrateEvent::class) }
-            .filter { it.orchestrateId == orchestrateId }
-            .map { OrchestrateRequest(it.clientEvent, codec) }
-            .flatMap { orchestrateFunction.orchestrate(it) }
-            .flatMap {
-                orchestrateResultHolder.setResult(
-                    transactionRollbackEvent.transactionId,
-                    TransactionState.ROLLBACK,
-                    it,
-                )
+            .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
+            .flatMap { event ->
+                val request = codec.decode(event.clientEvent, getCastableType())
+                rollbackFunction.rollback(request)
             }
             .map { }
     }

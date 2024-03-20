@@ -1,53 +1,43 @@
 package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
+import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
-import kotlin.reflect.KClass
 
-class JoinOrchestrateListener(
-    private val isLast: Boolean = false,
+internal class JoinOrchestrateListener<T : Any, V : Any>(
     private val codec: Codec,
     private val transactionManager: TransactionManager,
-    private val orchestrateId: String,
+    private val orchestratorId: String,
     private val orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<Any>,
-    private val noRollbackFor: Array<out KClass<out Throwable>>,
+    private val orchestrateFunction: OrchestrateFunction<T, V>,
+) : AbstractOrchestrateListener<T, V>(
+    orchestratorId,
+    orchestrateSequence,
+    codec,
+    transactionManager
 ) {
 
     @TransactionJoinListener(OrchestrateEvent::class)
     fun listenJoinOrchestrateEvent(transactionJoinEvent: TransactionJoinEvent): Mono<Unit> {
-        return Mono.just(transactionJoinEvent)
-            .map { it.decodeEvent(OrchestrateEvent::class) }
+        return transactionJoinEvent.toOrchestrateEvent()
             .filter {
                 it.orchestrateSequence == orchestrateSequence
-                        && it.orchestrateId == orchestrateId
+                        && it.orchestratorId == orchestratorId
             }
-            .map { OrchestrateRequest(it.clientEvent, codec) to it }
-            .map { (request, event) ->
-                orchestrateFunction.orchestrate(request) to event
+            .map { event ->
+                val request = codec.decode(event.clientEvent, getCastableType())
+                orchestrateFunction.orchestrate(request)
             }
-            .onErrorResume {
-                if (it == AlreadyCommittedTransactionException::class) {
-                    return@onErrorResume Mono.empty()
-                }
-                if (isNoRollbackFor(it)) {
-                    throw it
-                }
-                rollback(it, transactionJoinEvent)
-                Mono.empty()
-            }
-            .map { (response, event) ->
-                if (isLast) {
-                    return@map OrchestrateEvent(
-                        orchestrateId = orchestrateId,
-                        clientEvent = codec.encode(response)
-                    )
-                }
+            .setNextCastableType()
+            .onErrorRollback(
+                transactionJoinEvent.transactionId,
+                transactionJoinEvent.decodeEvent(OrchestrateEvent::class)
+            )
+            .map { response ->
                 OrchestrateEvent(
-                    orchestrateId = orchestrateId,
-                    orchestrateSequence = event.orchestrateSequence + 1,
+                    orchestratorId = orchestratorId,
+                    orchestrateSequence = orchestrateSequence + 1,
                     clientEvent = codec.encode(response),
                 )
             }
@@ -72,23 +62,4 @@ class JoinOrchestrateListener(
             }
             .map { }
     }
-
-    private fun rollback(
-        it: Throwable,
-        transactionJoinEvent: TransactionJoinEvent
-    ) {
-        val orchestrateEvent =
-            OrchestrateEvent(
-                orchestrateId = orchestrateId,
-                clientEvent = it.message ?: it.localizedMessage
-            )
-        transactionManager.rollback(
-            transactionId = transactionJoinEvent.transactionId,
-            cause = it.message ?: it.localizedMessage,
-            event = orchestrateEvent
-        ).subscribeOn(Schedulers.boundedElastic()).subscribe()
-    }
-
-    private fun isNoRollbackFor(throwable: Throwable) =
-        noRollbackFor.isNotEmpty() && noRollbackFor.contains(throwable::class)
 }

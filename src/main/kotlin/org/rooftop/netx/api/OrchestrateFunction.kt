@@ -1,6 +1,6 @@
 package org.rooftop.netx.api
 
-fun interface OrchestrateFunction<T> {
+fun interface OrchestrateFunction<T : Any, V : Any> {
 
-    fun orchestrate(orchestrateRequest: OrchestrateRequest): T
+    fun orchestrate(request: T): V
 }

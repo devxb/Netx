@@ -15,7 +15,6 @@ import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
-
 class RedisOrchestrateResultHolder(
     poolSize: Int,
     private val codec: Codec,
@@ -30,7 +29,10 @@ class RedisOrchestrateResultHolder(
         .maxPendingAcquireUnbounded()
         .buildPool()
 
-    override fun getResult(timeout: Duration, transactionId: String): Mono<OrchestrateResult> {
+    override fun <T : Any> getResult(
+        timeout: Duration,
+        transactionId: String
+    ): Mono<OrchestrateResult<T>> {
         return pool.withPoolable {
             it.leftPop("Result:$transactionId", timeout.toJavaDuration())
                 .switchIfEmpty(Mono.error {
@@ -39,14 +41,16 @@ class RedisOrchestrateResultHolder(
                         TimeoutException()
                     )
                 })
-        }.single().map {
-            OrchestrateResult(
-                isSuccess = it.state == TransactionState.COMMIT,
-                codec = codec,
-                result = it.event
-                    ?: throw NullPointerException("OrchestrateResult message cannot be null")
-            )
-        }.doOnNext { info("Get result $it") }
+        }.single()
+            .map { transaction ->
+                transaction.event?.let {
+                    OrchestrateResult<T>(
+                        isSuccess = transaction.state == TransactionState.COMMIT,
+                        result = it,
+                        codec = codec,
+                    )
+                } ?: throw NullPointerException("OrchestrateResult message cannot be null")
+            }.doOnNext { info("Get result $it") }
     }
 
     override fun <T : Any> setResult(

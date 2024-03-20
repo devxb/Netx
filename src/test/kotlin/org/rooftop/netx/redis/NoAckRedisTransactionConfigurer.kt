@@ -10,6 +10,7 @@ import org.rooftop.netx.engine.OrchestrateResultHolder
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.logging.logger
+import org.rooftop.netx.factory.OrchestratorFactory
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -41,6 +42,15 @@ class NoAckRedisTransactionConfigurer(
     init {
         logger = LoggerFactory.getLogger("org.rooftop.netx.logger.$loggingLevel")
     }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisStreamOrchestratorFactory(): OrchestratorFactory = OrchestratorFactory(
+        transactionManager = redisStreamTransactionManager(),
+        transactionDispatcher = redisStreamTransactionDispatcher(),
+        codec = jsonCodec(),
+        orchestrateResultHolder = redisOrchestrateResultHolder(),
+    )
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
@@ -83,7 +93,7 @@ class NoAckRedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
+    internal fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
         poolSize,
         jsonCodec(),
         nodeName,

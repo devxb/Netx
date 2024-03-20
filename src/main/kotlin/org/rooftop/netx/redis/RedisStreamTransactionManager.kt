@@ -36,6 +36,13 @@ class RedisStreamTransactionManager(
             .map { TransactionState.valueOf(it) }
     }
 
+    /*
+        --- 요구사항 ---
+
+        1. transaciton의 join마다, undo를 설정할 수 있어야함. -> 새로운 인터페이스를 만든다..?
+        2. 자신이 참여하지 않은 transaction을 수신하지 않아야함. -> 방법이 없다면.. transactionId에 참여중인 서버의 group을 알고있어야할듯
+            --> silent drop undo가 없다면 참여하지 않은것.
+     */
     override fun publishTransaction(transactionId: String, transaction: Transaction): Mono<String> {
         return Mono.fromCallable { hasUndo(transaction) }
             .flatMap {

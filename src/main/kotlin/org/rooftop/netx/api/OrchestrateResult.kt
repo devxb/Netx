@@ -2,13 +2,13 @@ package org.rooftop.netx.api
 
 import kotlin.reflect.KClass
 
-data class OrchestrateResult(
+data class OrchestrateResult<T : Any>(
     val isSuccess: Boolean,
     private val codec: Codec,
-    private val result: String
+    private val result: String,
 ) {
 
-    fun <T : Any> decodeResult(type: Class<T>): T = decodeResult(type.kotlin)
+    fun decodeResult(type: Class<T>): T = decodeResult(type.kotlin)
 
-    fun <T : Any> decodeResult(type: KClass<T>): T = codec.decode(result, type)
+    fun decodeResult(type: KClass<T>): T = codec.decode(result, type)
 }

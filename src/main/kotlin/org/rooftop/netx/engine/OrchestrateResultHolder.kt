@@ -5,9 +5,9 @@ import org.rooftop.netx.engine.core.TransactionState
 import reactor.core.publisher.Mono
 import kotlin.time.Duration
 
-interface OrchestrateResultHolder {
+internal interface OrchestrateResultHolder {
 
-    fun getResult(timeout: Duration, transactionId: String): Mono<OrchestrateResult>
+    fun <T : Any> getResult(timeout: Duration, transactionId: String): Mono<OrchestrateResult<T>>
 
-    fun <T: Any> setResult(transactionId: String, state: TransactionState, result: T): Mono<T>
+    fun <T : Any> setResult(transactionId: String, state: TransactionState, result: T): Mono<T>
 }

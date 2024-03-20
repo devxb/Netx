@@ -13,6 +13,7 @@ import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.logging.LoggerFactory
 import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.engine.logging.logger
+import org.rooftop.netx.factory.OrchestratorFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationContext
@@ -50,6 +51,15 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun redisStreamOrchestratorFactory(): OrchestratorFactory = OrchestratorFactory(
+        transactionManager = redisStreamTransactionManager(),
+        transactionDispatcher = redisStreamTransactionDispatcher(),
+        codec = jsonCodec(),
+        orchestrateResultHolder = redisOrchestrateResultHolder(),
+    )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     fun redisStreamTransactionManager(): TransactionManager =
         RedisStreamTransactionManager(
             nodeName = nodeName,
@@ -84,14 +94,15 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisOrchestrateResultHolder(): OrchestrateResultHolder = RedisOrchestrateResultHolder(
-        poolSize,
-        jsonCodec(),
-        nodeName,
-        nodeGroup,
-        netxObjectMapper(),
-        reactiveRedisTemplate(),
-    )
+    internal fun redisOrchestrateResultHolder(): OrchestrateResultHolder =
+        RedisOrchestrateResultHolder(
+            poolSize,
+            jsonCodec(),
+            nodeName,
+            nodeGroup,
+            netxObjectMapper(),
+            reactiveRedisTemplate(),
+        )
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")

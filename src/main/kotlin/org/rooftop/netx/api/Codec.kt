@@ -7,6 +7,4 @@ interface Codec {
     fun <T : Any> encode(data: T): String
 
     fun <T : Any> decode(data: String, type: KClass<T>): T
-
-    fun <T : Any> decode(data: String, typeReference: TypeReference<T>): T
 }
