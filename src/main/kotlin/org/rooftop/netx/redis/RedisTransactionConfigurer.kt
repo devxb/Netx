@@ -7,7 +7,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.JsonCodec
-import org.rooftop.netx.engine.OrchestrateResultHolder
+import org.rooftop.netx.engine.RequestHolder
+import org.rooftop.netx.engine.ResultHolder
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.logging.LoggerFactory
@@ -55,7 +56,8 @@ class RedisTransactionConfigurer(
         transactionManager = redisStreamTransactionManager(),
         transactionDispatcher = redisStreamTransactionDispatcher(),
         codec = jsonCodec(),
-        orchestrateResultHolder = redisOrchestrateResultHolder(),
+        resultHolder = redisResultHolder(),
+        requestHolder = redisRequestHolder(),
     )
 
     @Bean
@@ -64,7 +66,7 @@ class RedisTransactionConfigurer(
         RedisStreamTransactionManager(
             nodeName = nodeName,
             nodeGroup = nodeGroup,
-            reactiveRedisTemplate = reactiveRedisTemplate(),
+            reactiveRedisTemplate = transactionReactiveRedisTemplate(),
             codec = jsonCodec(),
             transactionIdGenerator = tsidTransactionIdGenerator(),
             objectMapper = netxObjectMapper(),
@@ -85,7 +87,7 @@ class RedisTransactionConfigurer(
             connectionFactory = reactiveRedisConnectionFactory(),
             nodeGroup = nodeGroup,
             nodeName = nodeName,
-            reactiveRedisTemplate = reactiveRedisTemplate(),
+            reactiveRedisTemplate = transactionReactiveRedisTemplate(),
             objectMapper = netxObjectMapper(),
         ).also {
             info("RedisStreamTransactionListener connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\" backpressureSize : \"$backpressureSize\"")
@@ -94,13 +96,19 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    internal fun redisOrchestrateResultHolder(): OrchestrateResultHolder =
-        RedisOrchestrateResultHolder(
+    internal fun redisResultHolder(): ResultHolder =
+        RedisResultHolder(
             poolSize,
             jsonCodec(),
-            nodeName,
-            nodeGroup,
             netxObjectMapper(),
+            reactiveRedisTemplate(),
+        )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    internal fun redisRequestHolder(): RequestHolder =
+        RedisRequestHolder(
+            jsonCodec(),
             reactiveRedisTemplate(),
         )
 
@@ -121,7 +129,7 @@ class RedisTransactionConfigurer(
         RedisTransactionRetrySupporter(
             nodeGroup = nodeGroup,
             nodeName = nodeName,
-            reactiveRedisTemplate = reactiveRedisTemplate(),
+            reactiveRedisTemplate = transactionReactiveRedisTemplate(),
             transactionDispatcher = redisStreamTransactionDispatcher(),
             orphanMilli = orphanMilli,
             recoveryMilli = recoveryMilli,
@@ -137,7 +145,7 @@ class RedisTransactionConfigurer(
     fun redisStreamTransactionDispatcher(): RedisStreamTransactionDispatcher =
         RedisStreamTransactionDispatcher(
             applicationContext = applicationContext,
-            reactiveRedisTemplate = reactiveRedisTemplate(),
+            reactiveRedisTemplate = transactionReactiveRedisTemplate(),
             nodeGroup = nodeGroup,
             codec = jsonCodec(),
         ).also {
@@ -146,12 +154,26 @@ class RedisTransactionConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, Transaction> {
+    fun transactionReactiveRedisTemplate(): ReactiveRedisTemplate<String, Transaction> {
         val keySerializer = StringRedisSerializer()
         val valueSerializer =
             Jackson2JsonRedisSerializer(netxObjectMapper(), Transaction::class.java)
 
         val builder: RedisSerializationContext.RedisSerializationContextBuilder<String, Transaction> =
+            RedisSerializationContext.newSerializationContext(keySerializer)
+
+        val context = builder.value(valueSerializer).build()
+
+        return ReactiveRedisTemplate(reactiveRedisConnectionFactory(), context);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, String> {
+        val keySerializer = StringRedisSerializer()
+        val valueSerializer = StringRedisSerializer()
+
+        val builder: RedisSerializationContext.RedisSerializationContextBuilder<String, String> =
             RedisSerializationContext.newSerializationContext(keySerializer)
 
         val context = builder.value(valueSerializer).build()

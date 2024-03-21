@@ -1,0 +1,58 @@
+package org.rooftop.netx.api
+
+import kotlin.reflect.KClass
+
+class Result<T : Any> private constructor(
+    val isSuccess: Boolean,
+    private val codec: Codec,
+    private val result: String?,
+    private val error: Error? = null,
+) {
+
+    fun decodeResult(type: Class<T>): T = decodeResult(type.kotlin)
+
+    fun decodeResult(type: KClass<T>): T = result?.let {
+        codec.decode(it, type)
+    } ?: throw ResultException("Cannot decode result cause Result is fail state")
+
+    fun throwError() = error?.throwError(codec)
+        ?: throw ResultException("Cannot throw error cause Result is success state")
+
+    private class Error(
+        private val error: String,
+        private val type: KClass<Throwable>
+    ) {
+
+        fun throwError(codec: Codec) {
+            throw codec.decode(error, type)
+        }
+    }
+
+    internal companion object {
+
+        fun <T : Any> success(
+            codec: Codec,
+            result: String,
+        ): Result<T> {
+            return Result(
+                true,
+                codec,
+                result,
+                null,
+            )
+        }
+
+        fun <T : Any> fail(
+            codec: Codec,
+            error: String,
+            type: KClass<Throwable>,
+        ): Result<T> {
+            return Result(
+                false,
+                codec,
+                null,
+                Error(error, type),
+            )
+        }
+    }
+}

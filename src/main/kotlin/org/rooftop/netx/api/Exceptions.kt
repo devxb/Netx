@@ -17,3 +17,5 @@ class FailedAckTransactionException(message: String) : RuntimeException(message)
 
 class ResultTimeoutException(message: String, throwable: Throwable) :
     RuntimeException(message, throwable)
+
+class ResultException(message: String) : RuntimeException(message)

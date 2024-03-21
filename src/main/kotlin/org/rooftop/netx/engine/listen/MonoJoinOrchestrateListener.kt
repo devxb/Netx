@@ -3,19 +3,25 @@ package org.rooftop.netx.engine.listen
 import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
+import org.rooftop.netx.engine.RequestHolder
+import org.rooftop.netx.engine.ResultHolder
 import reactor.core.publisher.Mono
 
 internal class MonoJoinOrchestrateListener<T : Any, V : Any>(
     private val codec: Codec,
     private val transactionManager: TransactionManager,
     private val orchestratorId: String,
-    private val orchestrateSequence: Int,
+    orchestrateSequence: Int,
     private val orchestrateFunction: OrchestrateFunction<T, Mono<V>>,
+    requestHolder: RequestHolder,
+    resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
     codec,
-    transactionManager
+    transactionManager,
+    requestHolder,
+    resultHolder,
 ) {
 
     @TransactionJoinListener(OrchestrateEvent::class)
@@ -25,8 +31,11 @@ internal class MonoJoinOrchestrateListener<T : Any, V : Any>(
                 it.orchestrateSequence == orchestrateSequence
                         && it.orchestratorId == orchestratorId
             }
-            .flatMap { event ->
-                val request = codec.decode(event.clientEvent, getCastableType())
+            .map { event ->
+                codec.decode(event.clientEvent, getCastableType())
+            }
+            .holdRequestIfRollbackable(transactionJoinEvent)
+            .flatMap { request ->
                 orchestrateFunction.orchestrate(request)
             }
             .setNextCastableType()

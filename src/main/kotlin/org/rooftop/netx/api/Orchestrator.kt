@@ -4,11 +4,11 @@ import reactor.core.publisher.Mono
 
 interface Orchestrator<T : Any, V : Any> {
 
-    fun transaction(request: T): Mono<OrchestrateResult<V>>
+    fun transaction(request: T): Mono<Result<V>>
 
-    fun transaction(timeoutMillis: Long, request: T): Mono<OrchestrateResult<V>>
+    fun transaction(timeoutMillis: Long, request: T): Mono<Result<V>>
 
-    fun transactionSync(request: T): OrchestrateResult<V>
+    fun transactionSync(request: T): Result<V>
 
-    fun transactionSync(timeoutMillis: Long, request: T): OrchestrateResult<V>
+    fun transactionSync(timeoutMillis: Long, request: T): Result<V>
 }

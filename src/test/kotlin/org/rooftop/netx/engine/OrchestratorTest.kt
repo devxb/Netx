@@ -1,5 +1,7 @@
 package org.rooftop.netx.engine
 
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
@@ -10,6 +12,7 @@ import org.rooftop.netx.redis.RedisContainer
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
 
 @EnableDistributedTransaction
 @ContextConfiguration(
@@ -19,12 +22,13 @@ import java.time.Instant
     ]
 )
 @DisplayName("Orchestrator 클래스의")
-@TestPropertySource("classpath:fast-recover-mode.properties")
+@TestPropertySource("classpath:application.properties")
 class OrchestratorTest(
     private val numberOrchestrator: Orchestrator<Int, Int>,
     private val homeOrchestrator: Orchestrator<Home, Home>,
     private val instantOrchestrator: Orchestrator<InstantWrapper, InstantWrapper>,
-    private val manyTypeOrchestrator: Orchestrator<Int, OrchestratorTest.Home>,
+    private val manyTypeOrchestrator: Orchestrator<Int, Home>,
+    private val rollbackOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -81,6 +85,24 @@ class OrchestratorTest(
             }
         }
     }
+
+    describe("rollbackOrchestrator 구현채는") {
+        val expected = listOf("1", "2", "3", "4", "-4", "-3", "-1")
+
+        context("transaction 메소드가 호출되면,") {
+            it("실패한 부분부터 위로 거슬러 올라가며 롤백한다") {
+                val result = rollbackOrchestrator.transactionSync("")
+
+                result.isSuccess shouldBeEqual false
+                shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
+                    result.throwError()
+                }
+                eventually(5.seconds) {
+                    rollbackOrchestratorResult shouldBeEqual expected
+                }
+            }
+        }
+    }
 }) {
     data class Home(
         val address: String,
@@ -96,4 +118,8 @@ class OrchestratorTest(
     data class InstantWrapper(
         val time: Instant,
     )
+
+    companion object {
+        val rollbackOrchestratorResult = mutableListOf<String>()
+    }
 }

@@ -1,6 +1,7 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.Orchestrator
+import org.rooftop.netx.engine.OrchestratorTest.Companion.rollbackOrchestratorResult
 import org.rooftop.netx.factory.OrchestratorFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -57,5 +58,38 @@ class OrchestratorConfigurer(
             .join({ 0.1 })
             .join({ OrchestratorTest.InstantWrapper(Instant.now()) })
             .commit({ OrchestratorTest.Home("HOME", mutableListOf()) })
+    }
+
+    @Bean(name = ["rollbackOrchestrator"])
+    fun rollbackOrchestrator(): Orchestrator<String, String> {
+        return orchestratorFactory.create<String>("rollbackOrchestrator")
+            .start(
+                function = {
+                    rollbackOrchestratorResult.add("1")
+                },
+                rollback = {
+                    rollbackOrchestratorResult.add("-1")
+                }
+            )
+            .join(
+                function = {
+                    rollbackOrchestratorResult.add("2")
+                }
+            )
+            .join(
+                function = {
+                    rollbackOrchestratorResult.add("3")
+                },
+                rollback = { rollbackOrchestratorResult.add("-3") }
+            )
+            .commit(
+                function = {
+                    rollbackOrchestratorResult.add("4")
+                    throw IllegalArgumentException("Rollback")
+                },
+                rollback = {
+                    rollbackOrchestratorResult.add("-4")
+                }
+            )
     }
 }

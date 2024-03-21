@@ -9,16 +9,20 @@ import kotlin.reflect.KClass
 
 internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal constructor(
     private val orchestratorId: String,
-    private val orchestrateSequence: Int,
+    val orchestrateSequence: Int,
     private val codec: Codec,
     private val transactionManager: TransactionManager,
+    private val requestHolder: RequestHolder,
+    private val resultHolder: ResultHolder,
 ) {
 
     var isFirst: Boolean = true
     var isLast: Boolean = true
+    var isRollbackable: Boolean = false
+    var beforeRollbackOrchestrateSequence: Int = 0
 
-    var nextOrchestrateListener: AbstractOrchestrateListener<V, Any>? = null
-    var nextRollbackOrchestrateListener: AbstractOrchestrateListener<V, Any>? = null
+    private var nextOrchestrateListener: AbstractOrchestrateListener<V, Any>? = null
+    private var nextRollbackOrchestrateListener: AbstractOrchestrateListener<V, Any>? = null
     private var castableType: KClass<out T>? = null
 
     @Suppress("UNCHECKED_CAST")
@@ -44,6 +48,27 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         }
     }
 
+    protected fun Mono<*>.getHeldRequest(transactionEvent: TransactionEvent): Mono<T> {
+        return this.flatMap {
+            requestHolder.getRequest(
+                "${transactionEvent.transactionId}:$orchestrateSequence",
+                getCastableType()
+            )
+        }
+    }
+
+    protected fun Mono<T>.holdRequestIfRollbackable(transactionEvent: TransactionEvent): Mono<T> {
+        return this.flatMap { request ->
+            if (!isRollbackable) {
+                Mono.just(request)
+            }
+            requestHolder.setRequest(
+                "${transactionEvent.transactionId}:$orchestrateSequence",
+                request
+            )
+        }
+    }
+
     protected fun getCastableType(): KClass<out T> {
         return castableType
             ?: throw NullPointerException("OrchestratorId \"$orchestratorId\", OrchestrateSequence \"$orchestrateSequence\"'s CastableType was null")
@@ -62,24 +87,30 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         transactionId: String,
         orchestrateEvent: OrchestrateEvent,
     ): Mono<S> = this.onErrorResume {
-        rollback(it, transactionId, orchestrateEvent)
+        holdFailResult(transactionId, it)
+        rollback(transactionId, it, orchestrateEvent)
         Mono.empty()
     }
 
+    private fun holdFailResult(transactionId: String, throwable: Throwable) {
+        resultHolder.setFailResult(transactionId, throwable)
+            .subscribeOn(Schedulers.parallel()).subscribe()
+    }
+
     private fun rollback(
-        it: Throwable,
         transactionId: String,
+        throwable: Throwable,
         orchestrateEvent: OrchestrateEvent,
     ) {
         transactionManager.rollback(
             transactionId = transactionId,
-            cause = it.message ?: it.localizedMessage,
+            cause = throwable.message ?: throwable.localizedMessage,
             event = orchestrateEvent
-        ).subscribeOn(Schedulers.boundedElastic()).subscribe()
+        ).subscribeOn(Schedulers.parallel()).subscribe()
     }
 
     override fun toString(): String {
-        return "AbstractOrchestrateListener(orchestratorId='$orchestratorId', orchestrateSequence=$orchestrateSequence, codec=$codec, transactionManager=$transactionManager, isFirst=$isFirst, isLast=$isLast, nextOrchestrateListener=$nextOrchestrateListener, nextRollbackOrchestrateListener=$nextRollbackOrchestrateListener, castableType=$castableType)"
+        return "AbstractOrchestrateListener(orchestratorId='$orchestratorId', orchestrateSequence=$orchestrateSequence, codec=$codec, transactionManager=$transactionManager, requestHolder=$requestHolder, isFirst=$isFirst, isLast=$isLast, isRollbackable=$isRollbackable, beforeRollbackOrchestrateSequence=$beforeRollbackOrchestrateSequence, nextOrchestrateListener=$nextOrchestrateListener, nextRollbackOrchestrateListener=$nextRollbackOrchestrateListener, castableType=$castableType)"
     }
 
 
