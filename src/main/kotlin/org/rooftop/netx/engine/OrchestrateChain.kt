@@ -191,7 +191,7 @@ class OrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
         return orchestrateChainCursor to orchestrateListeners
     }
 
-    private fun chainOrchestrateListeners(orchestrateListeners: MutableList<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
+    private fun chainOrchestrateListeners(orchestrateListeners: List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
         for (listenerWithIdx in orchestrateListeners.withIndex()) {
             val isFirst = listenerWithIdx.index == 0
             val isLast =
@@ -210,7 +210,7 @@ class OrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
         }
     }
 
-    private fun chainRollbackListeners(orchestrateListeners: MutableList<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
+    private fun chainRollbackListeners(orchestrateListeners: List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
         val rollbackListeners = orchestrateListeners.asSequence()
             .map { it.second }
             .filter { it != null }
@@ -230,7 +230,7 @@ class OrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
         }
     }
 
-    private fun addDispatcher(orchestrateListeners: MutableList<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
+    private fun addDispatcher(orchestrateListeners: List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
         orchestrateListeners.forEach { (listener, rollbackListener) ->
             chainContainer.transactionDispatcher.addHandler(listener)
             rollbackListener?.let { chainContainer.transactionDispatcher.addHandler(it) }
