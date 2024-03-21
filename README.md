@@ -6,7 +6,7 @@
 
 <br>
 
-![version 0.3.1](https://img.shields.io/badge/version-0.3.1-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
+![version 0.3.2](https://img.shields.io/badge/version-0.3.2-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 Saga pattern 으로 구현된 분산 트랜잭션 프레임워크 입니다.   
@@ -61,45 +61,58 @@ class Application {
 #### Orchestrator-example.
 > [!TIP]   
 > Orchestrator 사용시, Transactional Message Pattern이 자동 적용됩니다.   
-> retry 단위는 Orchestrator의 각 연산(하나의 function) 단위이며, 모든 체인이 성공하거나 rollback이 호출됩니다.   
+> 메시지 유실에대한 retry 단위는 Orchestrator의 각 연산(하나의 function) 단위이며, 모든 체인이 성공하거나 rollback이 호출됩니다.   
  
 ```kotlin
 // Use Orchestrator
 @Service
-class OrderService(private val orderOrchestrator: Orchestrator<Order>) {
-  
-  fun order(orderRequest: Order): OrderResult {
-    val orchestrateResult = orderOrchestrator.transactionSync(orderRequest)    
-    return orchestrateResult.decodeResult(OrderResult::class)
-  }
+class OrderService(private val orderOrchestrator: Orchestrator<Order, OrderResponse>) {
+
+    fun order(orderRequest: Order): OrderResult {
+        val result = orderOrchestrator.transactionSync(orderRequest)
+        if (!result.isSuccess) {
+            result.throwError()
+        }
+        return result.decodeResult(OrderResult::class)
+    }
 }
 
 // Register Orchestrator
-class OrchestratorConfigurer: AbstractOrchestartorConfigurer() {
+@Configurer
+class OrchestratorConfigurer(
+    private val orchestratorFactory: OrchestratorFactory
+) {
 
-  @Bean // Generic is first request type
-  fun orderOrchestartor(): Orchestrator<Order> { 
-    return newOrchestrator()
-      .startSync { orchestrateRequet ->
-        // Start Transaction with your bussiness logic 
-        // something like ... "check seller"
-      }
-      .joinSync(noRollbackFor = OptimisiticLockingFailureException::class) {
-        // If an exception set in noRollbackFor is thrown during           
-        // business logic, This block retried until success
-      }
-      .join {
-        // Webflux supports, just return Mono.
-      }
-      .commitSync {
-         // The value returned commit chain can be retrieved as follow code.
-         // result.decodeResult(Something::class)
-      }
-      .rollbackSync {
-        // Rollback Logic to be executed when orchestrator chain fails.
-      }
-      .build()
-  }
+    @Bean 
+    fun orderOrchestartor(): Orchestrator<Order, OrderResponse> { // <First Request, Last Response>
+        return orchestratorFactory.create("orderOrchestrator")
+            .start(
+                function = { order -> // its order type
+                    // Start Transaction with your bussiness logic 
+                    // something like ... "Check valid seller"
+                    return@start user
+                },
+                rollback = { order ->
+                    // do rollback logic
+                }
+            )
+            .joinReactive(
+                function = { user -> // Before operations response type "User" flow here 
+                    // Webflux supports, should return Mono type.
+                },
+                // Can skip rollback operation, if you want
+            )
+            .commit(
+                function = { request ->
+                    // When an error occurs, all rollbacks are called from the bottom up, 
+                    // starting from the location where the error occurred.
+                    throw IllegalArgumentException("Oops! Something went wrong..")
+                },
+                rollback = { request ->
+                    ...
+                }
+            )
+    }
 }
 ```
 
