@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.minutes
 @TestPropertySource("classpath:fast-recover-mode.properties")
 class NetxOrchestratorLoadTest(
     private val loadRunner: LoadRunner,
-    private val orchestrator: Orchestrator<Int>,
+    private val orchestrator: Orchestrator<Int, Int>,
 ) : FunSpec({
 
     test("Netx의 Orcehstrator는 부하가 가중되어도, 결과적 일관성을 보장한다.") {
@@ -57,4 +57,3 @@ class NetxOrchestratorLoadTest(
         private const val THREE_MINUTES_MILLIS = 1000 * 60 * 3L
     }
 }
-

@@ -1,19 +1,18 @@
 package org.rooftop.netx.engine
 
-import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
-import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.api.ResultTimeoutException
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
 
 @EnableDistributedTransaction
 @ContextConfiguration(
@@ -23,86 +22,84 @@ import java.time.Instant
     ]
 )
 @DisplayName("Orchestrator 클래스의")
-@TestPropertySource("classpath:fast-recover-mode.properties")
+@TestPropertySource("classpath:application.properties")
 class OrchestratorTest(
-    private val numberOrchestrator: Orchestrator<Int>,
-    private val homeOrchestrator: Orchestrator<Home>,
-    @Qualifier("rollbackOrchestrator") private val rollbackOrchestrator: Orchestrator<String>,
-    @Qualifier("noRollbackForOrchestrator") private val noRollbackForOrchestrator: Orchestrator<String>,
-    @Qualifier("timeOutOrchestrator") private val timeOutOrchestrator: Orchestrator<String>,
-    private val instantOrchestrator: Orchestrator<InstantWrapper>,
+    private val numberOrchestrator: Orchestrator<Int, Int>,
+    private val homeOrchestrator: Orchestrator<Home, Home>,
+    private val instantOrchestrator: Orchestrator<InstantWrapper, InstantWrapper>,
+    private val manyTypeOrchestrator: Orchestrator<Int, Home>,
+    private val rollbackOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
         context("transaction 메소드가 호출되면,") {
             it("처음 입력받은 숫자에 orchestrate만큼의 수를 더한다.") {
-                val number = numberOrchestrator.transactionSync(3).decodeResult(Int::class)
+                val result = numberOrchestrator.transactionSync(3)
 
-                number shouldBeEqual 7
+                result.isSuccess shouldBeEqual true
+                result.decodeResult(Int::class) shouldBeEqual 7
             }
         }
     }
 
     describe("homeOrchestrator 구현채는") {
-        context("아무도 없는 Home을 입력받으면,") {
-            val address = "Gangnam, Seoul, South Korea"
-            val expected = Home(
-                address, mutableListOf(
-                    Person("Grand mother"),
-                    Person("Father"),
-                    Person("Mother"),
-                    Person("Son"),
-                )
-            )
+        val expected = Home(
+            "Korea, Seoul, Gangnam",
+            mutableListOf(Person("Mother"), Person("Father"), Person("Son"))
+        )
 
-            it("Home에 [Grand mother, Father, Mother, Son] 을 추가한다.") {
-                val home = homeOrchestrator.transactionSync(Home(address, mutableListOf()))
-                    .decodeResult(Home::class)
+        context("transaction 메소드가 호출되면,") {
+            it("처음 입력 받은 Home에 Mother, Father, Son을 추가한다.") {
+                val result =
+                    homeOrchestrator.transaction(Home("Korea, Seoul, Gangnam", mutableListOf()))
+                        .block()
 
-                home shouldBeEqualToComparingFields expected
-            }
-        }
-    }
-
-    describe("rollbackOrchestrator 구현채는") {
-        context("요청이 실패할경우,") {
-            it("isSuccess로 false와 Rollback 메시지를 반환한다.") {
-                val result = rollbackOrchestrator.transactionSync("order")
-
-                result.isSuccess shouldBe false
-                result.decodeResult(String::class) shouldBe "Rollback"
-            }
-        }
-    }
-
-    describe("noRollbackForOrchestrator 구현채는") {
-        context("noRollbackFor에 해당하는 예외가 던져지면,") {
-            it("retry를 진행하고, rollback을 하지않는다.") {
-                val result = noRollbackForOrchestrator.transactionSync("Start transaction")
-
-                result.isSuccess shouldBe true
-                result.decodeResult(NullPointerException::class).message!! shouldBeEqual "Success no rollback for"
-            }
-        }
-    }
-
-    describe("timeOutOrchestrator 구현채는") {
-        context("1초안에 연산이 끝나지 않으면,") {
-            it("ResultTimeoutException 을 던진다.") {
-                shouldThrow<ResultTimeoutException> {
-                    timeOutOrchestrator.transactionSync(1000, "Do Timeout")
-                }
+                result!!.isSuccess shouldBeEqual true
+                result.decodeResult(Home::class) shouldBeEqualToComparingFields expected
             }
         }
     }
 
     describe("instantOrchestrator 구현채는") {
-        context("InstantWrapper를 입력받아서,") {
-            val request = InstantWrapper(Instant.now())
-            it("같은 InstantWrapper를 반환한다.") {
-                val result = instantOrchestrator.transactionSync(request)
+        val expected = InstantWrapper(Instant.now())
 
-                result.decodeResult(InstantWrapper::class) shouldBeEqualToComparingFields request
+        context("transaction 메소드가 호출되면,") {
+            it("처음 입력받은 instantWrapper를 그대로 반환한다.") {
+                val result = instantOrchestrator.transactionSync(expected)
+
+                result.isSuccess shouldBeEqual true
+                result.decodeResult(InstantWrapper::class) shouldBeEqualToComparingFields expected
+            }
+        }
+    }
+
+    describe("manyTypeOrchestrator 구현채는") {
+        val expected = Home("HOME", mutableListOf())
+
+        context("transaction메소드가 호출되면,") {
+            it("처음 Home을 반환한다.") {
+                val result = manyTypeOrchestrator.transactionSync(1)
+
+                result.isSuccess shouldBeEqual true
+                result.decodeResult(Home::class) shouldBeEqualToComparingFields expected
+            }
+        }
+    }
+
+    describe("rollbackOrchestrator 구현채는") {
+        val expected = listOf("1", "2", "3", "4", "-4", "-3", "-1")
+
+        context("transaction 메소드가 호출되면,") {
+            it("실패한 부분부터 위로 거슬러 올라가며 롤백한다") {
+                val result = rollbackOrchestrator.transactionSync("")
+
+                result.isSuccess shouldBeEqual false
+                shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
+                    result.throwError()
+                }
+                eventually(5.seconds) {
+                    rollbackOrchestratorResult shouldBeEqual expected
+                }
             }
         }
     }
@@ -121,4 +118,8 @@ class OrchestratorTest(
     data class InstantWrapper(
         val time: Instant,
     )
+
+    companion object {
+        val rollbackOrchestratorResult = mutableListOf<String>()
+    }
 }

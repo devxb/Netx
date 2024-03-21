@@ -89,6 +89,12 @@ abstract class AbstractTransactionDispatcher(
             )
 
             TransactionState.ROLLBACK -> findOwnUndo(transaction)
+                .onErrorResume {
+                    if (it is TransactionException) {
+                        return@onErrorResume Mono.empty()
+                    }
+                    throw it
+                }
                 .warningOnError("Error occurred when findOwnUndo transaction ${transaction.id}")
                 .map {
                     TransactionRollbackEvent(
@@ -96,10 +102,8 @@ abstract class AbstractTransactionDispatcher(
                         nodeName = transaction.serverId,
                         group = transaction.group,
                         event = extractEvent(transaction),
-                        cause = when (transaction.event != null) {
-                            true -> transaction.cause
-                            false -> null
-                        },
+                        cause = transaction.cause
+                            ?: throw NullPointerException("Null value on TransactionRollbackEvent's cause field"),
                         undo = it,
                         codec = codec,
                     )
@@ -116,12 +120,10 @@ abstract class AbstractTransactionDispatcher(
 
     protected abstract fun findOwnUndo(transaction: Transaction): Mono<String>
 
-    internal fun addHandlers(handlers: List<Any>) {
-        initMonoFunctions(handlers)
-        initNotPublisherFunctions(handlers)
-        handlers.forEach { handler ->
-            info("Add functions : \"${handler}\"")
-        }
+    internal fun addHandler(handler: Any) {
+        initMonoFunctions(listOf(handler))
+        initNotPublisherFunctions(listOf(handler))
+        info("Add functions : \"${handler}\"")
     }
 
     @PostConstruct
