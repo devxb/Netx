@@ -23,6 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     RedisContainer.class,
     NetxJavaSupportsTest.class,
     TransactionEventListeners.class,
+    OrchestratorConfigurer.class,
 })
 @DisplayName("NetxJavaSupportsTest")
 @TestPropertySource("classpath:fast-recover-mode.properties")
@@ -38,6 +39,9 @@ class NetxJavaSupportsTest {
 
     @Autowired
     private TransactionEventListeners transactionEventListeners;
+
+    @Autowired
+    private Orchestrator<Integer, Integer> orchestrator;
 
     @BeforeEach
     void clear() {
@@ -72,5 +76,14 @@ class NetxJavaSupportsTest {
                 transactionEventListeners.assertTransactionCount(TransactionState.JOIN, 1);
                 transactionEventListeners.assertTransactionCount(TransactionState.ROLLBACK, 1);
             });
+    }
+
+    @Test
+    @DisplayName("Scenario-3. Orchestrator add 3 number")
+    void Orchestrator_Add_Three_Number() {
+        var result = orchestrator.transactionSync(0);
+
+        Assertions.assertThat(result.isSuccess()).isTrue();
+        Assertions.assertThat(result.decodeResult(Integer.class)).isEqualTo(3);
     }
 }
