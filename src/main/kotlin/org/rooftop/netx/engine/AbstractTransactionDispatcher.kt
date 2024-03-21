@@ -91,20 +91,16 @@ abstract class AbstractTransactionDispatcher(
             TransactionState.ROLLBACK -> findOwnUndo(transaction)
                 .warningOnError("Error occurred when findOwnUndo transaction ${transaction.id}")
                 .map {
-                    when (transaction.event != null) {
-                        true -> transaction.cause
-                        false -> null
-                    }?.let { it1 ->
-                        TransactionRollbackEvent(
-                            transactionId = transaction.id,
-                            nodeName = transaction.serverId,
-                            group = transaction.group,
-                            event = extractEvent(transaction),
-                            cause = it1,
-                            undo = it,
-                            codec = codec,
-                        )
-                    }
+                    TransactionRollbackEvent(
+                        transactionId = transaction.id,
+                        nodeName = transaction.serverId,
+                        group = transaction.group,
+                        event = extractEvent(transaction),
+                        cause = transaction.cause
+                            ?: throw NullPointerException("Null value on TransactionRollbackEvent's cause field"),
+                        undo = it,
+                        codec = codec,
+                    )
                 }
         }
     }
