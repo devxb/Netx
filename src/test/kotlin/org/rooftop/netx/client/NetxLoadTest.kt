@@ -37,14 +37,14 @@ internal class NetxLoadTest(
             transactionReceiveStorage.clear()
 
             loadRunner.load(commitLoadCount) {
-                val transactionId = netxClient.startTransaction("")
-                netxClient.joinTransaction(transactionId, "")
+                val transactionId = netxClient.startTransaction("-")
+                netxClient.joinTransaction(transactionId, "-")
                 netxClient.commitTransaction(transactionId)
             }
 
             loadRunner.load(rollbackLoadCount) {
-                val transactionId = netxClient.startTransaction("")
-                netxClient.joinTransaction(transactionId, "")
+                val transactionId = netxClient.startTransaction("-")
+                netxClient.joinTransaction(transactionId, "-")
                 netxClient.rollbackTransaction(transactionId, "")
             }
 

@@ -18,6 +18,10 @@ class Result<T : Any> private constructor(
     fun throwError() = error?.throwError(codec)
         ?: throw ResultException("Cannot throw error cause Result is success state")
 
+    override fun toString(): String {
+        return "Result(isSuccess=$isSuccess, codec=$codec, result=$result, error=$error)"
+    }
+
     private class Error(
         private val error: String,
         private val type: KClass<Throwable>
@@ -25,6 +29,10 @@ class Result<T : Any> private constructor(
 
         fun throwError(codec: Codec) {
             throw codec.decode(error, type)
+        }
+
+        override fun toString(): String {
+            return "Error(error='$error', type=$type)"
         }
     }
 
