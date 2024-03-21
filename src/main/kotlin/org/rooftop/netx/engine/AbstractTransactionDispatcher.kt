@@ -5,7 +5,6 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.core.TransactionState
 import org.rooftop.netx.engine.logging.info
-import org.rooftop.netx.engine.logging.warning
 import org.rooftop.netx.engine.logging.warningOnError
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
