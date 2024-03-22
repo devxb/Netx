@@ -93,6 +93,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
     }
 
     private fun holdFailResult(transactionId: String, throwable: Throwable) {
+        throwable.stackTrace = arrayOf()
         resultHolder.setFailResult(transactionId, throwable)
             .subscribeOn(Schedulers.parallel()).subscribe()
     }
