@@ -34,7 +34,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 class RedisTransactionConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
-    @Value("\${netx.password}") private val password: String?,
+    @Value("\${netx.password:0000}") private val password: String,
     @Value("\${netx.group}") private val nodeGroup: String,
     @Value("\${netx.node-id}") private val nodeId: Int,
     @Value("\${netx.node-name}") private val nodeName: String,
