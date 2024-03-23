@@ -20,6 +20,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
     var isLast: Boolean = true
     var isRollbackable: Boolean = false
     var beforeRollbackOrchestrateSequence: Int = 0
+    var rollbackSequence: Int = orchestrateSequence
 
     private var nextOrchestrateListener: AbstractOrchestrateListener<V, Any>? = null
     private var nextRollbackOrchestrateListener: AbstractOrchestrateListener<V, Any>? = null
@@ -103,10 +104,12 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         throwable: Throwable,
         orchestrateEvent: OrchestrateEvent,
     ) {
+        val rollbackOrchestrateEvent =
+            OrchestrateEvent(orchestrateEvent.orchestratorId, rollbackSequence, "")
         transactionManager.rollback(
             transactionId = transactionId,
             cause = throwable.message ?: throwable.localizedMessage,
-            event = orchestrateEvent
+            event = rollbackOrchestrateEvent
         ).subscribeOn(Schedulers.parallel()).subscribe()
     }
 
