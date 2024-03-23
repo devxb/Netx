@@ -114,7 +114,10 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
     }
 
     override fun toString(): String {
-        return "AbstractOrchestrateListener(orchestratorId='$orchestratorId', orchestrateSequence=$orchestrateSequence, codec=$codec, transactionManager=$transactionManager, requestHolder=$requestHolder, isFirst=$isFirst, isLast=$isLast, isRollbackable=$isRollbackable, beforeRollbackOrchestrateSequence=$beforeRollbackOrchestrateSequence, nextOrchestrateListener=$nextOrchestrateListener, nextRollbackOrchestrateListener=$nextRollbackOrchestrateListener, castableType=$castableType)"
+        return "AbstractOrchestrateListener(orchestrateSequence=$orchestrateSequence, " +
+                "isFirst=$isFirst, isLast=$isLast, isRollbackable=$isRollbackable, " +
+                "beforeRollbackOrchestrateSequence=$beforeRollbackOrchestrateSequence, " +
+                "rollbackSequence=$rollbackSequence)"
     }
 
 
