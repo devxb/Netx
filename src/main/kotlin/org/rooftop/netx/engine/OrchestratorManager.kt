@@ -37,6 +37,7 @@ class OrchestratorManager<T : Any, V : Any> internal constructor(
                 OrchestrateEvent(
                     orchestratorId = orchestratorId,
                     clientEvent = codec.encode(request),
+                    context = codec.encode(mutableMapOf<String, String>())
                 )
             }
             .flatMap { transactionManager.start(UNDO, it) }

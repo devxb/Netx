@@ -1,6 +1,9 @@
 package org.rooftop.netx.engine.listen
 
-import org.rooftop.netx.api.*
+import org.rooftop.netx.api.Codec
+import org.rooftop.netx.api.TransactionCommitEvent
+import org.rooftop.netx.api.TransactionCommitListener
+import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
@@ -12,7 +15,7 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
     transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<T, V>,
+    private val orchestrateCommand: OrchestrateCommand<T, V>,
     private val resultHolder: ResultHolder,
     requestHolder: RequestHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -30,13 +33,18 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
             .map { it.decodeEvent(OrchestrateEvent::class) }
             .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
             .map { event ->
-                codec.decode(event.clientEvent, getCastableType())
+                codec.decode(event.clientEvent, getCastableType()) to event
             }
-            .holdRequestIfRollbackable(transactionCommitEvent)
-            .map { request ->
-                orchestrateFunction.orchestrate(request)
+            .flatMap { (request, event) ->
+                holdRequestIfRollbackable(request, transactionCommitEvent.transactionId)
+                    .map{ it to event }
             }
-            .flatMap { resultHolder.setSuccessResult(transactionCommitEvent.transactionId, it) }
+            .map { (request, event) ->
+                orchestrateCommand.command(request, event.context)
+            }
+            .flatMap { (response, _) ->
+                resultHolder.setSuccessResult(transactionCommitEvent.transactionId, response)
+            }
             .onErrorRollback(
                 transactionCommitEvent.transactionId,
                 transactionCommitEvent.decodeEvent(OrchestrateEvent::class)

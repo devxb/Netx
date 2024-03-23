@@ -65,7 +65,7 @@ internal class OrchestratorFactoryTest(
 }) {
 
     companion object {
-        
+
         private fun OrchestratorFactory.createIntOrchestrator(orchestratorId: String): Orchestrator<Int, Int> {
             return this.create<Int>(orchestratorId)
                 .start({ it + 1 })

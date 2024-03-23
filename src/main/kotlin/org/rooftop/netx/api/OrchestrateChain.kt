@@ -6,35 +6,64 @@ import reactor.core.publisher.Mono
 interface OrchestrateChain<OriginReq : Any, T : Any, V : Any> {
 
     fun <S : Any> join(
-        function: OrchestrateFunction<V, S>,
-        rollback: RollbackFunction<V, *>? = null,
+        orchestrate: Orchestrate<V, S>,
+        rollback: Rollback<V, *>? = null,
     ): DefaultOrchestrateChain<OriginReq, V, S>
 
     fun <S : Any> joinReactive(
-        function: OrchestrateFunction<V, Mono<S>>,
-        rollback: RollbackFunction<V, Mono<*>>? = null,
+        orchestrate: Orchestrate<V, Mono<S>>,
+        rollback: Rollback<V, Mono<*>>? = null,
+    ): DefaultOrchestrateChain<OriginReq, V, S>
+
+    fun <S : Any> joinWithContext(
+        contextOrchestrate: ContextOrchestrate<V, S>,
+        contextRollback: ContextRollback<V, *>? = null,
+    ): DefaultOrchestrateChain<OriginReq, V, S>
+
+    fun <S : Any> joinReactiveWithContext(
+        contextOrchestrate: ContextOrchestrate<V, Mono<S>>,
+        contextRollback: ContextRollback<V, Mono<*>>? = null,
     ): DefaultOrchestrateChain<OriginReq, V, S>
 
     fun <S : Any> commit(
-        function: OrchestrateFunction<V, S>,
-        rollback: RollbackFunction<V, *>? = null,
+        orchestrate: Orchestrate<V, S>,
+        rollback: Rollback<V, *>? = null,
     ): Orchestrator<OriginReq, S>
 
     fun <S : Any> commitReactive(
-        function: OrchestrateFunction<V, Mono<S>>,
-        rollback: RollbackFunction<V, Mono<*>>? = null,
+        orchestrate: Orchestrate<V, Mono<S>>,
+        rollback: Rollback<V, Mono<*>>? = null,
+    ): Orchestrator<OriginReq, S>
+
+    fun <S : Any> commitWithContext(
+        contextOrchestrate: ContextOrchestrate<V, S>,
+        contextRollback: ContextRollback<V, *>? = null,
+    ): Orchestrator<OriginReq, S>
+
+    fun <S : Any> commitReactiveWithContext(
+        contextOrchestrate: ContextOrchestrate<V, Mono<S>>,
+        contextRollback: ContextRollback<V, Mono<*>>? = null,
     ): Orchestrator<OriginReq, S>
 
     interface Pre<T : Any> {
         fun <V : Any> start(
-            function: OrchestrateFunction<T, V>,
-            rollback: RollbackFunction<T, *>? = null,
+            orchestrate: Orchestrate<T, V>,
+            rollback: Rollback<T, *>? = null,
         ): DefaultOrchestrateChain<T, T, V>
 
         fun <V : Any> startReactive(
-            function: OrchestrateFunction<T, Mono<V>>,
-            rollback: RollbackFunction<T, Mono<*>>? = null,
+            orchestrate: Orchestrate<T, Mono<V>>,
+            rollback: Rollback<T, Mono<*>>? = null,
         ): DefaultOrchestrateChain<T, T, V>
 
+        fun <V : Any> startWithContext(
+            contextOrchestrate: ContextOrchestrate<T, V>,
+            contextRollback: ContextRollback<T, *>? = null,
+        ): DefaultOrchestrateChain<T, T, V>
+
+        fun <V : Any> startReactiveWithContext(
+            contextOrchestrate: ContextOrchestrate<T, Mono<V>>,
+            contextRollback: ContextRollback<T, Mono<*>>? = null,
+        ): DefaultOrchestrateChain<T, T, V>
     }
 }

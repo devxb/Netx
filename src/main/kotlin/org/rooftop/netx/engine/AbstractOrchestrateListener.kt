@@ -1,6 +1,7 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.Codec
+import org.rooftop.netx.api.Context
 import org.rooftop.netx.api.TransactionEvent
 import org.rooftop.netx.api.TransactionManager
 import reactor.core.publisher.Mono
@@ -42,30 +43,39 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         castableType = type
     }
 
-    internal fun Mono<V>.setNextCastableType(): Mono<V> {
-        return this.doOnNext {
-            nextOrchestrateListener?.castableType = it::class
-            nextRollbackOrchestrateListener?.castableType = it::class
+    internal fun Mono<Pair<V, Context>>.setNextCastableType(): Mono<Pair<V, Context>> {
+        return this.doOnNext { (request, _) ->
+            nextOrchestrateListener?.castableType = request::class
+            nextRollbackOrchestrateListener?.castableType = request::class
         }
     }
 
-    protected fun Mono<*>.getHeldRequest(transactionEvent: TransactionEvent): Mono<T> {
-        return this.flatMap {
+    protected fun Mono<OrchestrateEvent>.getHeldRequest(transactionEvent: TransactionEvent): Mono<Pair<T, OrchestrateEvent>> {
+        return this.flatMap { event ->
             requestHolder.getRequest(
                 "${transactionEvent.transactionId}:$orchestrateSequence",
                 getCastableType()
-            )
+            ).map { it to event }
         }
     }
 
-    protected fun Mono<T>.holdRequestIfRollbackable(transactionEvent: TransactionEvent): Mono<T> {
-        return this.flatMap { request ->
-            if (!isRollbackable) {
-                Mono.just(request)
-            }
-            requestHolder.setRequest(
-                "${transactionEvent.transactionId}:$orchestrateSequence",
-                request
+    protected fun holdRequestIfRollbackable(request: T, transactionId: String): Mono<T> {
+        if (!isRollbackable) {
+            Mono.just(request)
+        }
+        return requestHolder.setRequest(
+            "$transactionId:$orchestrateSequence",
+            request
+        )
+    }
+
+    protected fun Mono<Pair<V, Context>>.toOrchestrateEvent(): Mono<OrchestrateEvent> {
+        return this.map { (response, context) ->
+            OrchestrateEvent(
+                orchestratorId = orchestratorId,
+                orchestrateSequence = orchestrateSequence + 1,
+                clientEvent = codec.encode(response),
+                context = codec.encode(context.contexts),
             )
         }
     }
@@ -105,7 +115,12 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         orchestrateEvent: OrchestrateEvent,
     ) {
         val rollbackOrchestrateEvent =
-            OrchestrateEvent(orchestrateEvent.orchestratorId, rollbackSequence, "")
+            OrchestrateEvent(
+                orchestrateEvent.orchestratorId,
+                rollbackSequence,
+                "",
+                orchestrateEvent.context,
+            )
         transactionManager.rollback(
             transactionId = transactionId,
             cause = throwable.message ?: throwable.localizedMessage,

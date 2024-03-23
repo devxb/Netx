@@ -12,7 +12,7 @@ internal class JoinOrchestrateListener<T : Any, V : Any>(
     private val transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<T, V>,
+    private val orchestrateCommand: OrchestrateCommand<T, V>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -32,24 +32,21 @@ internal class JoinOrchestrateListener<T : Any, V : Any>(
                         && it.orchestratorId == orchestratorId
             }
             .map { event ->
-                codec.decode(event.clientEvent, getCastableType())
+                codec.decode(event.clientEvent, getCastableType()) to event
             }
-            .holdRequestIfRollbackable(transactionJoinEvent)
-            .map { request ->
-                orchestrateFunction.orchestrate(request)
+            .flatMap { (request, event) ->
+                holdRequestIfRollbackable(request, transactionJoinEvent.transactionId)
+                    .map{ it to event }
+            }
+            .map { (request, event) ->
+                orchestrateCommand.command(request, event.context)
             }
             .setNextCastableType()
             .onErrorRollback(
                 transactionJoinEvent.transactionId,
                 transactionJoinEvent.decodeEvent(OrchestrateEvent::class)
             )
-            .map { response ->
-                OrchestrateEvent(
-                    orchestratorId = orchestratorId,
-                    orchestrateSequence = orchestrateSequence + 1,
-                    clientEvent = codec.encode(response),
-                )
-            }
+            .toOrchestrateEvent()
             .flatMap {
                 if (isLast) {
                     return@flatMap transactionManager.commit(
