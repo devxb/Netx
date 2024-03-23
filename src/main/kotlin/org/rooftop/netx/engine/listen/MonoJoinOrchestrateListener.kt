@@ -12,7 +12,7 @@ internal class MonoJoinOrchestrateListener<T : Any, V : Any>(
     private val transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrate: Orchestrate<T, Mono<V>>,
+    private val monoOrchestrateCommand: MonoOrchestrateCommand<T, V>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -32,24 +32,21 @@ internal class MonoJoinOrchestrateListener<T : Any, V : Any>(
                         && it.orchestratorId == orchestratorId
             }
             .map { event ->
-                codec.decode(event.clientEvent, getCastableType())
+                codec.decode(event.clientEvent, getCastableType()) to event
             }
-            .holdRequestIfRollbackable(transactionJoinEvent)
-            .flatMap { request ->
-                orchestrate.orchestrate(request)
+            .flatMap { (request, event) ->
+                holdRequestIfRollbackable(request, transactionJoinEvent.transactionId)
+                    .map{ it to event }
+            }
+            .flatMap { (request, event) ->
+                monoOrchestrateCommand.command(request, event.context)
             }
             .setNextCastableType()
             .onErrorRollback(
                 transactionJoinEvent.transactionId,
                 transactionJoinEvent.decodeEvent(OrchestrateEvent::class)
             )
-            .map { response ->
-                OrchestrateEvent(
-                    orchestratorId = orchestratorId,
-                    orchestrateSequence = orchestrateSequence + 1,
-                    clientEvent = codec.encode(response),
-                )
-            }
+            .toOrchestrateEvent()
             .flatMap {
                 if (isLast) {
                     return@flatMap transactionManager.commit(

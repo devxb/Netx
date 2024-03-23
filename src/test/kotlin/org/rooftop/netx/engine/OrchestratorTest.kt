@@ -6,6 +6,7 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
+import org.rooftop.netx.api.Orchestrate
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
@@ -31,6 +32,8 @@ class OrchestratorTest(
     private val manyTypeOrchestrator: Orchestrator<Int, Home>,
     @Qualifier("rollbackOrchestrator") private val rollbackOrchestrator: Orchestrator<String, String>,
     @Qualifier("upChainRollbackOrchestrator") private val upChainRollbackOrchestrator: Orchestrator<String, String>,
+    @Qualifier("monoRollbackOrchestrator") private val monoRollbackOrchestrator: Orchestrator<String, String>,
+    @Qualifier("contextOrchestrator") private val contextOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -121,6 +124,43 @@ class OrchestratorTest(
             }
         }
     }
+
+    describe("monoRollbackOrchestrator 구현채는") {
+        context("transaction 메소드가 호출되면,") {
+            val expected = listOf("1", "2", "3", "4", "-3", "-1")
+
+            it("실패한 부분부터 위로 거슬러 올라가며 롤백한다.") {
+                val result = monoRollbackOrchestrator.transactionSync("")
+
+                result.isSuccess shouldBeEqual false
+                shouldThrowWithMessage<IllegalArgumentException>("Rollback for test") {
+                    result.throwError()
+                }
+                eventually(5.seconds) {
+                    monoRollbackResult shouldBeEqual expected
+                }
+            }
+        }
+    }
+
+    describe("contextOrchestrator 구현채는") {
+        context("transaction 메소드가 호출되면,") {
+            val expected = listOf("0", "1", "2", "r3", "r2")
+
+            it("context 에서 아이템을 교환하며 Saga를 진행한다.") {
+                val result = contextOrchestrator.transactionSync("0")
+
+                result.isSuccess shouldBeEqual false
+                shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
+                    result.throwError()
+                }
+                eventually(5.seconds) {
+                    contextResult shouldBeEqual expected
+                }
+            }
+        }
+    }
+
 }) {
     data class Home(
         val address: String,
@@ -140,5 +180,7 @@ class OrchestratorTest(
     companion object {
         val rollbackOrchestratorResult = mutableListOf<String>()
         val upChainResult = mutableListOf<String>()
+        val monoRollbackResult = mutableListOf<String>()
+        val contextResult = mutableListOf<String>()
     }
 }

@@ -6,14 +6,13 @@ import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
 import org.rooftop.netx.engine.ResultHolder
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 
 internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
-    codec: Codec,
+    private val codec: Codec,
     private val orchestratorId: String,
     orchestrateSequence: Int,
     private val transactionManager: TransactionManager,
-    private val rollback: Rollback<T, Mono<*>>,
+    private val monoRollbackCommand: MonoRollbackCommand<T>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -31,31 +30,27 @@ internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
             .map { it.decodeEvent(OrchestrateEvent::class) }
             .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
             .getHeldRequest(transactionRollbackEvent)
-            .flatMap { request ->
-                rollback.rollback(request)
+            .flatMap { (request, event) ->
+                monoRollbackCommand.command(request, event.context)
             }
-            .switchIfEmpty(Mono.just("SUCCESS ROLLBACK"))
-            .map { }
             .cascadeRollback(transactionRollbackEvent)
     }
 
-    private fun Mono<Unit>.cascadeRollback(transactionRollbackEvent: TransactionRollbackEvent): Mono<Unit> {
-        return this.doOnSuccess {
-            val orchestrateEvent = transactionRollbackEvent.decodeEvent(OrchestrateEvent::class)
-            if (!isFirst && orchestrateEvent.orchestratorId == orchestratorId
-                && orchestrateEvent.orchestrateSequence == orchestrateSequence
-            ) {
+    private fun Mono<Pair<Any?, Context>>.cascadeRollback(transactionRollbackEvent: TransactionRollbackEvent): Mono<Unit> {
+        return this.filter { !isFirst }
+            .flatMap { (_, context) ->
+                val orchestrateEvent = transactionRollbackEvent.decodeEvent(OrchestrateEvent::class)
                 val nextOrchestrateEvent = OrchestrateEvent(
                     orchestrateEvent.orchestratorId,
                     beforeRollbackOrchestrateSequence,
-                    orchestrateEvent.clientEvent
+                    orchestrateEvent.clientEvent,
+                    codec.encode(context.contexts),
                 )
                 transactionManager.rollback(
                     transactionRollbackEvent.transactionId,
                     transactionRollbackEvent.cause,
                     nextOrchestrateEvent
-                ).subscribeOn(Schedulers.parallel()).subscribe()
-            }
-        }
+                )
+            }.map { }
     }
 }
