@@ -1,25 +1,25 @@
 package org.rooftop.netx.engine
 
+import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.equals.shouldNotBeEqual
 import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.factory.OrchestratorFactory
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 
 @EnableDistributedTransaction
-@DisplayName("OrchestratorCache 클래스의")
+@DisplayName("OrchestratorFactory 클래스의")
 @ContextConfiguration(classes = [RedisContainer::class])
 @TestPropertySource("classpath:application.properties")
-internal class OrchestratorCacheTest(
+internal class OrchestratorFactoryTest(
     private val orchestratorFactory: OrchestratorFactory,
 ) : DescribeSpec({
 
-    describe("cache 메소드는") {
+    describe("create 메소드는") {
         context("같은 orchestratorId를 가진 Orchestrator 를 생성하려하면,") {
             val expected = orchestratorFactory.createIntOrchestrator("same")
 
@@ -41,6 +41,27 @@ internal class OrchestratorCacheTest(
         }
     }
 
+    describe("get 메소드는") {
+        context("존재하는 orchestratorId를 입력받으면,") {
+            val expected = orchestratorFactory.createIntOrchestrator("exist")
+
+            it("해당하는 Orchestrator를 반환한다.") {
+                val existOrchestrator = orchestratorFactory.get<Int, Int>("exist")
+
+                expected shouldBeEqual existOrchestrator
+            }
+        }
+
+        context("존재하지 않는 orchestratorId를 입력받으면,") {
+            it("IllegalArgumentException을 던진다.") {
+                shouldThrowWithMessage<IllegalArgumentException>("Cannot find orchestrator by orchestratorId \"notExists\"")
+                {
+                    orchestratorFactory.get<Int, Int>("notExists")
+                }
+            }
+        }
+
+    }
 }) {
 
     companion object {
