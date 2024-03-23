@@ -16,10 +16,10 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     private var nextDefaultOrchestrateChain: DefaultOrchestrateChain<OriginReq, V, out Any>? = null
 
     override fun <S : Any> join(
-        function: OrchestrateFunction<V, S>,
-        rollback: RollbackFunction<V, *>?,
+        orchestrate: Orchestrate<V, S>,
+        rollback: Rollback<V, *>?,
     ): DefaultOrchestrateChain<OriginReq, V, S> {
-        val nextJoinOrchestrateListener = getJoinOrchestrateListener(function)
+        val nextJoinOrchestrateListener = getJoinOrchestrateListener(orchestrate)
         val nextRollbackOrchestrateListener = getRollbackOrchestrateListener<V, S>(rollback)
 
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
@@ -35,22 +35,22 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         return nextDefaultOrchestrateChain
     }
 
-    private fun <T : Any, V : Any> getJoinOrchestrateListener(function: OrchestrateFunction<T, V>) =
+    private fun <T : Any, V : Any> getJoinOrchestrateListener(function: Orchestrate<T, V>) =
         JoinOrchestrateListener(
             codec = chainContainer.codec,
             transactionManager = chainContainer.transactionManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = orchestrateSequence + 1,
-            orchestrateFunction = function,
+            orchestrate = function,
             requestHolder = chainContainer.requestHolder,
             resultHolder = chainContainer.resultHolder,
         )
 
     override fun <S : Any> joinReactive(
-        function: OrchestrateFunction<V, Mono<S>>,
-        rollback: RollbackFunction<V, Mono<*>>?,
+        orchestrate: Orchestrate<V, Mono<S>>,
+        rollback: Rollback<V, Mono<*>>?,
     ): DefaultOrchestrateChain<OriginReq, V, S> {
-        val nextJoinOrchestrateListener = getMonoJoinOrchestrateListener(function)
+        val nextJoinOrchestrateListener = getMonoJoinOrchestrateListener(orchestrate)
         val nextRollbackOrchestrateListener = getMonoRollbackOrchestrateListener<V, S>(rollback)
 
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
@@ -66,22 +66,22 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         return nextDefaultOrchestrateChain
     }
 
-    private fun <T : Any, V : Any> getMonoJoinOrchestrateListener(function: OrchestrateFunction<T, Mono<V>>) =
+    private fun <T : Any, V : Any> getMonoJoinOrchestrateListener(function: Orchestrate<T, Mono<V>>) =
         MonoJoinOrchestrateListener(
             codec = chainContainer.codec,
             transactionManager = chainContainer.transactionManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = orchestrateSequence + 1,
-            orchestrateFunction = function,
+            orchestrate = function,
             requestHolder = chainContainer.requestHolder,
             resultHolder = chainContainer.resultHolder,
         )
 
     override fun <S : Any> commit(
-        function: OrchestrateFunction<V, S>,
-        rollback: RollbackFunction<V, *>?,
+        orchestrate: Orchestrate<V, S>,
+        rollback: Rollback<V, *>?,
     ): Orchestrator<OriginReq, S> {
-        val nextCommitOrchestrateListener = getCommitOrchestrateListener(function)
+        val nextCommitOrchestrateListener = getCommitOrchestrateListener(orchestrate)
         val nextRollbackOrchestrateListener = getRollbackOrchestrateListener<V, S>(rollback)
 
         return OrchestratorCache.cache(orchestratorId) {
@@ -107,35 +107,35 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         }
     }
 
-    private fun <T : Any, V : Any> getCommitOrchestrateListener(function: OrchestrateFunction<T, V>) =
+    private fun <T : Any, V : Any> getCommitOrchestrateListener(function: Orchestrate<T, V>) =
         CommitOrchestrateListener(
             codec = chainContainer.codec,
             transactionManager = chainContainer.transactionManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = orchestrateSequence + 1,
-            orchestrateFunction = function,
+            orchestrate = function,
             resultHolder = chainContainer.resultHolder,
             requestHolder = chainContainer.requestHolder,
         )
 
-    private fun <T : Any, V : Any> getRollbackOrchestrateListener(rollback: RollbackFunction<T, *>?) =
+    private fun <T : Any, V : Any> getRollbackOrchestrateListener(rollback: Rollback<T, *>?) =
         rollback?.let {
             RollbackOrchestrateListener<T, V>(
                 codec = chainContainer.codec,
                 transactionManager = chainContainer.transactionManager,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = orchestrateSequence + 1,
-                rollbackFunction = it,
+                rollback = it,
                 requestHolder = chainContainer.requestHolder,
                 resultHolder = chainContainer.resultHolder,
             )
         }
 
     override fun <S : Any> commitReactive(
-        function: OrchestrateFunction<V, Mono<S>>,
-        rollback: RollbackFunction<V, Mono<*>>?,
+        orchestrate: Orchestrate<V, Mono<S>>,
+        rollback: Rollback<V, Mono<*>>?,
     ): Orchestrator<OriginReq, S> {
-        val nextJoinOrchestrateListener = getMonoCommitOrchestrateListener(function)
+        val nextJoinOrchestrateListener = getMonoCommitOrchestrateListener(orchestrate)
         val nextRollbackOrchestrateListener = getMonoRollbackOrchestrateListener<V, S>(rollback)
 
         return OrchestratorCache.cache(orchestratorId) {
@@ -246,25 +246,25 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         }
     }
 
-    private fun <T : Any, V : Any> getMonoCommitOrchestrateListener(function: OrchestrateFunction<T, Mono<V>>) =
+    private fun <T : Any, V : Any> getMonoCommitOrchestrateListener(function: Orchestrate<T, Mono<V>>) =
         MonoCommitOrchestrateListener(
             codec = chainContainer.codec,
             transactionManager = chainContainer.transactionManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = orchestrateSequence + 1,
-            orchestrateFunction = function,
+            orchestrate = function,
             resultHolder = chainContainer.resultHolder,
             requestHolder = chainContainer.requestHolder,
         )
 
-    private fun <T : Any, V : Any> getMonoRollbackOrchestrateListener(rollback: RollbackFunction<T, Mono<*>>?) =
+    private fun <T : Any, V : Any> getMonoRollbackOrchestrateListener(rollback: Rollback<T, Mono<*>>?) =
         rollback?.let {
             MonoRollbackOrchestrateListener<T, V>(
                 codec = chainContainer.codec,
                 transactionManager = chainContainer.transactionManager,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = orchestrateSequence + 1,
-                rollbackFunction = it,
+                rollback = it,
                 requestHolder = chainContainer.requestHolder,
                 resultHolder = chainContainer.resultHolder,
             )
@@ -280,10 +280,10 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     ): OrchestrateChain.Pre<T> {
 
         override fun <V : Any> start(
-            function: OrchestrateFunction<T, V>,
-            rollback: RollbackFunction<T, *>?,
+            orchestrate: Orchestrate<T, V>,
+            rollback: Rollback<T, *>?,
         ): DefaultOrchestrateChain<T, T, V> {
-            val startOrchestrateListener = getStartOrchestrateListener(function)
+            val startOrchestrateListener = getStartOrchestrateListener(orchestrate)
             val rollbackOrchestrateListener = getRollbackOrchestrateListener<V>(rollback)
 
             return DefaultOrchestrateChain(
@@ -295,35 +295,35 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             )
         }
 
-        private fun <V : Any> getStartOrchestrateListener(function: OrchestrateFunction<T, V>) =
+        private fun <V : Any> getStartOrchestrateListener(function: Orchestrate<T, V>) =
             StartOrchestrateListener(
                 codec = codec,
                 transactionManager = transactionManager,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
-                orchestrateFunction = function,
+                orchestrate = function,
                 requestHolder = requestHolder,
                 resultHolder = resultHolder,
             )
 
-        private fun <V : Any> getRollbackOrchestrateListener(rollback: RollbackFunction<T, *>?) =
+        private fun <V : Any> getRollbackOrchestrateListener(rollback: Rollback<T, *>?) =
             rollback?.let {
                 RollbackOrchestrateListener<T, V>(
                     codec = codec,
                     transactionManager = transactionManager,
                     orchestratorId = orchestratorId,
                     orchestrateSequence = 0,
-                    rollbackFunction = it,
+                    rollback = it,
                     requestHolder = requestHolder,
                     resultHolder = resultHolder,
                 )
             }
 
         override fun <V : Any> startReactive(
-            function: OrchestrateFunction<T, Mono<V>>,
-            rollback: RollbackFunction<T, Mono<*>>?,
+            orchestrate: Orchestrate<T, Mono<V>>,
+            rollback: Rollback<T, Mono<*>>?,
         ): DefaultOrchestrateChain<T, T, V> {
-            val startOrchestrateListener = getMonoStartOrchestrateListener(function)
+            val startOrchestrateListener = getMonoStartOrchestrateListener(orchestrate)
             val rollbackOrchestrateListener = getMonoRollbackOrchestrateListener<V>(rollback)
 
             return DefaultOrchestrateChain(
@@ -335,25 +335,25 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             )
         }
 
-        private fun <V : Any> getMonoStartOrchestrateListener(function: OrchestrateFunction<T, Mono<V>>) =
+        private fun <V : Any> getMonoStartOrchestrateListener(function: Orchestrate<T, Mono<V>>) =
             MonoStartOrchestrateListener(
                 codec = codec,
                 transactionManager = transactionManager,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
-                orchestrateFunction = function,
+                orchestrate = function,
                 requestHolder = requestHolder,
                 resultHolder = resultHolder,
             )
 
-        private fun <V : Any> getMonoRollbackOrchestrateListener(rollback: RollbackFunction<T, Mono<*>>?) =
+        private fun <V : Any> getMonoRollbackOrchestrateListener(rollback: Rollback<T, Mono<*>>?) =
             rollback?.let {
                 MonoRollbackOrchestrateListener<T, V>(
                     codec = codec,
                     transactionManager = transactionManager,
                     orchestratorId = orchestratorId,
                     orchestrateSequence = 0,
-                    rollbackFunction = it,
+                    rollback = it,
                     requestHolder = requestHolder,
                     resultHolder = resultHolder,
                 )

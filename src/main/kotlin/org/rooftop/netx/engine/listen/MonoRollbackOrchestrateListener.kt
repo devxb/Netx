@@ -13,7 +13,7 @@ internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
     private val orchestratorId: String,
     orchestrateSequence: Int,
     private val transactionManager: TransactionManager,
-    private val rollbackFunction: RollbackFunction<T, Mono<*>>,
+    private val rollback: Rollback<T, Mono<*>>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -32,7 +32,7 @@ internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
             .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
             .getHeldRequest(transactionRollbackEvent)
             .flatMap { request ->
-                rollbackFunction.rollback(request)
+                rollback.rollback(request)
             }
             .switchIfEmpty(Mono.just("SUCCESS ROLLBACK"))
             .map { }

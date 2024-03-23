@@ -16,13 +16,13 @@ class OrchestratorConfigurer(
     @Bean(name = ["numberOrchestrator"])
     fun numberOrchestrator(): Orchestrator<Int, Int> {
         return orchestratorFactory.create<Int>("numberOrchestrator")
-            .start(function = { it + 1 })
-            .join(function = { it + 1 })
-            .joinReactive(function = { Mono.just(it + 1) })
-            .commit(function = { it + 1 })
+            .start(orchestrate = { it + 1 })
+            .join(orchestrate = { it + 1 })
+            .joinReactive(orchestrate = { Mono.just(it + 1) })
+            .commit(orchestrate = { it + 1 })
     }
 
-    @Bean(name = ["homeOrchestartor"])
+    @Bean(name = ["homeOrchestrator"])
     fun homeOrchestrator(): Orchestrator<OrchestratorTest.Home, OrchestratorTest.Home> {
         return orchestratorFactory.create<OrchestratorTest.Home>("homeOrchestrator")
             .startReactive({ home ->
@@ -64,7 +64,7 @@ class OrchestratorConfigurer(
     fun rollbackOrchestrator(): Orchestrator<String, String> {
         return orchestratorFactory.create<String>("rollbackOrchestrator")
             .start(
-                function = {
+                orchestrate = {
                     rollbackOrchestratorResult.add("1")
                 },
                 rollback = {
@@ -72,18 +72,18 @@ class OrchestratorConfigurer(
                 }
             )
             .join(
-                function = {
+                orchestrate = {
                     rollbackOrchestratorResult.add("2")
                 }
             )
             .join(
-                function = {
+                orchestrate = {
                     rollbackOrchestratorResult.add("3")
                 },
                 rollback = { rollbackOrchestratorResult.add("-3") }
             )
             .commit(
-                function = {
+                orchestrate = {
                     rollbackOrchestratorResult.add("4")
                     throw IllegalArgumentException("Rollback")
                 },

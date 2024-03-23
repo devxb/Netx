@@ -12,7 +12,7 @@ internal class MonoStartOrchestrateListener<T : Any, V : Any>(
     private val transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<T, Mono<V>>,
+    private val orchestrate: Orchestrate<T, Mono<V>>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -33,7 +33,7 @@ internal class MonoStartOrchestrateListener<T : Any, V : Any>(
             }
             .holdRequestIfRollbackable(transactionStartEvent)
             .flatMap { request ->
-                orchestrateFunction.orchestrate(request)
+                orchestrate.orchestrate(request)
             }
             .setNextCastableType()
             .onErrorRollback(

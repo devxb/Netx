@@ -12,7 +12,7 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
     transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<T, V>,
+    private val orchestrate: Orchestrate<T, V>,
     private val resultHolder: ResultHolder,
     requestHolder: RequestHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -34,7 +34,7 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
             }
             .holdRequestIfRollbackable(transactionCommitEvent)
             .map { request ->
-                orchestrateFunction.orchestrate(request)
+                orchestrate.orchestrate(request)
             }
             .flatMap { resultHolder.setSuccessResult(transactionCommitEvent.transactionId, it) }
             .onErrorRollback(

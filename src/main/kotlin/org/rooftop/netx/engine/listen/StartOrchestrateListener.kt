@@ -12,7 +12,7 @@ internal class StartOrchestrateListener<T : Any, V : Any>(
     private val transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<T, V>,
+    private val orchestrate: Orchestrate<T, V>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -33,7 +33,7 @@ internal class StartOrchestrateListener<T : Any, V : Any>(
             }
             .holdRequestIfRollbackable(transactionStartEvent)
             .map { request ->
-                orchestrateFunction.orchestrate(request)
+                orchestrate.orchestrate(request)
             }
             .setNextCastableType()
             .onErrorRollback(

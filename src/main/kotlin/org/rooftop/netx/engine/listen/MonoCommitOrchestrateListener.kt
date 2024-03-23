@@ -12,7 +12,7 @@ internal class MonoCommitOrchestrateListener<T : Any, V : Any> internal construc
     transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val orchestrateFunction: OrchestrateFunction<T, Mono<V>>,
+    private val orchestrate: Orchestrate<T, Mono<V>>,
     requestHolder: RequestHolder,
     private val resultHolder: ResultHolder,
 ) : AbstractOrchestrateListener<T, V>(
@@ -33,7 +33,7 @@ internal class MonoCommitOrchestrateListener<T : Any, V : Any> internal construc
             }
             .holdRequestIfRollbackable(transactionCommitEvent)
             .flatMap { request ->
-                orchestrateFunction.orchestrate(request)
+                orchestrate.orchestrate(request)
             }
             .flatMap { resultHolder.setSuccessResult(transactionCommitEvent.transactionId, it) }
             .onErrorRollback(
