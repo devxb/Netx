@@ -2,6 +2,7 @@ package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.engine.OrchestratorTest.Companion.rollbackOrchestratorResult
+import org.rooftop.netx.engine.OrchestratorTest.Companion.upChainResult
 import org.rooftop.netx.factory.OrchestratorFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -91,5 +92,17 @@ class OrchestratorConfigurer(
                     rollbackOrchestratorResult.add("-4")
                 }
             )
+    }
+
+    @Bean(name = ["upChainRollbackOrchestrator"])
+    fun upChainRollbackOrchestrator(): Orchestrator<String, String> {
+        return orchestratorFactory.create<String>("upChainRollbackOrchestrator")
+            .start({ upChainResult.add("1") }, { upChainResult.add("-1") })
+            .join({ upChainResult.add("2") })
+            .join({ upChainResult.add("3") }, { upChainResult.add("-3") })
+            .commit({
+                upChainResult.add("4")
+                throw IllegalArgumentException("Rollback for test")
+            })
     }
 }

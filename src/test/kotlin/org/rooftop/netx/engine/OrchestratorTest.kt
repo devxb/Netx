@@ -9,6 +9,7 @@ import io.kotest.matchers.equals.shouldBeEqual
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import java.time.Instant
@@ -28,7 +29,8 @@ class OrchestratorTest(
     private val homeOrchestrator: Orchestrator<Home, Home>,
     private val instantOrchestrator: Orchestrator<InstantWrapper, InstantWrapper>,
     private val manyTypeOrchestrator: Orchestrator<Int, Home>,
-    private val rollbackOrchestrator: Orchestrator<String, String>,
+    @Qualifier("rollbackOrchestrator") private val rollbackOrchestrator: Orchestrator<String, String>,
+    @Qualifier("upChainRollbackOrchestrator") private val upChainRollbackOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -103,6 +105,22 @@ class OrchestratorTest(
             }
         }
     }
+
+    describe("upStreamRollbackOrchestrator 구현채는") {
+        val expected = listOf("1", "2", "3", "4", "-3", "-1")
+
+        it("호출할 rollback function이 없으면, 가장 가까운 상단의 rollback을 호출한다.") {
+            val result = upChainRollbackOrchestrator.transactionSync("")
+
+            result.isSuccess shouldBeEqual false
+            shouldThrowWithMessage<IllegalArgumentException>("Rollback for test") {
+                result.throwError()
+            }
+            eventually(5.seconds) {
+                upChainResult shouldBeEqual expected
+            }
+        }
+    }
 }) {
     data class Home(
         val address: String,
@@ -121,5 +139,6 @@ class OrchestratorTest(
 
     companion object {
         val rollbackOrchestratorResult = mutableListOf<String>()
+        val upChainResult = mutableListOf<String>()
     }
 }

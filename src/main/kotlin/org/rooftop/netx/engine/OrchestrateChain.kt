@@ -196,13 +196,18 @@ class OrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
     }
 
     private fun chainOrchestrateListeners(orchestrateListeners: List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
+        var rollbackSequence = 0
         for (listenerWithIdx in orchestrateListeners.withIndex()) {
             val isFirst = listenerWithIdx.index == 0
             val isLast =
                 listenerWithIdx.index == (orchestrateListeners.size - 1 - COMMIT_LISTENER_PREFIX)
 
             val listener = listenerWithIdx.value.first
-            listenerWithIdx.value.second?.let { listener.isRollbackable = true }
+            listenerWithIdx.value.second?.let {
+                listener.isRollbackable = true
+                rollbackSequence = it.orchestrateSequence
+            }
+            listener.rollbackSequence = rollbackSequence
 
             listener.isFirst = isFirst
             listener.isLast = isLast
