@@ -84,25 +84,27 @@ class OrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
         val nextCommitOrchestrateListener = getCommitOrchestrateListener(function)
         val nextRollbackOrchestrateListener = getRollbackOrchestrateListener<V, S>(rollback)
 
-        val nextOrchestrateChain = OrchestrateChain(
-            orchestratorId,
-            orchestrateSequence + 1,
-            chainContainer,
-            nextCommitOrchestrateListener,
-            nextRollbackOrchestrateListener,
-            this,
-        )
-        this.nextOrchestrateChain = nextOrchestrateChain
-        val firstOrchestrateChain = nextOrchestrateChain.initOrchestrateListeners()
+        return OrchestratorCache.cache(orchestratorId) {
+            val nextOrchestrateChain = OrchestrateChain(
+                orchestratorId,
+                orchestrateSequence + 1,
+                chainContainer,
+                nextCommitOrchestrateListener,
+                nextRollbackOrchestrateListener,
+                this,
+            )
+            this.nextOrchestrateChain = nextOrchestrateChain
+            val firstOrchestrateChain = nextOrchestrateChain.initOrchestrateListeners()
 
-        return OrchestratorManager(
-            transactionManager = chainContainer.transactionManager,
-            codec = chainContainer.codec,
-            orchestratorId = orchestratorId,
-            resultHolder = chainContainer.resultHolder,
-            orchestrateListener = firstOrchestrateChain.orchestrateListener,
-            rollbackOrchestrateListener = firstOrchestrateChain.rollbackOrchestrateListener,
-        )
+            return@cache OrchestratorManager<OriginReq, S>(
+                transactionManager = chainContainer.transactionManager,
+                codec = chainContainer.codec,
+                orchestratorId = orchestratorId,
+                resultHolder = chainContainer.resultHolder,
+                orchestrateListener = firstOrchestrateChain.orchestrateListener,
+                rollbackOrchestrateListener = firstOrchestrateChain.rollbackOrchestrateListener,
+            )
+        }
     }
 
     private fun <T : Any, V : Any> getCommitOrchestrateListener(function: OrchestrateFunction<T, V>) =
@@ -136,26 +138,28 @@ class OrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
         val nextJoinOrchestrateListener = getMonoCommitOrchestrateListener(function)
         val nextRollbackOrchestrateListener = getMonoRollbackOrchestrateListener<V, S>(rollback)
 
-        val nextOrchestrateChain = OrchestrateChain(
-            orchestratorId,
-            orchestrateSequence + 1,
-            chainContainer,
-            nextJoinOrchestrateListener,
-            nextRollbackOrchestrateListener,
-            this,
-        )
-        this.nextOrchestrateChain = nextOrchestrateChain
+        return OrchestratorCache.cache(orchestratorId) {
+            val nextOrchestrateChain = OrchestrateChain(
+                orchestratorId,
+                orchestrateSequence + 1,
+                chainContainer,
+                nextJoinOrchestrateListener,
+                nextRollbackOrchestrateListener,
+                this,
+            )
+            this.nextOrchestrateChain = nextOrchestrateChain
 
-        val firstOrchestrateChain = nextOrchestrateChain.initOrchestrateListeners()
+            val firstOrchestrateChain = nextOrchestrateChain.initOrchestrateListeners()
 
-        return OrchestratorManager(
-            transactionManager = chainContainer.transactionManager,
-            codec = chainContainer.codec,
-            orchestratorId = orchestratorId,
-            resultHolder = chainContainer.resultHolder,
-            orchestrateListener = firstOrchestrateChain.orchestrateListener,
-            rollbackOrchestrateListener = firstOrchestrateChain.rollbackOrchestrateListener,
-        )
+            return@cache OrchestratorManager<OriginReq, S>(
+                transactionManager = chainContainer.transactionManager,
+                codec = chainContainer.codec,
+                orchestratorId = orchestratorId,
+                resultHolder = chainContainer.resultHolder,
+                orchestrateListener = firstOrchestrateChain.orchestrateListener,
+                rollbackOrchestrateListener = firstOrchestrateChain.rollbackOrchestrateListener,
+            )
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
