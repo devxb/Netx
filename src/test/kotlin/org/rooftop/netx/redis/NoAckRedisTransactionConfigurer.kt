@@ -11,7 +11,7 @@ import org.rooftop.netx.engine.ResultHolder
 import org.rooftop.netx.engine.TransactionIdGenerator
 import org.rooftop.netx.engine.core.Transaction
 import org.rooftop.netx.engine.logging.logger
-import org.rooftop.netx.factory.OrchestratorFactory
+import org.rooftop.netx.engine.OrchestratorFactory
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
