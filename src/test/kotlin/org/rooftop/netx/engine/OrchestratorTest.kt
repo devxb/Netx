@@ -6,7 +6,6 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
-import org.rooftop.netx.api.Orchestrate
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.meta.EnableDistributedTransaction
 import org.rooftop.netx.redis.RedisContainer
@@ -34,6 +33,7 @@ class OrchestratorTest(
     @Qualifier("upChainRollbackOrchestrator") private val upChainRollbackOrchestrator: Orchestrator<String, String>,
     @Qualifier("monoRollbackOrchestrator") private val monoRollbackOrchestrator: Orchestrator<String, String>,
     @Qualifier("contextOrchestrator") private val contextOrchestrator: Orchestrator<String, String>,
+    @Qualifier("pairOrchestrator") private val pairOrchestrator: Orchestrator<String, Pair<Foo, Foo>>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -161,6 +161,18 @@ class OrchestratorTest(
         }
     }
 
+    describe("pairOrchestrator 구현채는") {
+        context("transaction 메소드가 호출되면,") {
+            it("입력받은 파라미터를 name 으로 갖는 Foo pair 를 반환한다. ") {
+                val result = pairOrchestrator.transactionSync("james")
+
+                result.isSuccess shouldBeEqual false
+                shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
+                    result.throwError()
+                }
+            }
+        }
+    }
 }) {
     data class Home(
         val address: String,
@@ -176,6 +188,8 @@ class OrchestratorTest(
     data class InstantWrapper(
         val time: Instant,
     )
+
+    data class Foo(val name: String)
 
     companion object {
         val rollbackOrchestratorResult = mutableListOf<String>()

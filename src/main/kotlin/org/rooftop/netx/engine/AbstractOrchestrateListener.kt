@@ -1,9 +1,6 @@
 package org.rooftop.netx.engine
 
-import org.rooftop.netx.api.Codec
-import org.rooftop.netx.api.Context
-import org.rooftop.netx.api.TransactionEvent
-import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.api.*
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import kotlin.reflect.KClass
@@ -15,6 +12,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
     private val transactionManager: TransactionManager,
     private val requestHolder: RequestHolder,
     private val resultHolder: ResultHolder,
+    private val typeReference: TypeReference<T>?,
 ) {
 
     var isFirst: Boolean = true
@@ -50,12 +48,23 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         }
     }
 
+    protected fun Mono<OrchestrateEvent>.mapReifiedRequest(): Mono<Pair<T, OrchestrateEvent>> {
+        return this.map { event ->
+            if (typeReference == null) {
+                return@map codec.decode(event.clientEvent, getCastableType()) to event
+            }
+            codec.decode(event.clientEvent, typeReference) to event
+        }
+    }
+
     protected fun Mono<OrchestrateEvent>.getHeldRequest(transactionEvent: TransactionEvent): Mono<Pair<T, OrchestrateEvent>> {
         return this.flatMap { event ->
-            requestHolder.getRequest(
-                "${transactionEvent.transactionId}:$orchestrateSequence",
-                getCastableType()
-            ).map { it to event }
+            val key = "${transactionEvent.transactionId}:$orchestrateSequence"
+            if (typeReference == null) {
+                return@flatMap requestHolder.getRequest(key, getCastableType())
+                    .map { it to event }
+            }
+            requestHolder.getRequest(key, typeReference).map { it to event }
         }
     }
 

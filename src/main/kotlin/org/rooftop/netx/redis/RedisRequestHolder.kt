@@ -1,5 +1,6 @@
 package org.rooftop.netx.redis
 
+import org.rooftop.netx.api.TypeReference
 import org.rooftop.netx.engine.JsonCodec
 import org.rooftop.netx.engine.RequestHolder
 import org.springframework.data.redis.core.ReactiveRedisTemplate
@@ -15,6 +16,15 @@ internal class RedisRequestHolder(
         return reactiveRedisTemplate.opsForValue()
             .get(key)
             .map { codec.decode(it, type) }
+            .switchIfEmpty(
+                Mono.error { NullPointerException("Cannot find exists request by key \"$key\"") }
+            )
+    }
+
+    override fun <T : Any> getRequest(key: String, typeReference: TypeReference<T>): Mono<T> {
+        return reactiveRedisTemplate.opsForValue()
+            .get(key)
+            .map { codec.decode(it, typeReference) }
             .switchIfEmpty(
                 Mono.error { NullPointerException("Cannot find exists request by key \"$key\"") }
             )

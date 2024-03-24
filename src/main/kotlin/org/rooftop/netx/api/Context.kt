@@ -11,6 +11,11 @@ data class Context internal constructor(
         contexts[key] = codec.encode(value)
     }
 
+    fun <T : Any> decodeContext(key: String, typeReference: TypeReference<T>): T =
+        contexts[key]?.let {
+            codec.decode(it, typeReference)
+        } ?: throw NullPointerException("Cannot find context by key \"$key\"")
+
     fun <T : Any> decodeContext(key: String, type: Class<T>): T = decodeContext(key, type.kotlin)
 
     fun <T : Any> decodeContext(key: String, type: KClass<T>): T = contexts[key]?.let {

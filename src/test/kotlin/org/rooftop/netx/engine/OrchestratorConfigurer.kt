@@ -1,6 +1,9 @@
 package org.rooftop.netx.engine
 
+import org.rooftop.netx.api.Orchestrate
 import org.rooftop.netx.api.Orchestrator
+import org.rooftop.netx.api.Rollback
+import org.rooftop.netx.api.TypeReference
 import org.rooftop.netx.engine.OrchestratorTest.Companion.contextResult
 import org.rooftop.netx.engine.OrchestratorTest.Companion.monoRollbackResult
 import org.rooftop.netx.engine.OrchestratorTest.Companion.rollbackOrchestratorResult
@@ -135,7 +138,7 @@ class OrchestratorConfigurer(
                     context.set("start-1", request)
                     "1"
                 },
-                contextRollback = { context, request ->
+                contextRollback = { context, _ ->
                     val start1 = context.decodeContext("start-1", String::class)
                     val join2 = context.decodeContext("join-2", String::class)
                     val join3 = context.decodeContext("join-3", String::class)
@@ -173,5 +176,77 @@ class OrchestratorConfigurer(
                     context.set("r-commit-4", "r$request")
                 }
             )
+    }
+
+    @Bean(name = ["pairOrchestrator"])
+    fun pairOrchestrator(): Orchestrator<String, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+        return orchestratorFactory.create<String>("pairOrchestrator")
+            .start({ OrchestratorTest.Foo(it) to OrchestratorTest.Foo(it) })
+            .join(PairOrchestrate, PairRollback)
+            .joinReactive(MonoPairOrchestrate, MonoPairRollback)
+            .commit(object :
+                Orchestrate<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+                override fun orchestrate(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Pair<OrchestratorTest.Foo, OrchestratorTest.Foo> {
+                    throw IllegalArgumentException("Rollback")
+                }
+
+                override fun reified(): TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+                    return object :
+                        TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>>() {}
+                }
+            })
+    }
+
+    object PairOrchestrate :
+        Orchestrate<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+        override fun orchestrate(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Pair<OrchestratorTest.Foo, OrchestratorTest.Foo> {
+            return OrchestratorTest.Foo(request.first.name) to OrchestratorTest.Foo(request.first.name)
+        }
+
+        override fun reified(): TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+            return object : TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>>() {}
+        }
+    }
+
+    object PairRollback :
+        Rollback<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+        override fun rollback(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Pair<OrchestratorTest.Foo, OrchestratorTest.Foo> {
+            return OrchestratorTest.Foo(request.first.name) to OrchestratorTest.Foo(request.first.name)
+        }
+
+        override fun reified(): TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+            return object : TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>>() {}
+        }
+    }
+
+    object MonoPairOrchestrate :
+        Orchestrate<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Mono<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>>> {
+
+        override fun orchestrate(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Mono<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+            return Mono.fromCallable {
+                OrchestratorTest.Foo(request.first.name) to OrchestratorTest.Foo(
+                    request.first.name
+                )
+            }
+        }
+
+        override fun reified(): TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+            return object : TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>>() {}
+        }
+    }
+
+    object MonoPairRollback :
+        Rollback<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Mono<*>> {
+        override fun rollback(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Mono<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+            return Mono.fromCallable {
+                OrchestratorTest.Foo(request.first.name) to OrchestratorTest.Foo(
+                    request.first.name
+                )
+            }
+        }
+
+        override fun reified(): TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
+            return object : TypeReference<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>>() {}
+        }
     }
 }
