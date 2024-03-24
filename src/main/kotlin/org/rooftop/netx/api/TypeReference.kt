@@ -3,8 +3,7 @@ package org.rooftop.netx.api
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 
-
-abstract class TypeReference<T : Any>() {
+abstract class TypeReference<T : Any> {
     val type: Type
 
     init {

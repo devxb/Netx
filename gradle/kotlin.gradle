@@ -1,9 +1,11 @@
 compileKotlin {
     kotlinOptions.jvmTarget = "${jvmTarget}"
+    kotlinOptions.freeCompilerArgs = ['-Xjvm-default=all']
 }
 
 compileTestKotlin {
     kotlinOptions.jvmTarget = "${jvmTarget}"
+    kotlinOptions.freeCompilerArgs = ['-Xjvm-default=all']
 }
 
 dependencies {

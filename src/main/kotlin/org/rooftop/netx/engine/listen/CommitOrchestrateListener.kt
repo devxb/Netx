@@ -1,9 +1,6 @@
 package org.rooftop.netx.engine.listen
 
-import org.rooftop.netx.api.Codec
-import org.rooftop.netx.api.TransactionCommitEvent
-import org.rooftop.netx.api.TransactionCommitListener
-import org.rooftop.netx.api.TransactionManager
+import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
@@ -18,6 +15,7 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
     private val orchestrateCommand: OrchestrateCommand<T, V>,
     private val resultHolder: ResultHolder,
     requestHolder: RequestHolder,
+    typeReference: TypeReference<T>?,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
@@ -25,6 +23,7 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
     transactionManager,
     requestHolder,
     resultHolder,
+    typeReference,
 ) {
 
     @TransactionCommitListener(OrchestrateEvent::class)
@@ -32,9 +31,7 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
         return Mono.just(transactionCommitEvent)
             .map { it.decodeEvent(OrchestrateEvent::class) }
             .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
-            .map { event ->
-                codec.decode(event.clientEvent, getCastableType()) to event
-            }
+            .mapReifiedRequest()
             .flatMap { (request, event) ->
                 holdRequestIfRollbackable(request, transactionCommitEvent.transactionId)
                     .map{ it to event }

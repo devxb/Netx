@@ -15,6 +15,7 @@ internal class RollbackOrchestrateListener<T : Any, V : Any>(
     private val rollbackCommand: RollbackCommand<T>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
+    typeReference: TypeReference<T>?,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
@@ -22,6 +23,7 @@ internal class RollbackOrchestrateListener<T : Any, V : Any>(
     transactionManager,
     requestHolder,
     resultHolder,
+    typeReference,
 ) {
 
     @TransactionRollbackListener(OrchestrateEvent::class)

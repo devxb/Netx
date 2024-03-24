@@ -8,13 +8,14 @@ import org.rooftop.netx.engine.ResultHolder
 import reactor.core.publisher.Mono
 
 internal class MonoJoinOrchestrateListener<T : Any, V : Any>(
-    private val codec: Codec,
+    codec: Codec,
     private val transactionManager: TransactionManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
     private val monoOrchestrateCommand: MonoOrchestrateCommand<T, V>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
+    typeReference: TypeReference<T>?,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
@@ -22,21 +23,19 @@ internal class MonoJoinOrchestrateListener<T : Any, V : Any>(
     transactionManager,
     requestHolder,
     resultHolder,
+    typeReference,
 ) {
 
     @TransactionJoinListener(OrchestrateEvent::class)
     fun listenJoinOrchestrateEvent(transactionJoinEvent: TransactionJoinEvent): Mono<Unit> {
         return transactionJoinEvent.toOrchestrateEvent()
             .filter {
-                it.orchestrateSequence == orchestrateSequence
-                        && it.orchestratorId == orchestratorId
+                it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId
             }
-            .map { event ->
-                codec.decode(event.clientEvent, getCastableType()) to event
-            }
+            .mapReifiedRequest()
             .flatMap { (request, event) ->
                 holdRequestIfRollbackable(request, transactionJoinEvent.transactionId)
-                    .map{ it to event }
+                    .map { it to event }
             }
             .flatMap { (request, event) ->
                 monoOrchestrateCommand.command(request, event.context)
