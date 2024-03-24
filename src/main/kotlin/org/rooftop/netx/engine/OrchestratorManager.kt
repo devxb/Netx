@@ -23,11 +23,37 @@ class OrchestratorManager<T : Any, V : Any> internal constructor(
             ?: throw TransactionException("Cannot start transaction \"$request\"")
     }
 
+    override fun transactionSync(request: T, context: MutableMap<String, Any>): Result<V> {
+        return transaction(request, context).block()
+            ?: throw TransactionException("Cannot start transaction \"$request\"")
+    }
+
+    override fun transactionSync(
+        timeoutMillis: Long,
+        request: T,
+        context: MutableMap<String, Any>
+    ): Result<V> {
+        return transaction(timeoutMillis, request, context).block()
+            ?: throw TransactionException("Cannot start transaction \"$request\"")
+    }
+
     override fun transaction(request: T): Mono<Result<V>> {
-        return transaction(TEN_SECONDS_TO_TIME_OUT, request)
+        return transaction(TEN_SECONDS_TO_TIME_OUT, request, mutableMapOf())
     }
 
     override fun transaction(timeoutMillis: Long, request: T): Mono<Result<V>> {
+        return transaction(timeoutMillis, request, mutableMapOf())
+    }
+
+    override fun transaction(request: T, context: MutableMap<String, Any>): Mono<Result<V>> {
+        return transaction(TEN_SECONDS_TO_TIME_OUT, request, context)
+    }
+
+    override fun transaction(
+        timeoutMillis: Long,
+        request: T,
+        context: MutableMap<String, Any>
+    ): Mono<Result<V>> {
         return Mono.just(request)
             .doOnNext { _ ->
                 orchestrateListener.setCastableType(request::class)
@@ -37,7 +63,7 @@ class OrchestratorManager<T : Any, V : Any> internal constructor(
                 OrchestrateEvent(
                     orchestratorId = orchestratorId,
                     clientEvent = codec.encode(request),
-                    context = codec.encode(mutableMapOf<String, String>())
+                    context = codec.encode(context.mapValues { codec.encode(it.value) })
                 )
             }
             .flatMap { transactionManager.start(UNDO, it) }

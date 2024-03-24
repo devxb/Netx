@@ -197,6 +197,17 @@ class OrchestratorConfigurer(
             })
     }
 
+    @Bean(name = ["startWithContextOrchestrator"])
+    fun startWithContextOrchestrator(): Orchestrator<String, String> {
+        return orchestratorFactory.create<String>("startWithContextOrchestrator")
+            .startWithContext({ context, _ ->
+                context.decodeContext("key", String::class)
+            })
+            .commitWithContext({ context, _ ->
+                context.decodeContext("key", String::class)
+            })
+    }
+
     object PairOrchestrate :
         Orchestrate<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
         override fun orchestrate(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Pair<OrchestratorTest.Foo, OrchestratorTest.Foo> {

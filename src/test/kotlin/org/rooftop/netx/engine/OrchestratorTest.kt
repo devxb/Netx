@@ -34,6 +34,7 @@ class OrchestratorTest(
     @Qualifier("monoRollbackOrchestrator") private val monoRollbackOrchestrator: Orchestrator<String, String>,
     @Qualifier("contextOrchestrator") private val contextOrchestrator: Orchestrator<String, String>,
     @Qualifier("pairOrchestrator") private val pairOrchestrator: Orchestrator<String, Pair<Foo, Foo>>,
+    @Qualifier("startWithContextOrchestrator") private val startWithContextOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -170,6 +171,19 @@ class OrchestratorTest(
                 shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
                     result.throwError()
                 }
+            }
+        }
+    }
+
+    describe("startWithContextOrchestrator 구현채는") {
+        context("context와 함께 transaction 메소드가 호출되면,") {
+            it("key에 해당하는 context를 반환한다.") {
+                val result = startWithContextOrchestrator.transactionSync(
+                    "ignored request",
+                    mutableMapOf("key" to "hello")
+                )
+
+                result.decodeResultOrThrow(String::class) shouldBeEqual "hello"
             }
         }
     }
