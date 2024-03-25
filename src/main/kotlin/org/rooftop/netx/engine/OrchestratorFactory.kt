@@ -11,8 +11,10 @@ class OrchestratorFactory internal constructor(
     private val requestHolder: RequestHolder,
 ) : OrchestratorFactory {
 
+    private val orchestratorCache: OrchestratorCache = OrchestratorCache()
+
     override fun <T : Any, V : Any> get(orchestratorId: String): Orchestrator<T, V> =
-        OrchestratorCache.get(orchestratorId)
+        orchestratorCache.get(orchestratorId)
 
     override fun <T : Any> create(orchestratorId: String): OrchestrateChain.Pre<T> {
         return DefaultOrchestrateChain.Pre(
@@ -22,6 +24,7 @@ class OrchestratorFactory internal constructor(
             codec = codec,
             resultHolder = resultHolder,
             requestHolder = requestHolder,
+            orchestratorCache = orchestratorCache,
         )
     }
 }
