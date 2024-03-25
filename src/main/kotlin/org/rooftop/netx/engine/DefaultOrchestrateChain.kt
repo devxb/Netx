@@ -201,7 +201,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         nextCommitOrchestrateListener: CommitOrchestrateListener<V, S>,
         nextRollbackOrchestrateListener: RollbackOrchestrateListener<V, S>?
     ): Orchestrator<OriginReq, S> {
-        return OrchestratorCache.cache(orchestratorId) {
+        return chainContainer.orchestratorCache.cache(orchestratorId) {
             val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
                 orchestratorId,
                 orchestrateSequence + 1,
@@ -252,7 +252,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         nextJoinOrchestrateListener: MonoCommitOrchestrateListener<V, S>,
         nextRollbackOrchestrateListener: MonoRollbackOrchestrateListener<V, S>?
     ): Orchestrator<OriginReq, S> {
-        return OrchestratorCache.cache(orchestratorId) {
+        return chainContainer.orchestratorCache.cache(orchestratorId) {
             val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
                 orchestratorId,
                 orchestrateSequence + 1,
@@ -407,6 +407,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         private val codec: Codec,
         private val resultHolder: ResultHolder,
         private val requestHolder: RequestHolder,
+        private val orchestratorCache: OrchestratorCache,
     ) : OrchestrateChain.Pre<T> {
 
         override fun <V : Any> start(
@@ -563,6 +564,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             codec,
             resultHolder,
             requestHolder,
+            orchestratorCache,
         )
     }
 
@@ -576,5 +578,6 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         val codec: Codec,
         val resultHolder: ResultHolder,
         val requestHolder: RequestHolder,
+        val orchestratorCache: OrchestratorCache,
     )
 }
