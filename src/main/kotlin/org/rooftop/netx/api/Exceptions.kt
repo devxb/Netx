@@ -1,7 +1,5 @@
 package org.rooftop.netx.api
 
-import org.rooftop.netx.engine.core.TransactionState
-
 class EncodeException(message: String, throwable: Throwable) : RuntimeException(message, throwable)
 
 class DecodeException(message: String, throwable: Throwable) : RuntimeException(message, throwable)

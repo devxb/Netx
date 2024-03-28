@@ -2,7 +2,6 @@ package org.rooftop.netx.redis
 
 import org.rooftop.netx.api.Codec
 import org.rooftop.netx.api.FailedAckTransactionException
-import org.rooftop.netx.api.TransactionException
 import org.rooftop.netx.api.TransactionManager
 import org.rooftop.netx.engine.AbstractTransactionDispatcher
 import org.rooftop.netx.engine.core.Transaction

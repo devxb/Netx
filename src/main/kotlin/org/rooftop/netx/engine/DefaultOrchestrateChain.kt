@@ -312,7 +312,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         return orchestrateListeners
     }
 
-    private fun MutableList<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>.toAnnotatedListeners()
+    private fun List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>.toAnnotatedListeners()
             : MutableList<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>> {
         return this.withIndex().map {
             val isFirst = it.index == 0
