@@ -8,7 +8,7 @@ class DecodeException(message: String, throwable: Throwable) : RuntimeException(
 
 open class TransactionException(message: String) : RuntimeException(message)
 
-class AlreadyCommittedTransactionException(transactionId: String, state: TransactionState) :
+class AlreadyCommittedTransactionException(transactionId: String, state: String) :
     TransactionException("Cannot join transaction cause, transaction \"$transactionId\" already \"$state\"")
 
 class NotFoundDispatchFunctionException(message: String) : RuntimeException(message)
