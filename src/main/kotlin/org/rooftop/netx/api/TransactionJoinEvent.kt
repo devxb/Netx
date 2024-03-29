@@ -8,6 +8,6 @@ class TransactionJoinEvent internal constructor(
     codec: Codec,
 ) : TransactionEvent(transactionId, nodeName, group, event, codec) {
 
-    override fun copy(): TransactionEvent =
+    override fun copy(): TransactionJoinEvent =
         TransactionJoinEvent(transactionId, nodeName, group, event, codec)
 }

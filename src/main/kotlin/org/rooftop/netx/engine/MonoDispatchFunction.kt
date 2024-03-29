@@ -36,7 +36,11 @@ internal class MonoDispatchFunction(
             .flatMap { function.call(handler, transactionEvent) }
             .info("Call Mono TransactionHandler \"${name()}\" with transactionId \"${transactionEvent.transactionId}\"")
             .switchIfEmpty(`continue`)
-            .doOnNext { publishNextTransaction(transactionEvent) }
+            .doOnNext {
+                if (isProcessable(transactionEvent)) {
+                    publishNextTransaction(transactionEvent)
+                }
+            }
             .onErrorResume {
                 if (isNoRollbackFor(it)) {
                     return@onErrorResume noRollbackFor
