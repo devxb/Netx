@@ -246,12 +246,12 @@ class TransactionHandler {
         event.setNextEvent(nextFoo) // When this handler terminates and calls the next event or rollback, the event set here is published together.
     }
 
-    @TransactionJoinHandler(successWith = SuccessWith.PUBLISH_COMMIT) // Receive all transaction event when no type is defined. And, when terminated this function, publish commit state
+    @TransactionJoinListener(successWith = SuccessWith.PUBLISH_COMMIT) // Receive all transaction event when no type is defined. And, when terminated this function, publish commit state
     fun handleTransactionJoinEvent(event: TransactionJoinEvent) {
         // ...
     }
 
-    @TransactionCommitHandler(
+    @TransactionCommitListener(
         event = Foo::class,
         noRollbackFor = [IllegalArgumentException::class] // Dont rollback when throw IllegalArgumentException. *Rollback if throw Throwable or IllegalArgumentException's super type* 
     )
@@ -260,7 +260,7 @@ class TransactionHandler {
         // ...
     }
 
-    @TransactionRollbackHandler(Foo::class)
+    @TransactionRollbackListener(Foo::class)
     fun handleTransactionRollbackEvent(event: TransactionRollbackEvent) { // In Mvc framework, publisher must not returned.
         val undo: Foo = event.decodeUndo(Foo::class) // Get event field to Foo.class
     }
