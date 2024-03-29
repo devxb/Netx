@@ -28,13 +28,12 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
 
     @TransactionCommitListener(OrchestrateEvent::class)
     fun listenCommitOrchestrateEvent(transactionCommitEvent: TransactionCommitEvent): Mono<V> {
-        return Mono.just(transactionCommitEvent)
-            .map { it.decodeEvent(OrchestrateEvent::class) }
+        return transactionCommitEvent.startWithOrchestrateEvent()
             .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
             .mapReifiedRequest()
             .flatMap { (request, event) ->
                 holdRequestIfRollbackable(request, transactionCommitEvent.transactionId)
-                    .map{ it to event }
+                    .map { it to event }
             }
             .map { (request, event) ->
                 orchestrateCommand.command(request, event.context)

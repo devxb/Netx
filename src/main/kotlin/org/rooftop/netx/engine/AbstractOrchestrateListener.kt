@@ -41,11 +41,40 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         castableType = type
     }
 
-    internal fun Mono<Pair<V, Context>>.setNextCastableType(): Mono<Pair<V, Context>> {
+    private fun Mono<Pair<V, Context>>.setNextCastableType(): Mono<Pair<V, Context>> {
         return this.doOnNext { (request, _) ->
             nextOrchestrateListener?.castableType = request::class
             nextRollbackOrchestrateListener?.castableType = request::class
         }
+    }
+
+    protected fun orchestrate(transactionEvent: TransactionEvent): Mono<OrchestrateEvent> {
+        return transactionEvent.startWithOrchestrateEvent()
+            .filter {
+                it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId
+            }
+            .mapReifiedRequest()
+            .flatMap { (request, event) ->
+                holdRequestIfRollbackable(request, transactionEvent.transactionId)
+                    .map { it to event }
+            }
+            .flatMap { (request, event) -> command(request, event) }
+            .setNextCastableType()
+            .doOnError {
+                rollback(
+                    transactionEvent.transactionId,
+                    it,
+                    transactionEvent.decodeEvent(OrchestrateEvent::class)
+                )
+            }
+            .toOrchestrateEvent()
+            .map {
+                transactionEvent.setNextEvent(it)
+            }
+    }
+
+    protected open fun command(request: T, event: OrchestrateEvent): Mono<Pair<V, Context>> {
+        throw UnsupportedOperationException("Cannot invoke command please do concrete class from \"with\" method")
     }
 
     protected fun Mono<OrchestrateEvent>.mapReifiedRequest(): Mono<Pair<T, OrchestrateEvent>> {
@@ -78,7 +107,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         )
     }
 
-    protected fun Mono<Pair<V, Context>>.toOrchestrateEvent(): Mono<OrchestrateEvent> {
+    private fun Mono<Pair<V, Context>>.toOrchestrateEvent(): Mono<OrchestrateEvent> {
         return this.map { (response, context) ->
             OrchestrateEvent(
                 orchestratorId = orchestratorId,

@@ -27,8 +27,7 @@ internal class MonoCommitOrchestrateListener<T : Any, V : Any> internal construc
 ) {
     @TransactionCommitListener(OrchestrateEvent::class)
     fun listenCommitOrchestrateEvent(transactionCommitEvent: TransactionCommitEvent): Mono<V> {
-        return Mono.just(transactionCommitEvent)
-            .map { it.decodeEvent(OrchestrateEvent::class) }
+        return transactionCommitEvent.startWithOrchestrateEvent()
             .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
             .mapReifiedRequest()
             .flatMap { (request, event) ->

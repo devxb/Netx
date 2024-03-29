@@ -49,26 +49,11 @@ internal class MonoStartOrchestrateListener<T : Any, V : Any>(
                 successWith = SuccessWith.PUBLISH_JOIN
             )
             fun handleTransactionStartEvent(transactionStartEvent: TransactionStartEvent): Mono<OrchestrateEvent> {
-                return transactionStartEvent.startWithOrchestrateEvent()
-                    .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
-                    .mapReifiedRequest()
-                    .flatMap { (request, event) ->
-                        holdRequestIfRollbackable(request, transactionStartEvent.transactionId)
-                            .map { it to event }
-                    }
-                    .flatMap { (request, event) ->
-                        monoOrchestrateCommand.command(request, event.context)
-                    }
-                    .setNextCastableType()
-                    .doOnError {
-                        rollback(
-                            transactionStartEvent.transactionId,
-                            it,
-                            transactionStartEvent.decodeEvent(OrchestrateEvent::class)
-                        )
-                    }
-                    .toOrchestrateEvent()
-                    .map { transactionStartEvent.setNextEvent(it) }
+                return orchestrate(transactionStartEvent)
+            }
+
+            override fun command(request: T, event: OrchestrateEvent): Mono<Pair<V, Context>> {
+                return monoOrchestrateCommand.command(request, event.context)
             }
         }
     }
@@ -88,26 +73,11 @@ internal class MonoStartOrchestrateListener<T : Any, V : Any>(
                 successWith = SuccessWith.PUBLISH_COMMIT
             )
             fun handleTransactionStartEvent(transactionStartEvent: TransactionStartEvent): Mono<OrchestrateEvent> {
-                return transactionStartEvent.startWithOrchestrateEvent()
-                    .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
-                    .mapReifiedRequest()
-                    .flatMap { (request, event) ->
-                        holdRequestIfRollbackable(request, transactionStartEvent.transactionId)
-                            .map { it to event }
-                    }
-                    .flatMap { (request, event) ->
-                        monoOrchestrateCommand.command(request, event.context)
-                    }
-                    .setNextCastableType()
-                    .doOnError {
-                        rollback(
-                            transactionStartEvent.transactionId,
-                            it,
-                            transactionStartEvent.decodeEvent(OrchestrateEvent::class)
-                        )
-                    }
-                    .toOrchestrateEvent()
-                    .map { transactionStartEvent.setNextEvent(it) }
+                return orchestrate(transactionStartEvent)
+            }
+
+            override fun command(request: T, event: OrchestrateEvent): Mono<Pair<V, Context>> {
+                return monoOrchestrateCommand.command(request, event.context)
             }
         }
     }
