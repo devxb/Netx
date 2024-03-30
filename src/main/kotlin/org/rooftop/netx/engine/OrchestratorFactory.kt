@@ -4,8 +4,8 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.api.OrchestratorFactory
 
 class OrchestratorFactory internal constructor(
-    private val transactionManager: TransactionManager,
-    private val transactionDispatcher: AbstractTransactionDispatcher,
+    private val sagaManager: SagaManager,
+    private val sagaDispatcher: AbstractSagaDispatcher,
     private val codec: Codec,
     private val resultHolder: ResultHolder,
     private val requestHolder: RequestHolder,
@@ -19,8 +19,8 @@ class OrchestratorFactory internal constructor(
     override fun <T : Any> create(orchestratorId: String): OrchestrateChain.Pre<T> {
         return DefaultOrchestrateChain.Pre(
             orchestratorId = orchestratorId,
-            transactionManager = transactionManager,
-            transactionDispatcher = transactionDispatcher,
+            sagaManager = sagaManager,
+            sagaDispatcher = sagaDispatcher,
             codec = codec,
             resultHolder = resultHolder,
             requestHolder = requestHolder,

@@ -1,11 +1,12 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.*
+import org.rooftop.netx.engine.listen.AbstractOrchestrateListener
 import reactor.core.publisher.Mono
 import kotlin.time.Duration.Companion.milliseconds
 
 class OrchestratorManager<T : Any, V : Any> internal constructor(
-    private val transactionManager: TransactionManager,
+    private val sagaManager: SagaManager,
     private val codec: Codec,
     private val orchestratorId: String,
     private val resultHolder: ResultHolder,
@@ -13,43 +14,43 @@ class OrchestratorManager<T : Any, V : Any> internal constructor(
     private val rollbackOrchestrateListener: AbstractOrchestrateListener<T, out Any>?,
 ) : Orchestrator<T, V> {
 
-    override fun transactionSync(request: T): Result<V> {
-        return transaction(request).block()
-            ?: throw TransactionException("Cannot start transaction \"$request\"")
+    override fun sagaSync(request: T): Result<V> {
+        return saga(request).block()
+            ?: throw SagaException("Cannot start saga \"$request\"")
     }
 
-    override fun transactionSync(timeoutMillis: Long, request: T): Result<V> {
-        return transaction(timeoutMillis, request).block()
-            ?: throw TransactionException("Cannot start transaction \"$request\"")
+    override fun sagaSync(timeoutMillis: Long, request: T): Result<V> {
+        return saga(timeoutMillis, request).block()
+            ?: throw SagaException("Cannot start saga \"$request\"")
     }
 
-    override fun transactionSync(request: T, context: MutableMap<String, Any>): Result<V> {
-        return transaction(request, context).block()
-            ?: throw TransactionException("Cannot start transaction \"$request\"")
+    override fun sagaSync(request: T, context: MutableMap<String, Any>): Result<V> {
+        return saga(request, context).block()
+            ?: throw SagaException("Cannot start saga \"$request\"")
     }
 
-    override fun transactionSync(
+    override fun sagaSync(
         timeoutMillis: Long,
         request: T,
         context: MutableMap<String, Any>
     ): Result<V> {
-        return transaction(timeoutMillis, request, context).block()
-            ?: throw TransactionException("Cannot start transaction \"$request\"")
+        return saga(timeoutMillis, request, context).block()
+            ?: throw SagaException("Cannot start saga \"$request\"")
     }
 
-    override fun transaction(request: T): Mono<Result<V>> {
-        return transaction(TEN_SECONDS_TO_TIME_OUT, request, mutableMapOf())
+    override fun saga(request: T): Mono<Result<V>> {
+        return saga(TEN_SECONDS_TO_TIME_OUT, request, mutableMapOf())
     }
 
-    override fun transaction(timeoutMillis: Long, request: T): Mono<Result<V>> {
-        return transaction(timeoutMillis, request, mutableMapOf())
+    override fun saga(timeoutMillis: Long, request: T): Mono<Result<V>> {
+        return saga(timeoutMillis, request, mutableMapOf())
     }
 
-    override fun transaction(request: T, context: MutableMap<String, Any>): Mono<Result<V>> {
-        return transaction(TEN_SECONDS_TO_TIME_OUT, request, context)
+    override fun saga(request: T, context: MutableMap<String, Any>): Mono<Result<V>> {
+        return saga(TEN_SECONDS_TO_TIME_OUT, request, context)
     }
 
-    override fun transaction(
+    override fun saga(
         timeoutMillis: Long,
         request: T,
         context: MutableMap<String, Any>
@@ -66,7 +67,7 @@ class OrchestratorManager<T : Any, V : Any> internal constructor(
                     context = codec.encode(context.mapValues { codec.encode(it.value) })
                 )
             }
-            .flatMap { transactionManager.start(it) }
+            .flatMap { sagaManager.start(it) }
             .flatMap { resultHolder.getResult(timeoutMillis.milliseconds, it) }
     }
 

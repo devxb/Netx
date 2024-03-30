@@ -1,7 +1,6 @@
 package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
-import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
 import org.rooftop.netx.engine.ResultHolder
@@ -9,7 +8,7 @@ import reactor.core.publisher.Mono
 
 internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
     codec: Codec,
-    transactionManager: TransactionManager,
+    sagaManager: SagaManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
     private val orchestrateCommand: OrchestrateCommand<T, V>,
@@ -20,19 +19,19 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
     orchestratorId,
     orchestrateSequence,
     codec,
-    transactionManager,
+    sagaManager,
     requestHolder,
     resultHolder,
     typeReference,
 ) {
 
-    @TransactionCommitListener(OrchestrateEvent::class)
-    fun listenCommitOrchestrateEvent(transactionCommitEvent: TransactionCommitEvent): Mono<V> {
-        return transactionCommitEvent.startWithOrchestrateEvent()
+    @SagaCommitListener(OrchestrateEvent::class)
+    fun listenCommitOrchestrateEvent(sagaCommitEvent: SagaCommitEvent): Mono<V> {
+        return sagaCommitEvent.startWithOrchestrateEvent()
             .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
             .mapReifiedRequest()
             .flatMap { (request, event) ->
-                holdRequestIfRollbackable(request, transactionCommitEvent.transactionId)
+                holdRequestIfRollbackable(request, sagaCommitEvent.id)
                     .map { it to event }
             }
             .map { (request, event) ->
@@ -40,13 +39,13 @@ internal class CommitOrchestrateListener<T : Any, V : Any> internal constructor(
             }
             .doOnError {
                 rollback(
-                    transactionCommitEvent.transactionId,
+                    sagaCommitEvent.id,
                     it,
-                    transactionCommitEvent.decodeEvent(OrchestrateEvent::class)
+                    sagaCommitEvent.decodeEvent(OrchestrateEvent::class)
                 )
             }
             .flatMap { (response, _) ->
-                resultHolder.setSuccessResult(transactionCommitEvent.transactionId, response)
+                resultHolder.setSuccessResult(sagaCommitEvent.id, response)
             }
     }
 }

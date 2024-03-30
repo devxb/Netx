@@ -8,7 +8,7 @@ import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.api.TypeReference
-import org.rooftop.netx.meta.EnableDistributedTransaction
+import org.rooftop.netx.meta.EnableSaga
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.test.context.ContextConfiguration
@@ -16,7 +16,7 @@ import org.springframework.test.context.TestPropertySource
 import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
-@EnableDistributedTransaction
+@EnableSaga
 @ContextConfiguration(
     classes = [
         RedisContainer::class,
@@ -40,9 +40,9 @@ class OrchestratorTest(
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             it("처음 입력받은 숫자에 orchestrate만큼의 수를 더한다.") {
-                val result = numberOrchestrator.transactionSync(3)
+                val result = numberOrchestrator.sagaSync(3)
 
                 result.isSuccess shouldBeEqual true
                 result.decodeResult(Int::class) shouldBeEqual 7
@@ -56,10 +56,10 @@ class OrchestratorTest(
             mutableListOf(Person("Mother"), Person("Father"), Person("Son"))
         )
 
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             it("처음 입력 받은 Home에 Mother, Father, Son을 추가한다.") {
                 val result =
-                    homeOrchestrator.transaction(Home("Korea, Seoul, Gangnam", mutableListOf()))
+                    homeOrchestrator.saga(Home("Korea, Seoul, Gangnam", mutableListOf()))
                         .block()
 
                 result!!.isSuccess shouldBeEqual true
@@ -71,9 +71,9 @@ class OrchestratorTest(
     describe("instantOrchestrator 구현채는") {
         val expected = InstantWrapper(Instant.now())
 
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             it("처음 입력받은 instantWrapper를 그대로 반환한다.") {
-                val result = instantOrchestrator.transactionSync(expected)
+                val result = instantOrchestrator.sagaSync(expected)
 
                 result.isSuccess shouldBeEqual true
                 result.decodeResult(InstantWrapper::class) shouldBeEqualToComparingFields expected
@@ -84,9 +84,9 @@ class OrchestratorTest(
     describe("manyTypeOrchestrator 구현채는") {
         val expected = Home("HOME", mutableListOf())
 
-        context("transaction메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             it("처음 Home을 반환한다.") {
-                val result = manyTypeOrchestrator.transactionSync(1)
+                val result = manyTypeOrchestrator.sagaSync(1)
 
                 result.isSuccess shouldBeEqual true
                 result.decodeResult(Home::class) shouldBeEqualToComparingFields expected
@@ -97,9 +97,9 @@ class OrchestratorTest(
     describe("rollbackOrchestrator 구현채는") {
         val expected = listOf("1", "2", "3", "4", "-4", "-3", "-1")
 
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             it("실패한 부분부터 위로 거슬러 올라가며 롤백한다") {
-                val result = rollbackOrchestrator.transactionSync("")
+                val result = rollbackOrchestrator.sagaSync("")
 
                 result.isSuccess shouldBeEqual false
                 shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
@@ -116,7 +116,7 @@ class OrchestratorTest(
         val expected = listOf("1", "2", "3", "4", "-3", "-1")
 
         it("호출할 rollback function이 없으면, 가장 가까운 상단의 rollback을 호출한다.") {
-            val result = upChainRollbackOrchestrator.transactionSync("")
+            val result = upChainRollbackOrchestrator.sagaSync("")
 
             result.isSuccess shouldBeEqual false
             shouldThrowWithMessage<IllegalArgumentException>("Rollback for test") {
@@ -129,11 +129,11 @@ class OrchestratorTest(
     }
 
     describe("monoRollbackOrchestrator 구현채는") {
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             val expected = listOf("1", "2", "3", "4", "-3", "-1")
 
             it("실패한 부분부터 위로 거슬러 올라가며 롤백한다.") {
-                val result = monoRollbackOrchestrator.transactionSync("")
+                val result = monoRollbackOrchestrator.sagaSync("")
 
                 result.isSuccess shouldBeEqual false
                 shouldThrowWithMessage<IllegalArgumentException>("Rollback for test") {
@@ -147,11 +147,11 @@ class OrchestratorTest(
     }
 
     describe("contextOrchestrator 구현채는") {
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             val expected = listOf("0", "1", "2", "r3", "r2")
 
             it("context 에서 아이템을 교환하며 Saga를 진행한다.") {
-                val result = contextOrchestrator.transactionSync("0")
+                val result = contextOrchestrator.sagaSync("0")
 
                 result.isSuccess shouldBeEqual false
                 shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
@@ -165,9 +165,9 @@ class OrchestratorTest(
     }
 
     describe("pairOrchestrator 구현채는") {
-        context("transaction 메소드가 호출되면,") {
+        context("saga 메소드가 호출되면,") {
             it("입력받은 파라미터를 name 으로 갖는 Foo pair 를 반환한다. ") {
-                val result = pairOrchestrator.transactionSync("james")
+                val result = pairOrchestrator.sagaSync("james")
 
                 result.isSuccess shouldBeEqual false
                 shouldThrowWithMessage<IllegalArgumentException>("Rollback") {
@@ -178,9 +178,9 @@ class OrchestratorTest(
     }
 
     describe("startWithContextOrchestrator 구현채는") {
-        context("context와 함께 transaction 메소드가 호출되면,") {
+        context("context와 함께 saga 메소드가 호출되면,") {
             it("key에 해당하는 context를 반환한다.") {
-                val result = startWithContextOrchestrator.transactionSync(
+                val result = startWithContextOrchestrator.sagaSync(
                     "ignored request",
                     mutableMapOf("key" to "hello")
                 )
@@ -191,7 +191,7 @@ class OrchestratorTest(
     }
 
     describe("fooContextOrchestrator 구현채는") {
-        context("context 와 함께 transaction 메소드가 호출되면,") {
+        context("context 와 함께 saga 메소드가 호출되면,") {
             val expected = listOf(
                 Foo("startSync"),
                 Foo("startWithContext"),
@@ -199,7 +199,7 @@ class OrchestratorTest(
             )
 
             it("0,1,2 Foo가 들어있는 Foo list를 반환한다.") {
-                val result = fooContextOrchestrator.transactionSync(
+                val result = fooContextOrchestrator.sagaSync(
                     "",
                     mutableMapOf("0" to Foo("startSync"))
                 )

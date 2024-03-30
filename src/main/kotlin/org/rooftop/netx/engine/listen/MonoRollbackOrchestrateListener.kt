@@ -1,7 +1,6 @@
 package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
-import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
 import org.rooftop.netx.engine.ResultHolder
@@ -11,7 +10,7 @@ internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
     private val codec: Codec,
     private val orchestratorId: String,
     orchestrateSequence: Int,
-    private val transactionManager: TransactionManager,
+    private val sagaManager: SagaManager,
     private val monoRollbackCommand: MonoRollbackCommand<T>,
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
@@ -20,36 +19,36 @@ internal class MonoRollbackOrchestrateListener<T : Any, V : Any>(
     orchestratorId,
     orchestrateSequence,
     codec,
-    transactionManager,
+    sagaManager,
     requestHolder,
     resultHolder,
     typeReference,
 ) {
 
-    @TransactionRollbackListener(OrchestrateEvent::class)
-    fun listenRollbackOrchestrateEvent(transactionRollbackEvent: TransactionRollbackEvent): Mono<Unit> {
-        return transactionRollbackEvent.startWithOrchestrateEvent()
+    @SagaRollbackListener(OrchestrateEvent::class)
+    fun listenRollbackOrchestrateEvent(sagaRollbackEvent: SagaRollbackEvent): Mono<Unit> {
+        return sagaRollbackEvent.startWithOrchestrateEvent()
             .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
-            .getHeldRequest(transactionRollbackEvent)
+            .getHeldRequest(sagaRollbackEvent)
             .flatMap { (request, event) ->
                 monoRollbackCommand.command(request, event.context)
             }
-            .cascadeRollback(transactionRollbackEvent)
+            .cascadeRollback(sagaRollbackEvent)
     }
 
-    private fun Mono<Pair<Any?, Context>>.cascadeRollback(transactionRollbackEvent: TransactionRollbackEvent): Mono<Unit> {
+    private fun Mono<Pair<Any?, Context>>.cascadeRollback(sagaRollbackEvent: SagaRollbackEvent): Mono<Unit> {
         return this.filter { !isFirst }
             .flatMap { (_, context) ->
-                val orchestrateEvent = transactionRollbackEvent.decodeEvent(OrchestrateEvent::class)
+                val orchestrateEvent = sagaRollbackEvent.decodeEvent(OrchestrateEvent::class)
                 val nextOrchestrateEvent = OrchestrateEvent(
                     orchestrateEvent.orchestratorId,
                     beforeRollbackOrchestrateSequence,
                     orchestrateEvent.clientEvent,
                     codec.encode(context.contexts),
                 )
-                transactionManager.rollback(
-                    transactionRollbackEvent.transactionId,
-                    transactionRollbackEvent.cause,
+                sagaManager.rollback(
+                    sagaRollbackEvent.id,
+                    sagaRollbackEvent.cause,
                     nextOrchestrateEvent
                 )
             }.map { }

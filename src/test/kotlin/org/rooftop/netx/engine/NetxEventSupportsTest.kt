@@ -4,141 +4,141 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.equality.shouldBeEqualUsingFields
 import io.kotest.matchers.equals.shouldBeEqual
-import org.rooftop.netx.api.TransactionManager
-import org.rooftop.netx.meta.EnableDistributedTransaction
+import org.rooftop.netx.api.SagaManager
+import org.rooftop.netx.meta.EnableSaga
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 
-@EnableDistributedTransaction
+@EnableSaga
 @ContextConfiguration(
     classes = [
         RedisContainer::class,
-        TransactionReceiveStorage::class,
+        SagaReceiveStorage::class,
     ]
 )
 @DisplayName("NetxEventSupports")
 @TestPropertySource("classpath:application.properties")
 class NetxEventSupportsTest(
-    private val transactionManager: TransactionManager,
-    private val transactionReceiveStorage: TransactionReceiveStorage,
+    private val sagaManager: SagaManager,
+    private val sagaReceiveStorage: SagaReceiveStorage,
 ) : StringSpec({
 
     beforeEach {
-        transactionReceiveStorage.clear()
+        sagaReceiveStorage.clear()
     }
 
-    "event로 객체가 주어지면, TransactionRollbackEvent에서 해당 객체를 decode 할 수 있다." {
+    "event로 객체가 주어지면, SagaRollbackEvent에서 해당 객체를 decode 할 수 있다." {
         // given
         val expected = Foo("hello", 1.1234567891234568)
-        transactionManager.syncStart(expected)
+        sagaManager.syncStart(expected)
 
         Thread.sleep(1000)
 
         // when
-        val startEvent = transactionReceiveStorage.pollStart()
+        val startEvent = sagaReceiveStorage.pollStart()
 
         // then
         startEvent.decodeEvent(Foo::class) shouldBeEqualUsingFields expected
     }
 
-    "event로 Map이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 Map이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = mapOf("name" to "hello")
-        val transactionId = transactionManager.syncStart()
-        transactionManager.syncJoin(transactionId, expected)
+        val id = sagaManager.syncStart()
+        sagaManager.syncJoin(id, expected)
 
         Thread.sleep(1000)
 
         // when
-        val joinEvent = transactionReceiveStorage.pollJoin()
+        val joinEvent = sagaReceiveStorage.pollJoin()
         val result = joinEvent.decodeEvent(Map::class)
 
         // then
         result["name"]!! shouldBeEqual expected["name"]!!
     }
 
-    "event로 Int가 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 Int가 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = 1
-        val transactionId = transactionManager.syncStart()
-        transactionManager.syncCommit(transactionId, expected)
+        val id = sagaManager.syncStart()
+        sagaManager.syncCommit(id, expected)
 
         Thread.sleep(1000)
 
         // when
-        val result = transactionReceiveStorage.pollCommit().decodeEvent(Int::class)
+        val result = sagaReceiveStorage.pollCommit().decodeEvent(Int::class)
 
         // then
         result shouldBeEqual expected
     }
 
-    "event로 Long이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 Long이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = 1L
-        val transactionId = transactionManager.syncStart()
-        transactionManager.syncRollback(transactionId, "cause", expected)
+        val id = sagaManager.syncStart()
+        sagaManager.syncRollback(id, "cause", expected)
 
         Thread.sleep(1000)
 
         // when
-        val result = transactionReceiveStorage.pollRollback().decodeEvent(Long::class)
+        val result = sagaReceiveStorage.pollRollback().decodeEvent(Long::class)
 
         // then
         result shouldBeEqual expected
     }
 
-    "event로 String이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 String이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = "string"
-        transactionManager.syncStart(expected)
+        sagaManager.syncStart(expected)
 
         Thread.sleep(1000)
 
         // when
-        val result = transactionReceiveStorage.pollStart().decodeEvent(String::class)
+        val result = sagaReceiveStorage.pollStart().decodeEvent(String::class)
 
         // then
         result shouldBeEqual expected
     }
 
-    "event로 char이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 char이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = 'c'
-        transactionManager.syncStart(expected)
+        sagaManager.syncStart(expected)
 
         Thread.sleep(1000)
 
         // when
-        val result = transactionReceiveStorage.pollStart().decodeEvent(Char::class)
+        val result = sagaReceiveStorage.pollStart().decodeEvent(Char::class)
 
         // then
         result shouldBeEqual expected
     }
 
-    "event로 Boolean이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 Boolean이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = true
-        transactionManager.syncStart(expected)
+        sagaManager.syncStart(expected)
 
         Thread.sleep(1000)
 
         // when
-        val result = transactionReceiveStorage.pollStart().decodeEvent(Boolean::class)
+        val result = sagaReceiveStorage.pollStart().decodeEvent(Boolean::class)
 
         // then
         result shouldBeEqual expected
     }
 
-    "event로 Unit이 주어지면, TransactionRollbackEvent에서 해당 객체를 decode할 수 있다." {
+    "event로 Unit이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = Unit
-        transactionManager.syncStart(expected)
+        sagaManager.syncStart(expected)
 
         Thread.sleep(1000)
 
         // when
-        val result = transactionReceiveStorage.pollStart().decodeEvent(Unit::class)
+        val result = sagaReceiveStorage.pollStart().decodeEvent(Unit::class)
 
         // then
         result shouldBeEqual expected

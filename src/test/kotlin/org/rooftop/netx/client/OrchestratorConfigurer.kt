@@ -13,9 +13,13 @@ class OrchestratorConfigurer(
     @Bean
     fun sum3Orchestrator(): Orchestrator<Int, Int> {
         return orchestratorFactory.create<Int>("sum3Orchestrator")
-            .start(IntOrchestrator)
-            .join(IntOrchestrator)
-            .commit(IntOrchestrator)
+            .startReactive(MonoIntOrchestrator, rollback = { Mono.fromCallable { it - 1 } })
+            .joinReactive(MonoIntOrchestrator, rollback = { Mono.fromCallable { it - 1 } })
+            .commitReactiveWithContext({ _, request ->
+                Mono.fromCallable {
+                    request + 1
+                }
+            }, contextRollback = { _, request -> Mono.fromCallable { request - 1 } })
     }
 
     object IntOrchestrator : Orchestrate<Int, Int> {

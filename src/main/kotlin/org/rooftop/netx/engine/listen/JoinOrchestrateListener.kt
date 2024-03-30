@@ -1,7 +1,6 @@
 package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
-import org.rooftop.netx.engine.AbstractOrchestrateListener
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
 import org.rooftop.netx.engine.ResultHolder
@@ -9,7 +8,7 @@ import reactor.core.publisher.Mono
 
 internal class JoinOrchestrateListener<T : Any, V : Any>(
     private val codec: Codec,
-    private val transactionManager: TransactionManager,
+    private val sagaManager: SagaManager,
     private val orchestratorId: String,
     orchestrateSequence: Int,
     private val orchestrateCommand: OrchestrateCommand<T, V>,
@@ -20,7 +19,7 @@ internal class JoinOrchestrateListener<T : Any, V : Any>(
     orchestratorId,
     orchestrateSequence,
     codec,
-    transactionManager,
+    sagaManager,
     requestHolder,
     resultHolder,
     typeReference,
@@ -39,17 +38,17 @@ internal class JoinOrchestrateListener<T : Any, V : Any>(
             orchestratorId,
             orchestrateSequence,
             codec,
-            transactionManager,
+            sagaManager,
             requestHolder,
             resultHolder,
             typeReference,
         ) {
-            @TransactionJoinListener(
+            @SagaJoinListener(
                 event = OrchestrateEvent::class,
                 successWith = SuccessWith.PUBLISH_JOIN
             )
-            fun handleTransactionJoinEvent(transactionJoinEvent: TransactionJoinEvent): Mono<OrchestrateEvent> {
-                return orchestrate(transactionJoinEvent)
+            fun handleSagaJoinEvent(sagaJoinEvent: SagaJoinEvent): Mono<OrchestrateEvent> {
+                return orchestrate(sagaJoinEvent)
             }
 
             override fun command(request: T, event: OrchestrateEvent): Mono<Pair<V, Context>> {
@@ -63,17 +62,17 @@ internal class JoinOrchestrateListener<T : Any, V : Any>(
             orchestratorId,
             orchestrateSequence,
             codec,
-            transactionManager,
+            sagaManager,
             requestHolder,
             resultHolder,
             typeReference,
         ) {
-            @TransactionJoinListener(
+            @SagaJoinListener(
                 event = OrchestrateEvent::class,
                 successWith = SuccessWith.PUBLISH_COMMIT
             )
-            fun handleTransactionJoinEvent(transactionJoinEvent: TransactionJoinEvent): Mono<OrchestrateEvent> {
-                return orchestrate(transactionJoinEvent)
+            fun handleSagaJoinEvent(sagaJoinEvent: SagaJoinEvent): Mono<OrchestrateEvent> {
+                return orchestrate(sagaJoinEvent)
             }
 
             override fun command(request: T, event: OrchestrateEvent): Mono<Pair<V, Context>> {

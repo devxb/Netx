@@ -1,2 +1,2 @@
-org.rooftop.netx.meta.EnableDistributedTransaction=\
-org.rooftop.netx.redis.RedisTransactionConfigurer
+org.rooftop.netx.meta.EnableSaga=\
+org.rooftop.netx.redis.RedisSagaConfigurer

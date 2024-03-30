@@ -6,12 +6,12 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.equals.shouldNotBeEqual
 import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.meta.EnableDistributedTransaction
+import org.rooftop.netx.meta.EnableSaga
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 
-@EnableDistributedTransaction
+@EnableSaga
 @DisplayName("OrchestratorFactory 클래스의")
 @ContextConfiguration(classes = [RedisContainer::class])
 @TestPropertySource("classpath:application.properties")
