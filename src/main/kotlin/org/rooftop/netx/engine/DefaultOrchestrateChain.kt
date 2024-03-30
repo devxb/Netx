@@ -44,7 +44,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         function: TypeReified<T>,
     ) = JoinOrchestrateListener(
         codec = chainContainer.codec,
-        transactionManager = chainContainer.transactionManager,
+        sagaManager = chainContainer.sagaManager,
         orchestratorId = orchestratorId,
         orchestrateSequence = orchestrateSequence + 1,
         orchestrateCommand = OrchestrateCommand<T, V>(
@@ -113,7 +113,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         function: TypeReified<T>,
     ) = MonoJoinOrchestrateListener(
         codec = chainContainer.codec,
-        transactionManager = chainContainer.transactionManager,
+        sagaManager = chainContainer.sagaManager,
         orchestratorId = orchestratorId,
         orchestrateSequence = orchestrateSequence + 1,
         monoOrchestrateCommand = MonoOrchestrateCommand<T, V>(
@@ -172,7 +172,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         function: TypeReified<T>,
     ) = CommitOrchestrateListener(
         codec = chainContainer.codec,
-        transactionManager = chainContainer.transactionManager,
+        sagaManager = chainContainer.sagaManager,
         orchestratorId = orchestratorId,
         orchestrateSequence = orchestrateSequence + 1,
         orchestrateCommand = OrchestrateCommand<T, V>(commandType, chainContainer.codec, function),
@@ -187,7 +187,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     ) = rollback?.let {
         RollbackOrchestrateListener<T, V>(
             codec = chainContainer.codec,
-            transactionManager = chainContainer.transactionManager,
+            sagaManager = chainContainer.sagaManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = orchestrateSequence + 1,
             rollbackCommand = RollbackCommand(commandType, chainContainer.codec, it),
@@ -214,7 +214,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             val firstOrchestrators = nextDefaultOrchestrateChain.initOrchestrateListeners()
 
             return@cache OrchestratorManager<OriginReq, S>(
-                transactionManager = chainContainer.transactionManager,
+                sagaManager = chainContainer.sagaManager,
                 codec = chainContainer.codec,
                 orchestratorId = orchestratorId,
                 resultHolder = chainContainer.resultHolder,
@@ -266,7 +266,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             val firstOrchestrators = nextDefaultOrchestrateChain.initOrchestrateListeners()
 
             return@cache OrchestratorManager<OriginReq, S>(
-                transactionManager = chainContainer.transactionManager,
+                sagaManager = chainContainer.sagaManager,
                 codec = chainContainer.codec,
                 orchestratorId = orchestratorId,
                 resultHolder = chainContainer.resultHolder,
@@ -373,8 +373,8 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
 
     private fun addDispatcher(orchestrateListeners: List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
         orchestrateListeners.forEach { (listener, rollbackListener) ->
-            chainContainer.transactionDispatcher.addOrchestrate(listener)
-            rollbackListener?.let { chainContainer.transactionDispatcher.addOrchestrate(it) }
+            chainContainer.sagaDispatcher.addOrchestrate(listener)
+            rollbackListener?.let { chainContainer.sagaDispatcher.addOrchestrate(it) }
         }
     }
 
@@ -383,7 +383,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         function: TypeReified<T>,
     ) = MonoCommitOrchestrateListener(
         codec = chainContainer.codec,
-        transactionManager = chainContainer.transactionManager,
+        sagaManager = chainContainer.sagaManager,
         orchestratorId = orchestratorId,
         orchestrateSequence = orchestrateSequence + 1,
         monoOrchestrateCommand = MonoOrchestrateCommand<T, V>(
@@ -402,7 +402,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     ) = rollback?.let {
         MonoRollbackOrchestrateListener<T, V>(
             codec = chainContainer.codec,
-            transactionManager = chainContainer.transactionManager,
+            sagaManager = chainContainer.sagaManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = orchestrateSequence + 1,
             monoRollbackCommand = MonoRollbackCommand<T>(
@@ -418,8 +418,8 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
 
     internal class Pre<T : Any> internal constructor(
         private val orchestratorId: String,
-        private val transactionManager: TransactionManager,
-        private val transactionDispatcher: AbstractTransactionDispatcher,
+        private val sagaManager: SagaManager,
+        private val sagaDispatcher: AbstractSagaDispatcher,
         private val codec: Codec,
         private val resultHolder: ResultHolder,
         private val requestHolder: RequestHolder,
@@ -467,7 +467,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             function: TypeReified<T>,
         ) = StartOrchestrateListener(
             codec = codec,
-            transactionManager = transactionManager,
+            sagaManager = sagaManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = 0,
             orchestrateCommand = OrchestrateCommand<T, V>(
@@ -486,7 +486,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         ) = rollback?.let {
             RollbackOrchestrateListener<T, V>(
                 codec = codec,
-                transactionManager = transactionManager,
+                sagaManager = sagaManager,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
                 rollbackCommand = RollbackCommand<T>(
@@ -541,7 +541,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
             function: TypeReified<T>,
         ) = MonoStartOrchestrateListener(
             codec = codec,
-            transactionManager = transactionManager,
+            sagaManager = sagaManager,
             orchestratorId = orchestratorId,
             orchestrateSequence = 0,
             monoOrchestrateCommand = MonoOrchestrateCommand<T, V>(
@@ -560,7 +560,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         ) = rollback?.let {
             MonoRollbackOrchestrateListener<T, V>(
                 codec = codec,
-                transactionManager = transactionManager,
+                sagaManager = sagaManager,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
                 monoRollbackCommand = MonoRollbackCommand(
@@ -575,8 +575,8 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         }
 
         private fun getStreamContainer(): ChainContainer = ChainContainer(
-            transactionManager,
-            transactionDispatcher,
+            sagaManager,
+            sagaDispatcher,
             codec,
             resultHolder,
             requestHolder,
@@ -589,8 +589,8 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     }
 
     private data class ChainContainer(
-        val transactionManager: TransactionManager,
-        val transactionDispatcher: AbstractTransactionDispatcher,
+        val sagaManager: SagaManager,
+        val sagaDispatcher: AbstractSagaDispatcher,
         val codec: Codec,
         val resultHolder: ResultHolder,
         val requestHolder: RequestHolder,

@@ -6,9 +6,9 @@ import kotlin.time.Duration
 
 internal interface ResultHolder {
 
-    fun <T : Any> getResult(timeout: Duration, transactionId: String): Mono<Result<T>>
+    fun <T : Any> getResult(timeout: Duration, id: String): Mono<Result<T>>
 
-    fun <T : Any> setSuccessResult(transactionId: String, result: T): Mono<T>
+    fun <T : Any> setSuccessResult(id: String, result: T): Mono<T>
 
-    fun <T : Throwable> setFailResult(transactionId: String, result: T) : Mono<T>
+    fun <T : Throwable> setFailResult(id: String, result: T) : Mono<T>
 }

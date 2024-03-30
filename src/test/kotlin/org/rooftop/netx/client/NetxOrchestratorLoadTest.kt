@@ -7,7 +7,7 @@ import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.equals.shouldBeEqual
 import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.meta.EnableDistributedTransaction
+import org.rooftop.netx.meta.EnableSaga
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
         OrchestratorConfigurer::class,
     ]
 )
-@EnableDistributedTransaction
+@EnableSaga
 @TestPropertySource("classpath:fast-recover-mode.properties")
 class NetxOrchestratorLoadTest(
     private val loadRunner: LoadRunner,
@@ -42,7 +42,7 @@ class NetxOrchestratorLoadTest(
 
             val atomicInt = AtomicInteger(0)
             loadRunner.load(count) {
-                orchestrator.transaction(THREE_MINUTES_MILLIS, atomicInt.getAndIncrement())
+                orchestrator.saga(THREE_MINUTES_MILLIS, atomicInt.getAndIncrement())
                     .map { resultStorage.add(it.decodeResult(Int::class)) }
                     .subscribe()
             }

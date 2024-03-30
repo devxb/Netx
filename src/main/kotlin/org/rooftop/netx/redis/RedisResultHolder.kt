@@ -28,10 +28,10 @@ class RedisResultHolder(
 
     override fun <T : Any> getResult(
         timeout: Duration,
-        transactionId: String
+        id: String
     ): Mono<Result<T>> {
         return pool.withPoolable {
-            it.leftPop("Netx:Result:$transactionId", timeout.toJavaDuration())
+            it.leftPop("Netx:Result:$id", timeout.toJavaDuration())
                 .switchIfEmpty(Mono.error {
                     ResultTimeoutException(
                         "Cannot get result in \"$timeout\" time",
@@ -61,18 +61,18 @@ class RedisResultHolder(
     }
 
     override fun <T : Any> setSuccessResult(
-        transactionId: String,
+        id: String,
         result: T
     ): Mono<T> {
         return reactiveRedisTemplate.opsForList()
             .leftPush(
-                "Netx:Result:$transactionId",
+                "Netx:Result:$id",
                 "$SUCCESS:${objectMapper.writeValueAsString(result)}"
             ).map { result }
             .doOnNext { info("Set success result $it") }
     }
 
-    override fun <T : Throwable> setFailResult(transactionId: String, result: T): Mono<T> {
+    override fun <T : Throwable> setFailResult(id: String, result: T): Mono<T> {
         val error = Error(
             objectMapper.writeValueAsString(result::class.java),
             objectMapper.writeValueAsString(result)
@@ -80,7 +80,7 @@ class RedisResultHolder(
         val encodedError = objectMapper.writeValueAsString(error)
         return reactiveRedisTemplate.opsForList()
             .leftPush(
-                "Netx:Result:$transactionId",
+                "Netx:Result:$id",
                 "$FAIL:$encodedError"
             ).map { result }
             .doOnNext { info("Set fail result $it") }
