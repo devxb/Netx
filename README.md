@@ -277,6 +277,6 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.rooftop-msa:netx:${version}"
+    implementation "com.github.devxb:netx:${version}"
 }
 ```
