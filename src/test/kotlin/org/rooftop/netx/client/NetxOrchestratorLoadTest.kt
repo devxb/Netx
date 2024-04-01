@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.minutes
 )
 @EnableSaga
 @TestPropertySource("classpath:fast-recover-mode.properties")
-class NetxOrchestratorLoadTest(
+internal class NetxOrchestratorLoadTest(
     private val loadRunner: LoadRunner,
     private val orchestrator: Orchestrator<Int, Int>,
 ) : FunSpec({

@@ -2,11 +2,11 @@ package org.rooftop.netx.client
 
 import org.rooftop.netx.api.Orchestrate
 import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.engine.OrchestratorFactory
+import org.rooftop.netx.api.OrchestratorFactory
 import org.springframework.context.annotation.Bean
 import reactor.core.publisher.Mono
 
-class OrchestratorConfigurer(
+internal class OrchestratorConfigurer(
     private val orchestratorFactory: OrchestratorFactory,
 ) {
 

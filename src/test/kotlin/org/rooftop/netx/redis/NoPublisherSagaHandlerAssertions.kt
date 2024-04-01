@@ -4,7 +4,7 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.meta.SagaHandler
 
 @SagaHandler
-class NoPublisherSagaHandlerAssertions : AbstractSagaHandlerAssertions() {
+internal class NoPublisherSagaHandlerAssertions : AbstractSagaHandlerAssertions() {
 
     @SagaRollbackListener
     fun handleRollback(event: SagaRollbackEvent): Long {

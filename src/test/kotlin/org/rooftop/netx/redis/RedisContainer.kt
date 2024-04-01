@@ -5,7 +5,7 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 
 @TestConfiguration
-class RedisContainer {
+internal class RedisContainer {
     init {
         val redis: GenericContainer<*> = GenericContainer(DockerImageName.parse("redis:7.2.3"))
             .withExposedPorts(6379)

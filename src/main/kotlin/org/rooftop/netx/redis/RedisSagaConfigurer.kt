@@ -27,7 +27,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 
 
 @Configuration
-internal class RedisSagaConfigurer(
+class RedisSagaConfigurer(
     @Value("\${netx.host}") private val host: String,
     @Value("\${netx.port}") private val port: String,
     @Value("\${netx.password:0000}") private val password: String,
@@ -48,7 +48,7 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisStreamOrchestratorFactory(): OrchestratorFactory = OrchestratorFactory(
+    internal fun redisStreamOrchestratorFactory(): OrchestratorFactory = OrchestratorFactory(
         sagaManager = redisStreamSagaManager(),
         sagaDispatcher = redisStreamSagaDispatcher(),
         codec = jsonCodec(),
@@ -58,7 +58,7 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisStreamSagaManager(): SagaManager =
+    internal fun redisStreamSagaManager(): SagaManager =
         RedisStreamSagaManager(
             nodeName = nodeName,
             nodeGroup = nodeGroup,
@@ -72,11 +72,11 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun tsidSagaIdGenerator(): SagaIdGenerator = SagaIdGenerator(nodeId)
+    internal fun tsidSagaIdGenerator(): SagaIdGenerator = SagaIdGenerator(nodeId)
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisStreamSagaListener(): RedisStreamSagaListener =
+    internal fun redisStreamSagaListener(): RedisStreamSagaListener =
         RedisStreamSagaListener(
             backpressureSize = backpressureSize,
             sagaDispatcher = redisStreamSagaDispatcher(),
@@ -92,7 +92,7 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisResultHolder(): ResultHolder =
+    internal fun redisResultHolder(): ResultHolder =
         RedisResultHolder(
             poolSize,
             jsonCodec(),
@@ -102,7 +102,7 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisRequestHolder(): RequestHolder =
+    internal fun redisRequestHolder(): RequestHolder =
         RedisRequestHolder(
             jsonCodec(),
             reactiveRedisTemplate(),
@@ -110,18 +110,18 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun jsonCodec(): JsonCodec = JsonCodec(netxObjectMapper())
+    internal fun jsonCodec(): JsonCodec = JsonCodec(netxObjectMapper())
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun netxObjectMapper(): ObjectMapper =
+    internal fun netxObjectMapper(): ObjectMapper =
         ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
             .registerModule(JavaTimeModule())
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun redisSagaRetrySupporter(): RedisSagaRetrySupporter =
+    internal fun redisSagaRetrySupporter(): RedisSagaRetrySupporter =
         RedisSagaRetrySupporter(
             nodeGroup = nodeGroup,
             nodeName = nodeName,
@@ -166,7 +166,7 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, String> {
+    internal fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, String> {
         val keySerializer = StringRedisSerializer()
         val valueSerializer = StringRedisSerializer()
 
@@ -180,7 +180,7 @@ internal class RedisSagaConfigurer(
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
-    fun reactiveRedisConnectionFactory(): ReactiveRedisConnectionFactory {
+    internal fun reactiveRedisConnectionFactory(): ReactiveRedisConnectionFactory {
         val port: String = System.getProperty("netx.port") ?: port
 
         val redisStandaloneConfiguration = RedisStandaloneConfiguration()

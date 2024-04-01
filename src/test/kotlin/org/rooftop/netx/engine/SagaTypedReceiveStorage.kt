@@ -13,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.reflect.KClass
 
 @SagaHandler
-class SagaTypedReceiveStorage {
+internal class SagaTypedReceiveStorage {
 
     private val storage: ConcurrentMap<KClass<*>, CopyOnWriteArrayList<SagaEvent>> =
         ConcurrentHashMap()
