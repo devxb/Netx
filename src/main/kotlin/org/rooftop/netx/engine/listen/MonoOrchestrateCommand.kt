@@ -3,7 +3,7 @@ package org.rooftop.netx.engine.listen
 import org.rooftop.netx.api.*
 import reactor.core.publisher.Mono
 
-class MonoOrchestrateCommand<T : Any, V : Any>(
+internal class MonoOrchestrateCommand<T : Any, V : Any>(
     private val commandType: CommandType = CommandType.DEFAULT,
     private val codec: Codec,
     private val command: Any

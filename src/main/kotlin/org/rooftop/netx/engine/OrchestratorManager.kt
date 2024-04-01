@@ -5,7 +5,7 @@ import org.rooftop.netx.engine.listen.AbstractOrchestrateListener
 import reactor.core.publisher.Mono
 import kotlin.time.Duration.Companion.milliseconds
 
-class OrchestratorManager<T : Any, V : Any> internal constructor(
+internal class OrchestratorManager<T : Any, V : Any> internal constructor(
     private val sagaManager: SagaManager,
     private val codec: Codec,
     private val orchestratorId: String,

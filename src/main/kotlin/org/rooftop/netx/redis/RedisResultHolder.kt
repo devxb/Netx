@@ -14,7 +14,7 @@ import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
-class RedisResultHolder(
+internal class RedisResultHolder(
     poolSize: Int,
     private val codec: Codec,
     private val objectMapper: ObjectMapper,

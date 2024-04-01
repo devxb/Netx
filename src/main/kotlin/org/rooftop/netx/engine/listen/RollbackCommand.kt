@@ -2,7 +2,7 @@ package org.rooftop.netx.engine.listen
 
 import org.rooftop.netx.api.*
 
-class RollbackCommand<T : Any>(
+internal class RollbackCommand<T : Any>(
     private val commandType: CommandType = CommandType.DEFAULT,
     private val codec: Codec,
     private val command: Any

@@ -4,7 +4,7 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.listen.*
 import reactor.core.publisher.Mono
 
-class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
+internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
     private val orchestratorId: String,
     private val orchestrateSequence: Int,
     private val chainContainer: ChainContainer,

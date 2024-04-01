@@ -7,7 +7,7 @@ import org.rooftop.netx.api.EncodeException
 import org.rooftop.netx.api.TypeReference
 import kotlin.reflect.KClass
 
-class JsonCodec(
+internal class JsonCodec(
     private val objectMapper: ObjectMapper,
 ) : Codec {
 
