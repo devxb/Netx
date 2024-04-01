@@ -2,7 +2,7 @@ package org.rooftop.netx.redis
 
 import io.kotest.matchers.shouldBe
 
-abstract class AbstractSagaHandlerAssertions {
+internal abstract class AbstractSagaHandlerAssertions {
 
     private val methodInvocationCounts = mutableMapOf<String, Int>()
 

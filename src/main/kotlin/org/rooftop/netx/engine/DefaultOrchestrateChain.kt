@@ -4,7 +4,7 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.engine.listen.*
 import reactor.core.publisher.Mono
 
-class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
+internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
     private val orchestratorId: String,
     private val orchestrateSequence: Int,
     private val chainContainer: ChainContainer,
@@ -18,7 +18,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     override fun <S : Any> join(
         orchestrate: Orchestrate<V, S>,
         rollback: Rollback<V, *>?,
-    ): DefaultOrchestrateChain<OriginReq, V, S> {
+    ): OrchestrateChain<OriginReq, V, S> {
         val nextJoinOrchestrateListener =
             getJoinOrchestrateListener<V, S>(CommandType.DEFAULT, orchestrate)
         val nextRollbackOrchestrateListener =
@@ -30,7 +30,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     override fun <S : Any> joinWithContext(
         contextOrchestrate: ContextOrchestrate<V, S>,
         contextRollback: ContextRollback<V, *>?
-    ): DefaultOrchestrateChain<OriginReq, V, S> {
+    ): OrchestrateChain<OriginReq, V, S> {
         val nextJoinOrchestrateListener =
             getJoinOrchestrateListener<V, S>(CommandType.CONTEXT, contextOrchestrate)
         val nextRollbackOrchestrateListener =
@@ -60,7 +60,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     private fun <S : Any> nextOrchestrateChain(
         nextJoinOrchestrateListener: JoinOrchestrateListener<V, S>,
         nextRollbackOrchestrateListener: RollbackOrchestrateListener<V, S>?
-    ): DefaultOrchestrateChain<OriginReq, V, S> {
+    ): OrchestrateChain<OriginReq, V, S> {
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
             orchestratorId,
             orchestrateSequence + 1,
@@ -77,7 +77,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     override fun <S : Any> joinReactive(
         orchestrate: Orchestrate<V, Mono<S>>,
         rollback: Rollback<V, Mono<*>>?,
-    ): DefaultOrchestrateChain<OriginReq, V, S> {
+    ): OrchestrateChain<OriginReq, V, S> {
         val nextJoinOrchestrateListener =
             getMonoJoinOrchestrateListener<V, S>(CommandType.DEFAULT, orchestrate)
         val nextRollbackOrchestrateListener =
@@ -89,7 +89,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     override fun <S : Any> joinReactiveWithContext(
         contextOrchestrate: ContextOrchestrate<V, Mono<S>>,
         contextRollback: ContextRollback<V, Mono<*>>?
-    ): DefaultOrchestrateChain<OriginReq, V, S> {
+    ): OrchestrateChain<OriginReq, V, S> {
         val nextJoinOrchestrateListener =
             getMonoJoinOrchestrateListener<V, S>(CommandType.CONTEXT, contextOrchestrate)
         val nextRollbackOrchestrateListener =
@@ -129,7 +129,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
     private fun <S : Any> nextOrchestrateChain(
         nextJoinOrchestrateListener: MonoJoinOrchestrateListener<V, S>,
         nextRollbackOrchestrateListener: MonoRollbackOrchestrateListener<V, S>?
-    ): DefaultOrchestrateChain<OriginReq, V, S> {
+    ): OrchestrateChain<OriginReq, V, S> {
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
             orchestratorId,
             orchestrateSequence + 1,
@@ -429,7 +429,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         override fun <V : Any> start(
             orchestrate: Orchestrate<T, V>,
             rollback: Rollback<T, *>?,
-        ): DefaultOrchestrateChain<T, T, V> {
+        ): OrchestrateChain<T, T, V> {
             val startOrchestrateListener =
                 getStartOrchestrateListener<V>(CommandType.DEFAULT, orchestrate)
             val rollbackOrchestrateListener =
@@ -447,7 +447,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         override fun <V : Any> startWithContext(
             contextOrchestrate: ContextOrchestrate<T, V>,
             contextRollback: ContextRollback<T, *>?
-        ): DefaultOrchestrateChain<T, T, V> {
+        ): OrchestrateChain<T, T, V> {
             val startOrchestrateListener =
                 getStartOrchestrateListener<V>(CommandType.CONTEXT, contextOrchestrate)
             val rollbackOrchestrateListener =
@@ -503,7 +503,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         override fun <V : Any> startReactive(
             orchestrate: Orchestrate<T, Mono<V>>,
             rollback: Rollback<T, Mono<*>>?,
-        ): DefaultOrchestrateChain<T, T, V> {
+        ): OrchestrateChain<T, T, V> {
             val startOrchestrateListener =
                 getMonoStartOrchestrateListener<V>(CommandType.DEFAULT, orchestrate)
             val rollbackOrchestrateListener =
@@ -521,7 +521,7 @@ class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constru
         override fun <V : Any> startReactiveWithContext(
             contextOrchestrate: ContextOrchestrate<T, Mono<V>>,
             contextRollback: ContextRollback<T, Mono<*>>?
-        ): DefaultOrchestrateChain<T, T, V> {
+        ): OrchestrateChain<T, T, V> {
             val startOrchestrateListener =
                 getMonoStartOrchestrateListener<V>(CommandType.CONTEXT, contextOrchestrate)
             val rollbackOrchestrateListener =

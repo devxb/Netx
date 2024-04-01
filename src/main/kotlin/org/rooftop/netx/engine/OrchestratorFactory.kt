@@ -3,7 +3,7 @@ package org.rooftop.netx.engine
 import org.rooftop.netx.api.*
 import org.rooftop.netx.api.OrchestratorFactory
 
-class OrchestratorFactory internal constructor(
+internal class OrchestratorFactory internal constructor(
     private val sagaManager: SagaManager,
     private val sagaDispatcher: AbstractSagaDispatcher,
     private val codec: Codec,

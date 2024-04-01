@@ -19,7 +19,7 @@ import org.springframework.test.context.TestPropertySource
 )
 @DisplayName("NetxEventSupports")
 @TestPropertySource("classpath:application.properties")
-class NetxEventSupportsTest(
+internal class NetxEventSupportsTest(
     private val sagaManager: SagaManager,
     private val sagaReceiveStorage: SagaReceiveStorage,
 ) : StringSpec({

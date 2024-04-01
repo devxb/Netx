@@ -5,7 +5,7 @@ import org.rooftop.netx.meta.SagaHandler
 import reactor.core.publisher.Mono
 
 @SagaHandler
-class MonoSagaHandlerAssertions : AbstractSagaHandlerAssertions() {
+internal class MonoSagaHandlerAssertions : AbstractSagaHandlerAssertions() {
 
     @SagaRollbackListener
     fun handleRollback(event: SagaRollbackEvent): Mono<Unit> {

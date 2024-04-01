@@ -5,7 +5,7 @@ import org.rooftop.netx.meta.SagaHandler
 import java.util.*
 
 @SagaHandler
-class SagaReceiveStorage {
+internal class SagaReceiveStorage {
 
     private val startEvents: Queue<SagaStartEvent> = LinkedList()
     private val joinEvents: Queue<SagaJoinEvent> = LinkedList()

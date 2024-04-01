@@ -3,7 +3,7 @@ package org.rooftop.netx.engine.listen
 import org.rooftop.netx.api.*
 import reactor.core.publisher.Mono
 
-class MonoRollbackCommand<T : Any>(
+internal class MonoRollbackCommand<T : Any>(
     private val commandType: CommandType = CommandType.DEFAULT,
     private val codec: Codec,
     private val command: Any

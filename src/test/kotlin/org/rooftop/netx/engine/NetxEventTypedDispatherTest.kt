@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.seconds
 )
 @DisplayName("NetxEventTypedDispatherTest")
 @TestPropertySource("classpath:application.properties")
-class NetxEventTypedDispatherTest(
+internal class NetxEventTypedDispatherTest(
     private val sagaManager: SagaManager,
     private val sagaTypedReceiveStorage: SagaTypedReceiveStorage,
 ) : StringSpec({

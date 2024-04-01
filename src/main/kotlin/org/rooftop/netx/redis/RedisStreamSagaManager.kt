@@ -15,7 +15,7 @@ internal class RedisStreamSagaManager(
     codec: Codec,
     nodeName: String,
     sagaIdGenerator: SagaIdGenerator,
-    private val nodeGroup: String,
+    nodeGroup: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Saga>,
     private val objectMapper: ObjectMapper,
 ) : AbstractSagaManager(

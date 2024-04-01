@@ -6,7 +6,7 @@ import org.rooftop.netx.meta.SagaHandler
 import reactor.core.publisher.Mono
 
 @SagaHandler
-class SagaNoRollbackForStorage {
+internal class SagaNoRollbackForStorage {
 
     @SagaStartListener(
         RedisStreamSagaDispatcherNoRollbackForTest.IllegalArgumentExceptionEvent::class,

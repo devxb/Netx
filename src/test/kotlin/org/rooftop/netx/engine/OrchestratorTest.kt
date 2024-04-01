@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
 )
 @DisplayName("Orchestrator 클래스의")
 @TestPropertySource("classpath:application.properties")
-class OrchestratorTest(
+internal class OrchestratorTest(
     private val numberOrchestrator: Orchestrator<Int, Int>,
     private val homeOrchestrator: Orchestrator<Home, Home>,
     private val instantOrchestrator: Orchestrator<InstantWrapper, InstantWrapper>,

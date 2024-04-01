@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono
 import java.time.Instant
 
 @Configuration
-class OrchestratorConfigurer(
+internal class OrchestratorConfigurer(
     private val orchestratorFactory: OrchestratorFactory,
 ) {
 
