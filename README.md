@@ -78,9 +78,9 @@ class OrderService(private val orderOrchestrator: Orchestrator<Order, OrderRespo
 
 // Register Orchestrator
 @Configurer
-class OrchestratorConfigurer(
-    private val orchestratorFactory: OrchestratorFactory
-) {
+class OrchestratorConfigurer {
+    
+    private val orchestratorFactory = OrchestratorFactory.instance()
 
     @Bean
     fun orderOrchestartor(): Orchestrator<Order, OrderResponse> { // <First Request, Last Response>
