@@ -1,9 +1,7 @@
 package org.rooftop.netx.engine
 
-import org.rooftop.netx.api.Orchestrate
-import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.api.Rollback
-import org.rooftop.netx.api.TypeReference
+import org.rooftop.netx.api.*
+import org.rooftop.netx.api.OrchestratorFactory
 import org.rooftop.netx.engine.OrchestratorTest.Companion.contextResult
 import org.rooftop.netx.engine.OrchestratorTest.Companion.monoRollbackResult
 import org.rooftop.netx.engine.OrchestratorTest.Companion.rollbackOrchestratorResult
@@ -14,13 +12,11 @@ import reactor.core.publisher.Mono
 import java.time.Instant
 
 @Configuration
-internal class OrchestratorConfigurer(
-    private val orchestratorFactory: OrchestratorFactory,
-) {
+internal class OrchestratorConfigurer {
 
     @Bean(name = ["numberOrchestrator"])
     fun numberOrchestrator(): Orchestrator<Int, Int> {
-        return orchestratorFactory.create<Int>("numberOrchestrator")
+        return OrchestratorFactory.instance().create<Int>("numberOrchestrator")
             .start(orchestrate = { it + 1 })
             .join(orchestrate = { it + 1 })
             .joinReactive(orchestrate = { Mono.just(it + 1) })
@@ -29,7 +25,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["homeOrchestrator"])
     fun homeOrchestrator(): Orchestrator<OrchestratorTest.Home, OrchestratorTest.Home> {
-        return orchestratorFactory.create<OrchestratorTest.Home>("homeOrchestrator")
+        return OrchestratorFactory.instance().create<OrchestratorTest.Home>("homeOrchestrator")
             .startReactive({ home ->
                 Mono.fromCallable {
                     home.addPerson(OrchestratorTest.Person("Mother"))
@@ -50,14 +46,15 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["instantOrchestrator"])
     fun instantOrchestrator(): Orchestrator<OrchestratorTest.InstantWrapper, OrchestratorTest.InstantWrapper> {
-        return orchestratorFactory.create<OrchestratorTest.InstantWrapper>("instantOrchestrator")
+        return OrchestratorFactory.instance()
+            .create<OrchestratorTest.InstantWrapper>("instantOrchestrator")
             .start({ it })
             .commit({ it })
     }
 
     @Bean(name = ["manyTypeOrchestrator"])
     fun manyTypeOrchestrator(): Orchestrator<Int, OrchestratorTest.Home> {
-        return orchestratorFactory.create<Int>("manyTypeOrchestrator")
+        return OrchestratorFactory.instance().create<Int>("manyTypeOrchestrator")
             .start({ "String" })
             .join({ 1L })
             .join({ 0.1 })
@@ -67,7 +64,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["rollbackOrchestrator"])
     fun rollbackOrchestrator(): Orchestrator<String, String> {
-        return orchestratorFactory.create<String>("rollbackOrchestrator")
+        return OrchestratorFactory.instance().create<String>("rollbackOrchestrator")
             .start(
                 orchestrate = {
                     rollbackOrchestratorResult.add("1")
@@ -100,7 +97,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["upChainRollbackOrchestrator"])
     fun upChainRollbackOrchestrator(): Orchestrator<String, String> {
-        return orchestratorFactory.create<String>("upChainRollbackOrchestrator")
+        return OrchestratorFactory.instance().create<String>("upChainRollbackOrchestrator")
             .start({ upChainResult.add("1") }, { upChainResult.add("-1") })
             .join({ upChainResult.add("2") })
             .join({ upChainResult.add("3") }, { upChainResult.add("-3") })
@@ -112,7 +109,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["monoRollbackOrchestrator"])
     fun monoRollbackOrchestrator(): Orchestrator<String, String> {
-        return orchestratorFactory.create<String>("monoRollbackOrchestrator")
+        return OrchestratorFactory.instance().create<String>("monoRollbackOrchestrator")
             .startReactive(
                 { Mono.fromCallable { monoRollbackResult.add("1") } },
                 { Mono.fromCallable { monoRollbackResult.add("-1") } }
@@ -132,7 +129,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["contextOrchestrator"])
     fun contextOrchestrator(): Orchestrator<String, String> {
-        return orchestratorFactory.create<String>("contextOrchestrator")
+        return OrchestratorFactory.instance().create<String>("contextOrchestrator")
             .startWithContext(
                 contextOrchestrate = { context, request ->
                     context.set("start-1", request)
@@ -180,7 +177,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["pairOrchestrator"])
     fun pairOrchestrator(): Orchestrator<String, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
-        return orchestratorFactory.create<String>("pairOrchestrator")
+        return OrchestratorFactory.instance().create<String>("pairOrchestrator")
             .start({ OrchestratorTest.Foo(it) to OrchestratorTest.Foo(it) })
             .join(PairOrchestrate, PairRollback)
             .joinReactive(MonoPairOrchestrate, MonoPairRollback)
@@ -199,7 +196,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["startWithContextOrchestrator"])
     fun startWithContextOrchestrator(): Orchestrator<String, String> {
-        return orchestratorFactory.create<String>("startWithContextOrchestrator")
+        return OrchestratorFactory.instance().create<String>("startWithContextOrchestrator")
             .startWithContext({ context, _ ->
                 context.decodeContext("key", String::class)
             })
@@ -210,7 +207,7 @@ internal class OrchestratorConfigurer(
 
     @Bean(name = ["fooContextOrchestrator"])
     fun fooContextOrchestrator(): Orchestrator<String, List<OrchestratorTest.Foo>> {
-        return orchestratorFactory.create<String>("fooContextOrchestrator")
+        return OrchestratorFactory.instance().create<String>("fooContextOrchestrator")
             .startWithContext({ context, _ ->
                 val before = context.decodeContext("0", OrchestratorTest.Foo::class)
                 context.set("1", OrchestratorTest.Foo("startWithContext"))

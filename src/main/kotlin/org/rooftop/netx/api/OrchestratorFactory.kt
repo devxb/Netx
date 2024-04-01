@@ -6,4 +6,9 @@ interface OrchestratorFactory {
 
     fun <T : Any> create(orchestratorId: String): OrchestrateChain.Pre<T>
 
+    companion object Instance {
+        internal lateinit var orchestratorFactory: OrchestratorFactory
+
+        fun instance(): OrchestratorFactory = orchestratorFactory
+    }
 }

@@ -54,7 +54,7 @@ class RedisSagaConfigurer(
         codec = jsonCodec(),
         resultHolder = redisResultHolder(),
         requestHolder = redisRequestHolder(),
-    )
+    ).apply { org.rooftop.netx.api.OrchestratorFactory.orchestratorFactory = this }
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")

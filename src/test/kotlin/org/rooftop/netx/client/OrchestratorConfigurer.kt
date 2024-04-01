@@ -6,13 +6,11 @@ import org.rooftop.netx.api.OrchestratorFactory
 import org.springframework.context.annotation.Bean
 import reactor.core.publisher.Mono
 
-internal class OrchestratorConfigurer(
-    private val orchestratorFactory: OrchestratorFactory,
-) {
+internal class OrchestratorConfigurer {
 
     @Bean
     fun sum3Orchestrator(): Orchestrator<Int, Int> {
-        return orchestratorFactory.create<Int>("sum3Orchestrator")
+        return OrchestratorFactory.instance().create<Int>("sum3Orchestrator")
             .startReactive(MonoIntOrchestrator, rollback = { Mono.fromCallable { it - 1 } })
             .joinReactive(MonoIntOrchestrator, rollback = { Mono.fromCallable { it - 1 } })
             .commitReactiveWithContext({ _, request ->
