@@ -48,7 +48,7 @@ class NetxJavaSupportsTest {
     @Test
     @DisplayName("Scenario-1. Start -> Join -> Commit")
     void Scenario1_Start_Join_Commit() {
-        String id = sagaManager.syncStart(POSITIVE_EVENT);
+        String id = sagaManager.startSync(POSITIVE_EVENT);
 
         Awaitility.waitAtMost(5, TimeUnit.SECONDS)
             .untilAsserted(() -> {
@@ -61,7 +61,7 @@ class NetxJavaSupportsTest {
     @Test
     @DisplayName("Scenario-2. Start -> Join -> Rollback")
     void Scenario2_Start_Join_Rollback() {
-        String id = sagaManager.syncStart(NEGATIVE_EVENT);
+        String id = sagaManager.startSync(NEGATIVE_EVENT);
 
         Awaitility.waitAtMost(5, TimeUnit.SECONDS)
             .untilAsserted(() -> {

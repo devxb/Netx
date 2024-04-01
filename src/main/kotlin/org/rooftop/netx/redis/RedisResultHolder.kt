@@ -2,7 +2,7 @@ package org.rooftop.netx.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
-import org.rooftop.netx.api.Codec
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.api.Result
 import org.rooftop.netx.api.ResultTimeoutException
 import org.rooftop.netx.engine.ResultHolder

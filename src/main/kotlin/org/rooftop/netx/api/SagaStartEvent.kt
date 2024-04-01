@@ -1,5 +1,7 @@
 package org.rooftop.netx.api
 
+import org.rooftop.netx.core.Codec
+
 class SagaStartEvent internal constructor(
     id: String,
     nodeName: String,

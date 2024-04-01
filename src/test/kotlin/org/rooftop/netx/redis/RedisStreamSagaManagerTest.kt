@@ -61,7 +61,7 @@ internal class RedisStreamSagaManagerTest(
     describe("syncStart 메소드는") {
         context("어떤 event도 없이 호출되면,") {
             it("Saga 를 시작하고 saga-id를 반환한다.") {
-                sagaManager.syncStart()
+                sagaManager.startSync()
 
                 eventually(5.seconds) {
                     monoSagaHandlerAssertions.startCountShouldBe(1)
@@ -72,8 +72,8 @@ internal class RedisStreamSagaManagerTest(
 
         context("서로 다른 id의 사가가 여러번 시작되어도") {
             it("모두 읽을 수 있다.") {
-                sagaManager.syncStart()
-                sagaManager.syncStart()
+                sagaManager.startSync()
+                sagaManager.startSync()
 
                 eventually(5.seconds) {
                     monoSagaHandlerAssertions.startCountShouldBe(2)
@@ -109,10 +109,10 @@ internal class RedisStreamSagaManagerTest(
 
     describe("syncJoin 메소드는") {
         context("존재하는 sagaId를 입력받으면,") {
-            val sagaId = sagaManager.syncStart()
+            val sagaId = sagaManager.startSync()
 
             it("Saga 에 참여한다.") {
-                sagaManager.syncJoin(sagaId)
+                sagaManager.joinSync(sagaId)
 
                 eventually(5.seconds) {
                     monoSagaHandlerAssertions.joinCountShouldBe(1)
@@ -124,7 +124,7 @@ internal class RedisStreamSagaManagerTest(
         context("존재하지 않는 sagaId를 입력받으면,") {
             it("SagaException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists saga by id \"$NOT_EXIST_TX_ID\"") {
-                    sagaManager.syncJoin(NOT_EXIST_TX_ID)
+                    sagaManager.joinSync(NOT_EXIST_TX_ID)
                 }
             }
         }
@@ -155,10 +155,10 @@ internal class RedisStreamSagaManagerTest(
 
     describe("syncExists 메소드는") {
         context("존재하는 sagaId를 입력받으면,") {
-            val sagaId = sagaManager.syncStart()
+            val sagaId = sagaManager.startSync()
 
             it("saga id를 반환한다.") {
-                val result = sagaManager.syncExists(sagaId)
+                val result = sagaManager.existsSync(sagaId)
 
                 result shouldBe sagaId
             }
@@ -167,7 +167,7 @@ internal class RedisStreamSagaManagerTest(
         context("존재하지 않는 sagaId를 입력받으면,") {
             it("SagaException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists saga by id \"$NOT_EXIST_TX_ID\"") {
-                    sagaManager.syncExists(NOT_EXIST_TX_ID)
+                    sagaManager.existsSync(NOT_EXIST_TX_ID)
                 }
             }
         }
@@ -199,10 +199,10 @@ internal class RedisStreamSagaManagerTest(
 
     describe("syncCommit 메소드는") {
         context("존재하는 sagaId를 입력받으면,") {
-            val sagaId = sagaManager.syncStart()
+            val sagaId = sagaManager.startSync()
 
             it("commit 메시지를 publish 한다") {
-                sagaManager.syncCommit(sagaId)
+                sagaManager.commitSync(sagaId)
 
                 eventually(5.seconds) {
                     monoSagaHandlerAssertions.commitCountShouldBe(1)
@@ -214,7 +214,7 @@ internal class RedisStreamSagaManagerTest(
         context("존재하지 않는 sagaId를 입력받으면,") {
             it("SagaException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists saga by id \"$NOT_EXIST_TX_ID\"") {
-                    sagaManager.syncCommit(NOT_EXIST_TX_ID)
+                    sagaManager.commitSync(NOT_EXIST_TX_ID)
                 }
             }
         }
@@ -246,10 +246,10 @@ internal class RedisStreamSagaManagerTest(
 
     describe("syncRollback 메소드는") {
         context("존재하는 sagaId를 입력받으면,") {
-            val sagaId = sagaManager.syncStart()
+            val sagaId = sagaManager.startSync()
 
             it("rollback 메시지를 publish 한다") {
-                sagaManager.syncRollback(sagaId, "rollback for test")
+                sagaManager.rollbackSync(sagaId, "rollback for test")
 
                 eventually(5.seconds) {
                     monoSagaHandlerAssertions.rollbackCountShouldBe(1)
@@ -261,7 +261,7 @@ internal class RedisStreamSagaManagerTest(
         context("존재하지 않는 sagaId를 입력받으면,") {
             it("SagaException 을 던진다.") {
                 shouldThrowMessage("Cannot find exists saga by id \"$NOT_EXIST_TX_ID\"") {
-                    sagaManager.syncRollback(NOT_EXIST_TX_ID, "rollback for test")
+                    sagaManager.rollbackSync(NOT_EXIST_TX_ID, "rollback for test")
                 }
             }
         }

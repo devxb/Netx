@@ -1,5 +1,6 @@
 package org.rooftop.netx.api
 
+import org.rooftop.netx.core.Codec
 import kotlin.reflect.KClass
 
 sealed class SagaEvent(

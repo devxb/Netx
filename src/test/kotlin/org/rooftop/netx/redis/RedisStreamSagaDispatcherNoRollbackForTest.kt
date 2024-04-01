@@ -29,7 +29,7 @@ internal class RedisStreamSagaDispatcherNoRollbackForTest(
     }
 
     "noRollbackFor로 IllegalArgumentException이 걸려있으면, 해당 예외가 발생해도 rollback 하지 않는다." {
-        sagaManager.syncStart(IllegalArgumentExceptionEvent("illegal"))
+        sagaManager.startSync(IllegalArgumentExceptionEvent("illegal"))
 
         eventually(5.seconds) {
             sagaAssertions.startCountShouldBe(1)
@@ -38,7 +38,7 @@ internal class RedisStreamSagaDispatcherNoRollbackForTest(
     }
 
     "noRollbackFor로 UnSupportedOperationException이 걸려있으면, 해당 예외가 발생해도 rollback 하지않는다." {
-        sagaManager.syncStart(UnSupportedOperationExceptionEvent("unsupports"))
+        sagaManager.startSync(UnSupportedOperationExceptionEvent("unsupports"))
 
         eventually(5.seconds) {
             sagaAssertions.startCountShouldBe(1)
@@ -47,7 +47,7 @@ internal class RedisStreamSagaDispatcherNoRollbackForTest(
     }
 
     "noRollbackFor에 설정되지 않은 예외가 발생하면, rollback을 수행한다." {
-        sagaManager.syncStart(NoSuchElementExceptionEvent("noSuchElement"))
+        sagaManager.startSync(NoSuchElementExceptionEvent("noSuchElement"))
 
         eventually(5.seconds) {
             sagaAssertions.startCountShouldBe(1)

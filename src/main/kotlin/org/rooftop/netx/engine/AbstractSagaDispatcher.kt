@@ -2,6 +2,7 @@ package org.rooftop.netx.engine
 
 import jakarta.annotation.PostConstruct
 import org.rooftop.netx.api.*
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.engine.core.Saga
 import org.rooftop.netx.engine.core.SagaState
 import org.rooftop.netx.engine.logging.info
