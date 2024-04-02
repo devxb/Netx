@@ -3,7 +3,7 @@ package org.rooftop.netx.core
 import org.rooftop.netx.api.TypeReference
 import kotlin.reflect.KClass
 
-internal interface Codec {
+interface Codec {
 
     fun <T : Any> encode(data: T): String
 

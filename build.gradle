@@ -2,6 +2,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     id "application"
+    id 'org.jetbrains.dokka' version "${dokkaVersion}"
     id "org.jetbrains.kotlin.jvm" version "${jetbrainKotlinVersion}"
     id "org.jetbrains.kotlin.plugin.spring" version "${jetbrainKotlinVersion}"
     id "org.springframework.boot" version "${springbootVersion}" apply false
@@ -50,6 +51,7 @@ apply from: "gradle/core.gradle"
 apply from: "gradle/sonar.gradle"
 apply from: "gradle/kotlin.gradle"
 apply from: "gradle/spring.gradle"
+apply from: "gradle/docs.gradle"
 
 wrapper {
     gradleVersion = "7.6.1"

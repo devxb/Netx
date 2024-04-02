@@ -2,6 +2,10 @@ package org.rooftop.netx.api
 
 import org.rooftop.netx.core.Codec
 
+/**
+ * @see SagaEvent
+ * @see SagaCommitListener
+ */
 class SagaCommitEvent internal constructor(
     id: String,
     nodeName: String,

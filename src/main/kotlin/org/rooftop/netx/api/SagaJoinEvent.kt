@@ -2,6 +2,10 @@ package org.rooftop.netx.api
 
 import org.rooftop.netx.core.Codec
 
+/**
+ * @see SagaEvent
+ * @see SagaJoinListener
+ */
 class SagaJoinEvent internal constructor(
     id: String,
     nodeName: String,
