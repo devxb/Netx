@@ -1,6 +1,6 @@
 package org.rooftop.netx.redis
 
-import org.rooftop.netx.api.Codec
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.api.FailedAckSagaException
 import org.rooftop.netx.api.SagaManager
 import org.rooftop.netx.engine.AbstractSagaDispatcher

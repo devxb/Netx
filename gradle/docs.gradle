@@ -1,0 +1,19 @@
+dokkaHtml {
+    outputDirectory.set(file("build/documentation/html"))
+}
+
+dokkaGfm {
+    outputDirectory.set(file("build/documentation/markdown"))
+}
+
+tasks.register('dokkaHtmlJar', Jar.class) {
+    dependsOn(dokkaHtml)
+    from(dokkaHtml)
+    archiveClassifier.set("html-docs")
+}
+
+tasks.register('dokkaJavadocJar', Jar.class) {
+    dependsOn(dokkaJavadoc)
+    from(dokkaJavadoc)
+    archiveClassifier.set("javadoc")
+}

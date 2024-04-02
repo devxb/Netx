@@ -1,5 +1,6 @@
-package org.rooftop.netx.api
+package org.rooftop.netx.core
 
+import org.rooftop.netx.api.TypeReference
 import kotlin.reflect.KClass
 
 interface Codec {

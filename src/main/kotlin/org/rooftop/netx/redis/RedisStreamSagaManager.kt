@@ -1,7 +1,7 @@
 package org.rooftop.netx.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.rooftop.netx.api.Codec
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.api.SagaException
 import org.rooftop.netx.engine.AbstractSagaManager
 import org.rooftop.netx.engine.SagaIdGenerator

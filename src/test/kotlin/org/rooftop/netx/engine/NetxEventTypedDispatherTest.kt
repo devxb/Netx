@@ -29,7 +29,7 @@ internal class NetxEventTypedDispatherTest(
     }
 
     "event로 Foo 타입의 클래스가 주어지면, Any::class, Foo::class의 모든 핸들러에게 saga event가 전파된다." {
-        sagaManager.syncStart(Foo("xb"))
+        sagaManager.startSync(Foo("xb"))
 
         eventually(5.seconds) {
             sagaTypedReceiveStorage.handlerShouldBeEqual(Any::class, 1)
@@ -42,7 +42,7 @@ internal class NetxEventTypedDispatherTest(
     }
 
     "event로 String 타입의 클래스가 주어지면, Any::class, String::class의 모든 핸들러에게 saga event가 전파된다." {
-        sagaManager.syncStart("String")
+        sagaManager.startSync("String")
 
         eventually(5.seconds) {
             sagaTypedReceiveStorage.handlerShouldBeEqual(Any::class, 1)
@@ -55,7 +55,7 @@ internal class NetxEventTypedDispatherTest(
     }
 
     "event로 Long 타입의 클래스가 주어지면, Any::class, Long::class, String::class, Boolean::class 의 모든 핸들러에게 saga event가 전파된다." {
-        sagaManager.syncStart(1000L)
+        sagaManager.startSync(1000L)
 
         eventually(5.seconds) {
             sagaTypedReceiveStorage.handlerShouldBeEqual(Any::class, 1)
@@ -68,7 +68,7 @@ internal class NetxEventTypedDispatherTest(
     }
 
     "event로 Boolean 타입의 클래스가 주어지면, Any::class, Boolean::class, String::class 의 모든 핸들러에게 saga event가 전파된다." {
-        sagaManager.syncStart(true)
+        sagaManager.startSync(true)
 
         eventually(5.seconds) {
             sagaTypedReceiveStorage.handlerShouldBeEqual(Any::class, 1)
@@ -81,7 +81,7 @@ internal class NetxEventTypedDispatherTest(
     }
 
     "event로 어떠한것도 전달되지 않으면, Any::class의 모든 핸들러에게 saga event가 전파된다." {
-        sagaManager.syncStart()
+        sagaManager.startSync()
 
         eventually(5.seconds) {
             sagaTypedReceiveStorage.handlerShouldBeEqual(Any::class, 1)
@@ -94,7 +94,7 @@ internal class NetxEventTypedDispatherTest(
     }
 
     "event로 Unit이 주어지면, Unit::class의 핸들러에게 saga event가 전파된다." {
-        sagaManager.syncStart(Unit)
+        sagaManager.startSync(Unit)
 
         eventually(5.seconds) {
             sagaTypedReceiveStorage.handlerShouldBeEqual(Any::class, 1)

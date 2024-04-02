@@ -31,7 +31,7 @@ internal class NetxEventSupportsTest(
     "event로 객체가 주어지면, SagaRollbackEvent에서 해당 객체를 decode 할 수 있다." {
         // given
         val expected = Foo("hello", 1.1234567891234568)
-        sagaManager.syncStart(expected)
+        sagaManager.startSync(expected)
 
         Thread.sleep(1000)
 
@@ -45,8 +45,8 @@ internal class NetxEventSupportsTest(
     "event로 Map이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = mapOf("name" to "hello")
-        val id = sagaManager.syncStart()
-        sagaManager.syncJoin(id, expected)
+        val id = sagaManager.startSync()
+        sagaManager.joinSync(id, expected)
 
         Thread.sleep(1000)
 
@@ -61,8 +61,8 @@ internal class NetxEventSupportsTest(
     "event로 Int가 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = 1
-        val id = sagaManager.syncStart()
-        sagaManager.syncCommit(id, expected)
+        val id = sagaManager.startSync()
+        sagaManager.commitSync(id, expected)
 
         Thread.sleep(1000)
 
@@ -76,8 +76,8 @@ internal class NetxEventSupportsTest(
     "event로 Long이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = 1L
-        val id = sagaManager.syncStart()
-        sagaManager.syncRollback(id, "cause", expected)
+        val id = sagaManager.startSync()
+        sagaManager.rollbackSync(id, "cause", expected)
 
         Thread.sleep(1000)
 
@@ -91,7 +91,7 @@ internal class NetxEventSupportsTest(
     "event로 String이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = "string"
-        sagaManager.syncStart(expected)
+        sagaManager.startSync(expected)
 
         Thread.sleep(1000)
 
@@ -105,7 +105,7 @@ internal class NetxEventSupportsTest(
     "event로 char이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = 'c'
-        sagaManager.syncStart(expected)
+        sagaManager.startSync(expected)
 
         Thread.sleep(1000)
 
@@ -119,7 +119,7 @@ internal class NetxEventSupportsTest(
     "event로 Boolean이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = true
-        sagaManager.syncStart(expected)
+        sagaManager.startSync(expected)
 
         Thread.sleep(1000)
 
@@ -133,7 +133,7 @@ internal class NetxEventSupportsTest(
     "event로 Unit이 주어지면, SagaRollbackEvent에서 해당 객체를 decode할 수 있다." {
         // given
         val expected = Unit
-        sagaManager.syncStart(expected)
+        sagaManager.startSync(expected)
 
         Thread.sleep(1000)
 

@@ -1,5 +1,11 @@
 package org.rooftop.netx.api
 
+import org.rooftop.netx.core.Codec
+
+/**
+ * @see SagaEvent
+ * @see SagaRollbackListener
+ */
 class SagaRollbackEvent internal constructor(
     id: String,
     nodeName: String,

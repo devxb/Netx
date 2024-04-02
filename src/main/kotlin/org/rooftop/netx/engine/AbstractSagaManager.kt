@@ -1,7 +1,7 @@
 package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.AlreadyCommittedSagaException
-import org.rooftop.netx.api.Codec
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.api.SagaException
 import org.rooftop.netx.api.SagaManager
 import org.rooftop.netx.engine.core.Saga
@@ -18,47 +18,47 @@ internal abstract class AbstractSagaManager(
     private val sagaIdGenerator: SagaIdGenerator,
 ) : SagaManager {
 
-    override fun syncStart(): String {
+    override fun startSync(): String {
         return start().block()
             ?: throw SagaException("Cannot start saga")
     }
 
-    final override fun <T : Any> syncStart(event: T): String {
+    final override fun <T : Any> startSync(event: T): String {
         return start(event).block()
             ?: throw SagaException("Cannot start saga \"$event\"")
     }
 
-    override fun syncJoin(id: String): String {
+    override fun joinSync(id: String): String {
         return join(id).block()
             ?: throw SagaException("Cannot join saga \"$id\"")
     }
 
-    final override fun <T : Any> syncJoin(id: String, event: T): String {
+    final override fun <T : Any> joinSync(id: String, event: T): String {
         return join(id, event).block()
             ?: throw SagaException("Cannot join saga \"$id\", \"$event\"")
     }
 
-    final override fun syncExists(id: String): String {
+    final override fun existsSync(id: String): String {
         return exists(id).block()
             ?: throw SagaException("Cannot exists saga \"$id\"")
     }
 
-    final override fun syncCommit(id: String): String {
+    final override fun commitSync(id: String): String {
         return commit(id).block()
             ?: throw SagaException("Cannot commit saga \"$id\"")
     }
 
-    override fun <T : Any> syncCommit(id: String, event: T): String {
+    override fun <T : Any> commitSync(id: String, event: T): String {
         return commit(id, event).block()
             ?: throw SagaException("Cannot commit saga \"$id\" \"$event\"")
     }
 
-    final override fun syncRollback(id: String, cause: String): String {
+    final override fun rollbackSync(id: String, cause: String): String {
         return rollback(id, cause).block()
             ?: throw SagaException("Cannot rollback saga \"$id\", \"$cause\"")
     }
 
-    override fun <T : Any> syncRollback(id: String, cause: String, event: T): String {
+    override fun <T : Any> rollbackSync(id: String, cause: String, event: T): String {
         return rollback(id, cause, event).block()
             ?: throw SagaException("Cannot rollback saga \"$id\", \"$cause\" \"$event\"")
     }

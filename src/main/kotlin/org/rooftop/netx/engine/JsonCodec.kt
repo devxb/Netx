@@ -1,7 +1,7 @@
 package org.rooftop.netx.engine
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.rooftop.netx.api.Codec
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.api.DecodeException
 import org.rooftop.netx.api.EncodeException
 import org.rooftop.netx.api.TypeReference
