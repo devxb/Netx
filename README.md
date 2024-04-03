@@ -7,7 +7,7 @@
 ![version 0.4.0](https://img.shields.io/badge/version-0.4.0-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
-> **TPS(6,000) on my default Macbook air m2.** _[link](#tps-test)_ 
+**TPS(6,000)** on my default Macbook air m2. _[link](#Test1.-TPS)_ 
 
 Netx is a Saga framework that supports Redis-Stream.   
 `Netx` provides the following features:
@@ -19,7 +19,7 @@ Netx is a Saga framework that supports Redis-Stream.
 6. Prevents multiple nodes in the same group from receiving duplicate events.
 7. Ensures message delivery using the `At Least Once` approach.
 
-You can see the test results [here](#test).
+You can see the test results [here](#Test).
 
 ## Download
 
@@ -279,22 +279,19 @@ fun exists(param: Any): Mono<Any> {
 
 ## Test
 
-### TPS test
+### Test1. TPS
 
 > **How to test?**    
 > For 333,333 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit.   
 > For 444,444 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit -> saga rollback.   
 > The combined test, consisting of both sequences, took a total of 2 minutes and 10 seconds.
+   
+<img width="700" alt="Netx load test 777,777" src="https://github.com/devxb/Netx/assets/62425964/2935f194-f246-40de-b9b3-be0505b19446">
 
-### Order -> payment -> rollback transaction
+
+### Test2. Rollback
 
 > **How to test?**   
 > Pending order -> Pending payment -> Successful payment -> Successful order -> Inventory deduction failure -> Order failure -> Payment failure
 
 <img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f"/>
-
-### Jvm 
-
-> **How to test?**   
-> Continuously sent requests at a certain rate per second for one hour without interruption.    
-> During this time, I monitored the status using Redis-stat and VisualVM.
