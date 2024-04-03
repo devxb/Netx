@@ -1,23 +1,34 @@
 # Netx <img src="https://avatars.githubusercontent.com/u/149151221?s=200&v=4" height = 100 align = left>
 
-> Saga framework / Supports redis-stream and reactive
-
-<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="360" align="right"/>
+> Saga framework / Supports redis-stream and blocking, reactive paradigms.
 
 <br>
 
 ![version 0.4.0](https://img.shields.io/badge/version-0.4.0-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
-Netx is a Saga framework that supports Redis-Stream.   
-`Netx` provides the following features:
+**TPS(6,000)** on my default Macbook air m2. _[link](#Test1-TPS)_ 
 
-1. Supports synchronous API and asynchronous [Reactor](https://projectreactor.io/) API.
-2. Supports both Orchestration and Choreograph.
-3. Automatically reruns lost events.
-4. Supports backpressure to control the number of events that can be processed per node.
-5. Prevents multiple nodes in the same group from receiving duplicate events.
-6. Ensures message delivery using the `At Least Once` approach.
+Netx is a Saga framework, that provides following features.
+
+1. Supports redis-stream.
+2. Supports synchronous API and asynchronous [Reactor](https://projectreactor.io/) API.
+3. Supports both Orchestration and Choreograph.
+4. Automatically reruns loss events.
+5. Automatically applies **`Transactional messaging pattern`**.
+6. Supports backpressure to control the number of events that can be processed per node.
+7. Prevents multiple nodes in the same group from receiving duplicate events.
+8. Ensures message delivery using the `At Least Once` approach.
+
+You can see the test results [here](#Test).
+
+## Download
+
+```groovy
+dependencies {
+    implementation "org.rooftopmsa:netx:${version}"
+}
+```
 
 ## How to use
 
@@ -43,7 +54,7 @@ When configured automatically with the `@EnableSaga` annotation, netx uses the f
 
 | KEY                     | EXAMPLE   | DESCRIPTION                                                                                                                                                                   | DEFAULT |
 |-------------------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| **netx.mode**           | redis     | Specifies the mode implementation used for Saga management.                                                                                                                                             |         |
+| **netx.mode**           | redis     | Specifies the mode implementation used for Saga management. Currently, only redis is available as an option.                                                                                                                                            |         |
 | **netx.host**           | localhost | The host URL of the event stream used for Saga management. (e.g., redis host)                                                                                                                           |         |
 | **netx.password**       | 0000      | The password used to connect to the event stream used for Saga management. If not set, 0000 is mapped as the password.                                                                                                       | 0000    |
 | **netx.port**           | 6379      | The port of the message queue used for Saga management.                                                                                                                                                 |         |
@@ -267,20 +278,21 @@ fun exists(param: Any): Mono<Any> {
 }
 ```
 
+## Test
 
-## Download
+### Test1-TPS
 
-```groovy
-repositories {
-    maven { url "https://jitpack.io" }
-}
-
-dependencies {
-    implementation "com.github.devxb:netx:${version}"
-}
-```
+> **How to test?**    
+> For 333,333 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit.   
+> For 444,444 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit -> saga rollback.   
+> The combined test, consisting of both sequences, took a total of 2 minutes and 10 seconds.
+   
+<img width="700" alt="Netx load test 777,777" src="https://github.com/devxb/Netx/assets/62425964/2935f194-f246-40de-b9b3-be0505b19446">
 
 
-#### Events-Scenario0. Handle saga event
+### Test2-Rollback
 
-When another distributed server (or itself) starts or changes the state of a saga through the sagaManager,
+> **How to test?**   
+> Pending order -> Pending payment -> Successful payment -> Successful order -> Inventory deduction failure -> Order failure -> Payment failure
+
+<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f"/>

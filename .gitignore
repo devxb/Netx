@@ -42,3 +42,7 @@ bin/
 .DS_Store
 
 .idea/
+target/
+
+### Secret ###
+publish.sh

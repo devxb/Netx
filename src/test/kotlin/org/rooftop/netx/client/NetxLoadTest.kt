@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 import kotlin.time.Duration.Companion.minutes
 
-@DisplayName("Netx 부하테스트")
+@DisplayName("Netx LoadTest")
 @SpringBootTest(
     classes = [
         RedisContainer::class,
@@ -29,13 +29,13 @@ internal class NetxLoadTest(
     private val sagaReceiveStorage: SagaReceiveStorage,
 ) : FunSpec({
 
-    test("Netx는 부하가 가중되어도, 결과적 일관성을 보장한다.") {
+    test("with 77,777 transactions.") {
         forAll(
             row(1, 1),
-//            row(10, 10),
-//            row(100, 100),
-//            row(1_000, 1_000),
-//            row(10_000, 10_000),
+            row(10, 10),
+            row(100, 100),
+            row(1_000, 1_000),
+            row(10_000, 10_000),
         ) { commitLoadCount, rollbackLoadCount ->
             sagaReceiveStorage.clear()
 
