@@ -9,15 +9,16 @@
 
 **TPS(6,000)** on my default Macbook air m2. _[link](#Test1-TPS)_ 
 
-Netx is a Saga framework that supports Redis-Stream.   
-`Netx` provides the following features:
-1. Supports synchronous API and asynchronous [Reactor](https://projectreactor.io/) API.
-2. Supports both Orchestration and Choreograph.
-3. Automatically reruns loss events.
-4. Automatically applies **`Transactional messaging pattern`**
-5. Supports backpressure to control the number of events that can be processed per node.
-6. Prevents multiple nodes in the same group from receiving duplicate events.
-7. Ensures message delivery using the `At Least Once` approach.
+Netx is a Saga framework, that provides following features.
+
+1. Supports redis-stream.
+2. Supports synchronous API and asynchronous [Reactor](https://projectreactor.io/) API.
+3. Supports both Orchestration and Choreograph.
+4. Automatically reruns loss events.
+5. Automatically applies **`Transactional messaging pattern`**.
+6. Supports backpressure to control the number of events that can be processed per node.
+7. Prevents multiple nodes in the same group from receiving duplicate events.
+8. Ensures message delivery using the `At Least Once` approach.
 
 You can see the test results [here](#Test).
 
@@ -53,7 +54,7 @@ When configured automatically with the `@EnableSaga` annotation, netx uses the f
 
 | KEY                     | EXAMPLE   | DESCRIPTION                                                                                                                                                                   | DEFAULT |
 |-------------------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| **netx.mode**           | redis     | Specifies the mode implementation used for Saga management.                                                                                                                                             |         |
+| **netx.mode**           | redis     | Specifies the mode implementation used for Saga management. Currently, only redis is available as an option.                                                                                                                                            |         |
 | **netx.host**           | localhost | The host URL of the event stream used for Saga management. (e.g., redis host)                                                                                                                           |         |
 | **netx.password**       | 0000      | The password used to connect to the event stream used for Saga management. If not set, 0000 is mapped as the password.                                                                                                       | 0000    |
 | **netx.port**           | 6379      | The port of the message queue used for Saga management.                                                                                                                                                 |         |
