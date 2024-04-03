@@ -2,30 +2,21 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     id "application"
-    id 'org.jetbrains.dokka' version "${dokkaVersion}"
+    id "org.jetbrains.dokka" version "${dokkaVersion}"
     id "org.jetbrains.kotlin.jvm" version "${jetbrainKotlinVersion}"
     id "org.jetbrains.kotlin.plugin.spring" version "${jetbrainKotlinVersion}"
     id "org.springframework.boot" version "${springbootVersion}" apply false
     id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
     id "org.sonarqube" version "${sonarcloudVersion}"
+    id "signing"
     id "maven-publish"
 }
 
 group = "${group}"
 version = "${version}"
-
+archivesBaseName = "netx"
 sourceCompatibility = "${compatibility}"
 targetCompatibility = "${compatibility}"
-
-jar {
-    enabled = true
-    from {
-        configurations.runtimeClasspath.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
 
 repositories {
     mavenCentral()
@@ -37,14 +28,6 @@ dependencyManagement {
     }
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-        }
-    }
-}
-
 apply from: "gradle/streams.gradle"
 apply from: "gradle/test.gradle"
 apply from: "gradle/core.gradle"
@@ -52,8 +35,9 @@ apply from: "gradle/sonar.gradle"
 apply from: "gradle/kotlin.gradle"
 apply from: "gradle/spring.gradle"
 apply from: "gradle/docs.gradle"
+apply from: "gradle/publish.gradle"
 
 wrapper {
-    gradleVersion = "7.6.1"
+    gradleVersion = "8.7"
     distributionType = Wrapper.DistributionType.ALL
 }

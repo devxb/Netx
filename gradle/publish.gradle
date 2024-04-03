@@ -1,0 +1,67 @@
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+
+publishing {
+    repositories {
+        maven {
+            def releaseRepo = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotRepo = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+
+            name = "OSSRH"
+            url = isReleaseVersion ? releaseRepo : snapshotRepo
+
+            credentials {
+                username = project.hasProperty("ossrhUsername") ? project.property("ossrhUsername") : ""
+                password = project.hasProperty("ossrhPassword") ? project.property("ossrhPassword") : ""
+            }
+        }
+    }
+
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                groupId = "org.rooftopmsa"
+                name = "netx"
+                description = "Saga framework / Supports redis stream and reactive"
+                url = 'https://github.com/devxb/netx'
+                packaging = 'jar'
+
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://github.com/devxb/Netx/blob/main/LICENSE'
+                    }
+                }
+
+                scm {
+                    url = "https://github.com/devxb/netx"
+                    connection = "scm:git://github.com:devxb/netx.git"
+                    developerConnection = "scm:git://github.com:devxb/netx.git"
+                }
+
+                developers {
+                    developer {
+                        id = 'devxb'
+                        name = 'Junyoung Lee'
+                        email = 'develxb@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    // Must be passed under properties
+    // signing.keyId
+    // signing.password
+    // signing.secretKeyRingFile
+    sign publishing.publications.mavenJava
+}
+
