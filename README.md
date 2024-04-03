@@ -2,22 +2,32 @@
 
 > Saga framework / Supports redis-stream and reactive
 
-<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f" width="360" align="right"/>
-
 <br>
 
 ![version 0.4.0](https://img.shields.io/badge/version-0.4.0-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
+> **TPS(6,000) on my default Macbook air m2.** _[link](#tps-test)_ 
+
 Netx is a Saga framework that supports Redis-Stream.   
 `Netx` provides the following features:
-
 1. Supports synchronous API and asynchronous [Reactor](https://projectreactor.io/) API.
 2. Supports both Orchestration and Choreograph.
-3. Automatically reruns lost events.
-4. Supports backpressure to control the number of events that can be processed per node.
-5. Prevents multiple nodes in the same group from receiving duplicate events.
-6. Ensures message delivery using the `At Least Once` approach.
+3. Automatically reruns loss events.
+4. Automatically applies **`Transactional messaging pattern`**
+5. Supports backpressure to control the number of events that can be processed per node.
+6. Prevents multiple nodes in the same group from receiving duplicate events.
+7. Ensures message delivery using the `At Least Once` approach.
+
+You can see the test results [here](#test).
+
+## Download
+
+```groovy
+dependencies {
+    implementation "org.rooftopmsa:netx:${version}"
+}
+```
 
 ## How to use
 
@@ -267,20 +277,24 @@ fun exists(param: Any): Mono<Any> {
 }
 ```
 
+## Test
 
-## Download
+### TPS test
 
-```groovy
-repositories {
-    maven { url "https://jitpack.io" }
-}
+> **How to test?**    
+> For 333,333 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit.   
+> For 444,444 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit -> saga rollback.   
+> The combined test, consisting of both sequences, took a total of 2 minutes and 10 seconds.
 
-dependencies {
-    implementation "com.github.devxb:netx:${version}"
-}
-```
+### Order -> payment -> rollback transaction
 
+> **How to test?**   
+> Pending order -> Pending payment -> Successful payment -> Successful order -> Inventory deduction failure -> Order failure -> Payment failure
 
-#### Events-Scenario0. Handle saga event
+<img src = "https://github.com/rooftop-MSA/Netx/assets/62425964/08ed9050-1923-42b5-803f-5b7ea37a263f"/>
 
-When another distributed server (or itself) starts or changes the state of a saga through the sagaManager,
+### Jvm 
+
+> **How to test?**   
+> Continuously sent requests at a certain rate per second for one hour without interruption.    
+> During this time, I monitored the status using Redis-stat and VisualVM.
