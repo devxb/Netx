@@ -7,7 +7,7 @@
 ![version 0.4.0](https://img.shields.io/badge/version-0.4.0-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
-**TPS(6,000)** on my default Macbook air m2. _[link](#Test1.-TPS)_ 
+**TPS(6,000)** on my default Macbook air m2. _[link](#Test1-TPS)_ 
 
 Netx is a Saga framework that supports Redis-Stream.   
 `Netx` provides the following features:
@@ -279,7 +279,7 @@ fun exists(param: Any): Mono<Any> {
 
 ## Test
 
-### Test1. TPS
+### Test1-TPS
 
 > **How to test?**    
 > For 333,333 tests, the sequence proceeds as follows: saga start -> saga join -> saga commit.   
@@ -289,7 +289,7 @@ fun exists(param: Any): Mono<Any> {
 <img width="700" alt="Netx load test 777,777" src="https://github.com/devxb/Netx/assets/62425964/2935f194-f246-40de-b9b3-be0505b19446">
 
 
-### Test2. Rollback
+### Test2-Rollback
 
 > **How to test?**   
 > Pending order -> Pending payment -> Successful payment -> Successful order -> Inventory deduction failure -> Order failure -> Payment failure
