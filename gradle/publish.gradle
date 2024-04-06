@@ -35,7 +35,7 @@ publishing {
                 licenses {
                     license {
                         name = 'The Apache License, Version 2.0'
-                        url = 'https://github.com/devxb/Netx/blob/main/LICENSE'
+                        url = 'https://github.com/devxb/netx/blob/main/LICENSE'
                     }
                 }
 
