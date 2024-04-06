@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.connection.RedisPassword
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
@@ -150,6 +151,7 @@ class RedisSagaConfigurer(
         }
 
     @Bean
+    @Primary
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     internal fun sagaReactiveRedisTemplate(): ReactiveRedisTemplate<String, Saga> {
         val keySerializer = StringRedisSerializer()
@@ -165,6 +167,7 @@ class RedisSagaConfigurer(
     }
 
     @Bean
+    @Primary
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     internal fun reactiveRedisTemplate(): ReactiveRedisTemplate<String, String> {
         val keySerializer = StringRedisSerializer()
@@ -179,6 +182,7 @@ class RedisSagaConfigurer(
     }
 
     @Bean
+    @Primary
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     internal fun reactiveRedisConnectionFactory(): ReactiveRedisConnectionFactory {
         val port: String = System.getProperty("netx.port") ?: port
