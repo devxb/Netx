@@ -6,6 +6,7 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
+import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.api.TypeReference
 import org.rooftop.netx.meta.EnableSaga
@@ -36,7 +37,8 @@ internal class OrchestratorTest(
     @Qualifier("contextOrchestrator") private val contextOrchestrator: Orchestrator<String, String>,
     @Qualifier("pairOrchestrator") private val pairOrchestrator: Orchestrator<String, Pair<Foo, Foo>>,
     @Qualifier("startWithContextOrchestrator") private val startWithContextOrchestrator: Orchestrator<String, String>,
-    @Qualifier("fooContextOrchestrator") private val fooContextOrchestrator: Orchestrator<String, List<Foo>>
+    @Qualifier("fooContextOrchestrator") private val fooContextOrchestrator: Orchestrator<String, List<Foo>>,
+    private val privateOrchestrator: Orchestrator<Private, Private>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -210,6 +212,19 @@ internal class OrchestratorTest(
             }
         }
     }
+
+    describe("privateFieldOrchestrator 구현채는") {
+        context("saga 메소드가 호출되면,") {
+            val private = Private("I'm private")
+
+            it("Private 필드가 포함된 객체를 반환한다.") {
+                val result = privateOrchestrator.sagaSync(private)
+
+                result.isSuccess shouldBeEqual true
+                result.decodeResultOrThrow(Private::class) shouldBeEqual private
+            }
+        }
+    }
 }) {
     data class Home(
         val address: String,
@@ -227,6 +242,8 @@ internal class OrchestratorTest(
     )
 
     data class Foo(val name: String)
+
+    data class Private(private val name: String)
 
     companion object {
         val rollbackOrchestratorResult = mutableListOf<String>()
