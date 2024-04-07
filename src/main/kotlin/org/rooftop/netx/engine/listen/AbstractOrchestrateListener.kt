@@ -1,6 +1,9 @@
 package org.rooftop.netx.engine.listen
 
-import org.rooftop.netx.api.*
+import org.rooftop.netx.api.Context
+import org.rooftop.netx.api.SagaEvent
+import org.rooftop.netx.api.SagaManager
+import org.rooftop.netx.api.TypeReference
 import org.rooftop.netx.core.Codec
 import org.rooftop.netx.engine.OrchestrateEvent
 import org.rooftop.netx.engine.RequestHolder
@@ -64,16 +67,17 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
             }
             .flatMap { (request, event) -> command(request, event) }
             .setNextCastableType()
+            .toOrchestrateEvent()
+            .map {
+                sagaEvent.setNextEvent(it)
+            }
             .doOnError {
+                it.printStackTrace()
                 rollback(
                     sagaEvent.id,
                     it,
                     sagaEvent.decodeEvent(OrchestrateEvent::class)
                 )
-            }
-            .toOrchestrateEvent()
-            .map {
-                sagaEvent.setNextEvent(it)
             }
     }
 

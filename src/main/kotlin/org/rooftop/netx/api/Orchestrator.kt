@@ -26,9 +26,9 @@ import reactor.core.publisher.Mono
  *
  *      }
  *
- *      class OrderOrchestratorConfigurer {
- *
- *          private val orchestratorFactory = OrchestratorFactory.instance()
+ *      class OrderOrchestratorConfigurer(
+ *          private val orchestratorFactory: OrchestratorFactory,
+ *      ){
  *
  *          fun orderOrchestrator(): Orchestrator<OrderRequest, Order> {
  *              return orchestratorFactory.create<OrderRequest>("orderOrchestrator")
