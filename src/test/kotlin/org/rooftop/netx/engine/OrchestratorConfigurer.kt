@@ -12,7 +12,9 @@ import reactor.core.publisher.Mono
 import java.time.Instant
 
 @Configuration
-internal class OrchestratorConfigurer {
+internal class OrchestratorConfigurer(
+    private val orchestratorFactory: OrchestratorFactory,
+) {
 
     @Bean(name = ["numberOrchestrator"])
     fun numberOrchestrator(): Orchestrator<Int, Int> {
@@ -224,6 +226,15 @@ internal class OrchestratorConfigurer {
                     context.decodeContext("2", OrchestratorTest.Foo::class),
                 )
             })
+    }
+
+    @Bean(name = ["privateFieldOrchestrator"])
+    fun privateFieldOrchestrator(): Orchestrator<OrchestratorTest.Private, OrchestratorTest.Private> {
+        return OrchestratorFactory.instance()
+            .create<OrchestratorTest.Private>("privateFieldOrchestrator")
+            .start({ it })
+            .join({ it })
+            .commit({ it })
     }
 
     object PairOrchestrate :

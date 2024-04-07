@@ -1,6 +1,8 @@
 package org.rooftop.netx.redis
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -116,7 +118,9 @@ class RedisSagaConfigurer(
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     internal fun netxObjectMapper(): ObjectMapper =
-        ObjectMapper().registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
+        ObjectMapper()
+            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+            .registerModule(ParameterNamesModule(JsonCreator.Mode.PROPERTIES))
             .registerModule(KotlinModule.Builder().build())
             .registerModule(JavaTimeModule())
 
