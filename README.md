@@ -120,12 +120,8 @@ class OrchestratorConfigurer(
             )
             .commit(
                 orchestrate = { request ->
-                    // When an error occurs, all rollbacks are called from the bottom up, 
-                    // starting from the location where the error occurred.
+                    // If a rollback occurs here, all the above rollback functions will be executed sequentially.
                     throw IllegalArgumentException("Oops! Something went wrong..")
-                },
-                rollback = { request ->
-                    // ...
                 }
             )
     }
