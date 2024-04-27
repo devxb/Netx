@@ -17,7 +17,7 @@ internal class OrchestratorConfigurer {
                 Mono.fromCallable {
                     request + 1
                 }
-            }, contextRollback = { _, request -> Mono.fromCallable { request - 1 } })
+            })
     }
 
     object IntOrchestrator : Orchestrate<Int, Int> {

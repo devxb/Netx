@@ -98,10 +98,10 @@ internal class OrchestratorTest(
     }
 
     describe("rollbackOrchestrator 구현채는") {
-        val expected = listOf("1", "2", "3", "4", "-4", "-3", "-1")
+        val expected = listOf("1", "2", "3", "4", "-3", "-1")
 
         context("saga 메소드가 호출되면,") {
-            it("실패한 부분부터 위로 거슬러 올라가며 롤백한다") {
+            it("실패한 부분 위부터 위로 거슬러 올라가며 롤백한다") {
                 val result = rollbackOrchestrator.sagaSync("")
 
                 result.isSuccess shouldBeEqual false
@@ -135,7 +135,7 @@ internal class OrchestratorTest(
         context("saga 메소드가 호출되면,") {
             val expected = listOf("1", "2", "3", "4", "-3", "-1")
 
-            it("실패한 부분부터 위로 거슬러 올라가며 롤백한다.") {
+            it("실패한 부분위부터 위로 거슬러 올라가며 롤백한다.") {
                 val result = monoRollbackOrchestrator.sagaSync("")
 
                 result.isSuccess shouldBeEqual false
@@ -151,7 +151,7 @@ internal class OrchestratorTest(
 
     describe("contextOrchestrator 구현채는") {
         context("saga 메소드가 호출되면,") {
-            val expected = listOf("0", "1", "2", "r3", "r2")
+            val expected = listOf("0", "1", "2", "r2")
 
             it("context 에서 아이템을 교환하며 Saga를 진행한다.") {
                 val result = contextOrchestrator.sagaSync("0")

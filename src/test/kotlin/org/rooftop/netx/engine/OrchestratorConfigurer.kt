@@ -91,9 +91,6 @@ internal class OrchestratorConfigurer(
                     rollbackOrchestratorResult.add("4")
                     throw IllegalArgumentException("Rollback")
                 },
-                rollback = {
-                    rollbackOrchestratorResult.add("-4")
-                }
             )
     }
 
@@ -141,10 +138,9 @@ internal class OrchestratorConfigurer(
                     val start1 = context.decodeContext("start-1", String::class)
                     val join2 = context.decodeContext("join-2", String::class)
                     val join3 = context.decodeContext("join-3", String::class)
-                    val rCommit4 = context.decodeContext("r-commit-4", String::class)
                     val rJoin3 = context.decodeContext("r-join-3", String::class)
 
-                    contextResult.addAll(listOf(start1, join2, join3, rCommit4, rJoin3))
+                    contextResult.addAll(listOf(start1, join2, join3, rJoin3))
                 }
             )
             .joinWithContext(
@@ -171,9 +167,6 @@ internal class OrchestratorConfigurer(
                     context.set("commit-4", request)
                     throw IllegalArgumentException("Rollback")
                 },
-                contextRollback = { context, request ->
-                    context.set("r-commit-4", "r$request")
-                }
             )
     }
 

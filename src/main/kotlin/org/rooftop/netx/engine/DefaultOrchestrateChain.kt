@@ -146,26 +146,20 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
 
     override fun <S : Any> commit(
         orchestrate: Orchestrate<V, S>,
-        rollback: Rollback<V, *>?,
     ): Orchestrator<OriginReq, S> {
         val nextCommitOrchestrateListener =
             getCommitOrchestrateListener<V, S>(CommandType.DEFAULT, orchestrate)
-        val nextRollbackOrchestrateListener =
-            getRollbackOrchestrateListener<V, S>(CommandType.DEFAULT, rollback)
 
-        return createOrchestrator(nextCommitOrchestrateListener, nextRollbackOrchestrateListener)
+        return createOrchestrator(nextCommitOrchestrateListener)
     }
 
     override fun <S : Any> commitWithContext(
         contextOrchestrate: ContextOrchestrate<V, S>,
-        contextRollback: ContextRollback<V, *>?
     ): Orchestrator<OriginReq, S> {
         val nextCommitOrchestrateListener =
             getCommitOrchestrateListener<V, S>(CommandType.CONTEXT, contextOrchestrate)
-        val nextRollbackOrchestrateListener =
-            getRollbackOrchestrateListener<V, S>(CommandType.CONTEXT, contextRollback)
 
-        return createOrchestrator(nextCommitOrchestrateListener, nextRollbackOrchestrateListener)
+        return createOrchestrator(nextCommitOrchestrateListener)
     }
 
     private fun <T : Any, V : Any> getCommitOrchestrateListener(
@@ -200,7 +194,6 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
 
     private fun <S : Any> createOrchestrator(
         nextCommitOrchestrateListener: CommitOrchestrateListener<V, S>,
-        nextRollbackOrchestrateListener: RollbackOrchestrateListener<V, S>?
     ): Orchestrator<OriginReq, S> {
         return chainContainer.orchestratorCache.cache(orchestratorId) {
             val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
@@ -208,7 +201,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 orchestrateSequence + 1,
                 chainContainer,
                 nextCommitOrchestrateListener,
-                nextRollbackOrchestrateListener,
+                null,
                 this,
             )
             this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
@@ -227,31 +220,24 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
 
     override fun <S : Any> commitReactive(
         orchestrate: Orchestrate<V, Mono<S>>,
-        rollback: Rollback<V, Mono<*>>?,
     ): Orchestrator<OriginReq, S> {
         val nextJoinOrchestrateListener =
             getMonoCommitOrchestrateListener<V, S>(CommandType.DEFAULT, orchestrate)
-        val nextRollbackOrchestrateListener =
-            getMonoRollbackOrchestrateListener<V, S>(CommandType.DEFAULT, rollback)
 
-        return createOrchestrator(nextJoinOrchestrateListener, nextRollbackOrchestrateListener)
+        return createOrchestrator(nextJoinOrchestrateListener)
     }
 
     override fun <S : Any> commitReactiveWithContext(
         contextOrchestrate: ContextOrchestrate<V, Mono<S>>,
-        contextRollback: ContextRollback<V, Mono<*>>?
     ): Orchestrator<OriginReq, S> {
         val nextJoinOrchestrateListener =
             getMonoCommitOrchestrateListener<V, S>(CommandType.CONTEXT, contextOrchestrate)
-        val nextRollbackOrchestrateListener =
-            getMonoRollbackOrchestrateListener<V, S>(CommandType.CONTEXT, contextRollback)
 
-        return createOrchestrator(nextJoinOrchestrateListener, nextRollbackOrchestrateListener)
+        return createOrchestrator(nextJoinOrchestrateListener)
     }
 
     private fun <S : Any> createOrchestrator(
         nextJoinOrchestrateListener: MonoCommitOrchestrateListener<V, S>,
-        nextRollbackOrchestrateListener: MonoRollbackOrchestrateListener<V, S>?
     ): Orchestrator<OriginReq, S> {
         return chainContainer.orchestratorCache.cache(orchestratorId) {
             val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
@@ -259,7 +245,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 orchestrateSequence + 1,
                 chainContainer,
                 nextJoinOrchestrateListener,
-                nextRollbackOrchestrateListener,
+                null,
                 this,
             )
             this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
@@ -330,6 +316,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
 
     private fun chainOrchestrateListeners(orchestrateListeners: List<Pair<AbstractOrchestrateListener<out Any, out Any>, AbstractOrchestrateListener<out Any, out Any>?>>) {
         var rollbackSequence = 0
+        var beforeRollbackSequence = -1
         for (listenerWithIdx in orchestrateListeners.withIndex()) {
             val isFirst = listenerWithIdx.index == 0
             val isLast =
@@ -341,6 +328,9 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 rollbackSequence = it.orchestrateSequence
             }
             listener.rollbackSequence = rollbackSequence
+            listener.beforeRollbackOrchestrateSequence = beforeRollbackSequence
+
+            beforeRollbackSequence = rollbackSequence
 
             listener.isFirst = isFirst
             listener.isLast = isLast
