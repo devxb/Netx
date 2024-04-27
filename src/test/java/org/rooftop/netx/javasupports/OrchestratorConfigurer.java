@@ -20,8 +20,7 @@ public class OrchestratorConfigurer {
                 request -> request - 1
             )
             .commit(
-                request -> request + 1,
-                request -> request - 1
+                request -> request + 1
             );
     }
 }

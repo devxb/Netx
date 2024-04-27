@@ -4,7 +4,7 @@
 
 <br>
 
-![version 0.4.2](https://img.shields.io/badge/version-0.4.2-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
+![version 0.4.3](https://img.shields.io/badge/version-0.4.3-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 **TPS(6,000)** on my Macbook air m2(default options). _[link](#Test1-TPS)_ 
@@ -120,12 +120,8 @@ class OrchestratorConfigurer(
             )
             .commit(
                 orchestrate = { request ->
-                    // When an error occurs, all rollbacks are called from the bottom up, 
-                    // starting from the location where the error occurred.
+                    // If a rollback occurs here, all the above rollback functions will be executed sequentially.
                     throw IllegalArgumentException("Oops! Something went wrong..")
-                },
-                rollback = { request ->
-                    // ...
                 }
             )
     }

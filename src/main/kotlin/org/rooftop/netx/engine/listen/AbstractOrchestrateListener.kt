@@ -153,7 +153,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         val rollbackOrchestrateEvent =
             OrchestrateEvent(
                 orchestrateEvent.orchestratorId,
-                rollbackSequence,
+                beforeRollbackOrchestrateSequence,
                 "",
                 orchestrateEvent.context,
             )
