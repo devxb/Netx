@@ -6,7 +6,6 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
-import io.kotest.matchers.shouldBe
 import org.rooftop.netx.api.Orchestrator
 import org.rooftop.netx.api.TypeReference
 import org.rooftop.netx.meta.EnableSaga
@@ -39,6 +38,8 @@ internal class OrchestratorTest(
     @Qualifier("startWithContextOrchestrator") private val startWithContextOrchestrator: Orchestrator<String, String>,
     @Qualifier("fooContextOrchestrator") private val fooContextOrchestrator: Orchestrator<String, List<Foo>>,
     private val privateOrchestrator: Orchestrator<Private, Private>,
+    @Qualifier("throwOnStartOrchestrator") private val throwOnStartOrchestrator: Orchestrator<String, String>,
+    @Qualifier("throwOnJoinOrchestrator") private val throwOnJoinOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -222,6 +223,28 @@ internal class OrchestratorTest(
 
                 result.isSuccess shouldBeEqual true
                 result.decodeResultOrThrow(Private::class) shouldBeEqual private
+            }
+        }
+    }
+
+    describe("throwOnStartOrchestrator 구현채는") {
+        context("start에서 예외가 던져지면,") {
+            it("해당 예외를 Result에서 throw한다.") {
+                shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
+                    throwOnStartOrchestrator.sagaSync("throw error in start.")
+                        .decodeResultOrThrow(String::class)
+                }
+            }
+        }
+    }
+
+    describe("throwOnJoinOrchestrator 구현채는") {
+        context("join에서 예외가 던져지면,") {
+            it("해당 예외를 Result에서 throw한다.") {
+                shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
+                    throwOnJoinOrchestrator.sagaSync("throw error in join.")
+                        .decodeResultOrThrow(String::class)
+                }
             }
         }
     }

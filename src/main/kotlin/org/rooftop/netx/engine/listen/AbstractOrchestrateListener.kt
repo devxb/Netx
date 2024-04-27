@@ -150,6 +150,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
         throwable: Throwable,
         orchestrateEvent: OrchestrateEvent,
     ) {
+        println(">>> $id , $throwable")
         val rollbackOrchestrateEvent =
             OrchestrateEvent(
                 orchestrateEvent.orchestratorId,

@@ -237,6 +237,35 @@ internal class OrchestratorConfigurer(
             .commit({ it })
     }
 
+    @Bean(name = ["throwOnStartOrchestrator"])
+    fun throwOnStartOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("throwOnStartOrchestrator")
+            .start(
+                orchestrate = {
+                    throw IllegalArgumentException("Throw error for test.")
+                }
+            )
+            .commit({
+                "Never reach this line."
+            })
+    }
+
+    @Bean(name = ["throwOnJoinOrchestrator"])
+    fun throwOnJoinOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("throwOnJoinOrchestrator")
+            .start({
+                "start success"
+            })
+            .join({
+                throw IllegalArgumentException("Throw error for test.")
+            })
+            .commit({
+                "Never reach this line."
+            })
+    }
+
     object PairOrchestrate :
         Orchestrate<Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>, Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>> {
         override fun orchestrate(request: Pair<OrchestratorTest.Foo, OrchestratorTest.Foo>): Pair<OrchestratorTest.Foo, OrchestratorTest.Foo> {
