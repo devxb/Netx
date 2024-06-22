@@ -20,7 +20,7 @@ import kotlin.time.toJavaDuration
 internal class RedisStreamSagaListener(
     backpressureSize: Int,
     sagaDispatcher: AbstractSagaDispatcher,
-    connectionFactory: ReactiveRedisConnectionFactory,
+    private val connectionFactory: ReactiveRedisConnectionFactory,
     private val nodeGroup: String,
     private val nodeName: String,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Saga>,
@@ -59,6 +59,10 @@ internal class RedisStreamSagaListener(
                 throw it
             }
             .flatMapMany { Flux.just(it) }
+    }
+
+    override fun shutdownCascade() {
+        connectionFactory.reactiveConnection.close()
     }
 
     private companion object {
