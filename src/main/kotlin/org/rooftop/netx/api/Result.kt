@@ -22,7 +22,12 @@ class Result<T : Any> private constructor(
      * @param typeReference
      * @return T result of saga
      */
-    fun decodeResultOrThrow(typeReference: TypeReference<T>): T = decodeResult(typeReference)
+    fun decodeResultOrThrow(typeReference: TypeReference<T>): T {
+        if (!isSuccess) {
+            throwError()
+        }
+        return decodeResult(typeReference)
+    }
 
     /**
      * @see decodeResultOrThrow
