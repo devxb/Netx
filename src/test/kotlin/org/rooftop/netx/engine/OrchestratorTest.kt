@@ -1,5 +1,6 @@
 package org.rooftop.netx.engine
 
+import io.jsonwebtoken.JwtException
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.annotation.DisplayName
@@ -40,6 +41,10 @@ internal class OrchestratorTest(
     private val privateOrchestrator: Orchestrator<Private, Private>,
     @Qualifier("throwOnStartOrchestrator") private val throwOnStartOrchestrator: Orchestrator<String, String>,
     @Qualifier("throwOnJoinOrchestrator") private val throwOnJoinOrchestrator: Orchestrator<String, String>,
+    @Qualifier("throwOnStartWithContextOrchestrator") private val throwOnStartWithContextOrchestrator: Orchestrator<List<Home>, List<Home>>,
+    @Qualifier("throwOnJoinWithContextOrchestrator") private val throwOnJoinWithContextOrchestrator: Orchestrator<List<Home>, List<Home>>,
+    @Qualifier("throwOnCommitWithContextOrchestrator") private val throwOnCommitWithContextOrchestrator: Orchestrator<List<Home>, List<Home>>,
+    @Qualifier("throwJwtExceptionOnStartOrchestrator") private val throwJwtExceptionOnStartOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -243,6 +248,50 @@ internal class OrchestratorTest(
             it("해당 예외를 Result에서 throw한다.") {
                 shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
                     throwOnJoinOrchestrator.sagaSync("throw error in join.")
+                        .decodeResultOrThrow(String::class)
+                }
+            }
+        }
+    }
+
+    describe("throwOnStartWithContextOrchestrator 구현채는") {
+        context("startWithContext에서 예외가 던져지면,") {
+            it("해당 예외를 Result에서 throw한다.") {
+                shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
+                    throwOnStartWithContextOrchestrator.sagaSync(listOf())
+                        .decodeResultOrThrow(object: TypeReference<List<Home>>(){})
+                }
+            }
+        }
+    }
+
+    describe("throwOnJoinWithContextOrchestrator 구현채는") {
+        context("joinWithContext에서 예외가 던져지면,") {
+            it("해당 예외를 Result에서 throw한다.") {
+                shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
+                    throwOnJoinWithContextOrchestrator.sagaSync(listOf())
+                        .decodeResultOrThrow(object: TypeReference<List<Home>>(){})
+                }
+            }
+        }
+    }
+
+    describe("throwOnCommitWithContextOrchestrator 구현채는") {
+        context("commitWithContext에서 예외가 던져지면,") {
+            it("해당 예외를 Result에서 throw한다.") {
+                shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
+                    throwOnCommitWithContextOrchestrator.sagaSync(listOf())
+                        .decodeResultOrThrow(object: TypeReference<List<Home>>(){})
+                }
+            }
+        }
+    }
+
+    describe("throwJwtExceptionOnStartOrchestrator 구현채는") {
+        context("JwtException이 던져져도,") {
+            it("해당 예외를 Result에 담고 timeout시간안에 예외를 반환한다") {
+                shouldThrowWithMessage<JwtException>("Authorization fail") {
+                    throwJwtExceptionOnStartOrchestrator.sagaSync("")
                         .decodeResultOrThrow(String::class)
                 }
             }

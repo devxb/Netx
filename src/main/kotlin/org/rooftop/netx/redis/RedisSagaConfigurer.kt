@@ -2,6 +2,7 @@ package org.rooftop.netx.redis
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -127,6 +128,23 @@ class RedisSagaConfigurer(
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
             .configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, true)
             .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true)
+            .addMixIn(Throwable::class.java, ThrowableMixIn::class.java)
+
+
+    abstract class ThrowableMixIn {
+        @JsonIgnore
+        private val detailMessage: String? = null
+
+        @JsonIgnore
+        private val suppressedExceptions: List<Throwable> = listOf()
+
+        @JsonIgnore
+        private val cause: String? = null
+
+        @JsonIgnore
+        private val stackTrace: Array<StackTraceElement> = arrayOf()
+    }
+
 
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
