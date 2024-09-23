@@ -72,7 +72,6 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
                 sagaEvent.setNextEvent(it)
             }
             .doOnError {
-                it.printStackTrace()
                 rollback(
                     sagaEvent.id,
                     it,

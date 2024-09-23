@@ -1,7 +1,9 @@
 package org.rooftop.netx.engine
 
+import io.jsonwebtoken.JwtException
 import org.rooftop.netx.api.*
 import org.rooftop.netx.api.OrchestratorFactory
+import org.rooftop.netx.engine.OrchestratorConfigurer.ListOrchestrate
 import org.rooftop.netx.engine.OrchestratorTest.Companion.contextResult
 import org.rooftop.netx.engine.OrchestratorTest.Companion.monoRollbackResult
 import org.rooftop.netx.engine.OrchestratorTest.Companion.rollbackOrchestratorResult
@@ -257,6 +259,70 @@ internal class OrchestratorConfigurer(
             .commit({
                 "Never reach this line."
             })
+    }
+
+    @Bean(name = ["throwOnStartWithContextOrchestrator"])
+    fun throwOnStartWithContextOrchestrator(): Orchestrator<List<OrchestratorTest.Home>, List<OrchestratorTest.Home>> {
+        return OrchestratorFactory.instance()
+            .create<List<OrchestratorTest.Home>>("throwOnStartWithContextOrchestrator")
+            .startWithContext(ListOrchestrate { _, _ ->
+                throw IllegalArgumentException("Throw error for test.")
+            })
+            .joinWithContext(ListOrchestrate { _, _ ->
+                listOf(OrchestratorTest.Home("", mutableListOf()))
+            })
+            .commitWithContext(ListOrchestrate { _, _ ->
+                listOf(OrchestratorTest.Home("", mutableListOf()))
+            })
+    }
+
+    @Bean(name = ["throwOnJoinWithContextOrchestrator"])
+    fun throwOnJoinWithContextOrchestrator(): Orchestrator<List<OrchestratorTest.Home>, List<OrchestratorTest.Home>> {
+        return OrchestratorFactory.instance()
+            .create<List<OrchestratorTest.Home>>("throwOnJoinWithContextOrchestrator")
+            .startWithContext(ListOrchestrate { _, _ ->
+                listOf(OrchestratorTest.Home("", mutableListOf()))
+            })
+            .joinWithContext(ListOrchestrate { _, _ ->
+                throw IllegalArgumentException("Throw error for test.")
+            })
+            .commitWithContext(ListOrchestrate { _, _ ->
+                listOf(OrchestratorTest.Home("", mutableListOf()))
+            })
+    }
+
+    @Bean(name = ["throwOnCommitWithContextOrchestrator"])
+    fun throwOnCommitWithContextOrchestrator(): Orchestrator<List<OrchestratorTest.Home>, List<OrchestratorTest.Home>> {
+        return OrchestratorFactory.instance()
+            .create<List<OrchestratorTest.Home>>("throwOnCommitWithContextOrchestrator")
+            .startWithContext(ListOrchestrate { _, _ ->
+                listOf(OrchestratorTest.Home("", mutableListOf()))
+            })
+            .joinWithContext(ListOrchestrate { _, _ ->
+                listOf(OrchestratorTest.Home("", mutableListOf()))
+            })
+            .commitWithContext(ListOrchestrate { _, _ ->
+                throw IllegalArgumentException("Throw error for test.")
+            })
+    }
+
+    @Bean(name = ["throwJwtExceptionOnStartOrchestrator"])
+    fun throwJwtExceptionOnStartOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("throwJwtExceptionOnStartOrchestrator")
+            .startWithContext({ context, event ->
+                throw JwtException("Authorization fail")
+            })
+            .joinWithContext({ _, _ -> "" })
+            .commit { "" }
+    }
+
+    fun interface ListOrchestrate :
+        ContextOrchestrate<List<OrchestratorTest.Home>, List<OrchestratorTest.Home>> {
+
+        override fun reified(): TypeReference<List<OrchestratorTest.Home>>? {
+            return object : TypeReference<List<OrchestratorTest.Home>>() {}
+        }
     }
 
     object PairOrchestrate :
