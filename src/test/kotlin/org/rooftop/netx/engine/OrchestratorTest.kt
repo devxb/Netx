@@ -2,18 +2,21 @@ package org.rooftop.netx.engine
 
 import io.jsonwebtoken.JwtException
 import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
 import org.rooftop.netx.api.Orchestrator
+import org.rooftop.netx.api.ResultException
 import org.rooftop.netx.api.TypeReference
 import org.rooftop.netx.meta.EnableSaga
 import org.rooftop.netx.redis.RedisContainer
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
+import org.springframework.web.client.HttpClientErrorException
 import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
@@ -45,6 +48,7 @@ internal class OrchestratorTest(
     @Qualifier("throwOnJoinWithContextOrchestrator") private val throwOnJoinWithContextOrchestrator: Orchestrator<List<Home>, List<Home>>,
     @Qualifier("throwOnCommitWithContextOrchestrator") private val throwOnCommitWithContextOrchestrator: Orchestrator<List<Home>, List<Home>>,
     @Qualifier("throwJwtExceptionOnStartOrchestrator") private val throwJwtExceptionOnStartOrchestrator: Orchestrator<String, String>,
+    @Qualifier("throwHttpClientErrorExceptionOnStartOrchestrator") private val throwHttpClientErrorExceptionOnStartOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -259,7 +263,7 @@ internal class OrchestratorTest(
             it("해당 예외를 Result에서 throw한다.") {
                 shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
                     throwOnStartWithContextOrchestrator.sagaSync(listOf())
-                        .decodeResultOrThrow(object: TypeReference<List<Home>>(){})
+                        .decodeResultOrThrow(object : TypeReference<List<Home>>() {})
                 }
             }
         }
@@ -270,7 +274,7 @@ internal class OrchestratorTest(
             it("해당 예외를 Result에서 throw한다.") {
                 shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
                     throwOnJoinWithContextOrchestrator.sagaSync(listOf())
-                        .decodeResultOrThrow(object: TypeReference<List<Home>>(){})
+                        .decodeResultOrThrow(object : TypeReference<List<Home>>() {})
                 }
             }
         }
@@ -281,7 +285,7 @@ internal class OrchestratorTest(
             it("해당 예외를 Result에서 throw한다.") {
                 shouldThrowWithMessage<IllegalArgumentException>("Throw error for test.") {
                     throwOnCommitWithContextOrchestrator.sagaSync(listOf())
-                        .decodeResultOrThrow(object: TypeReference<List<Home>>(){})
+                        .decodeResultOrThrow(object : TypeReference<List<Home>>() {})
                 }
             }
         }
@@ -292,6 +296,17 @@ internal class OrchestratorTest(
             it("해당 예외를 Result에 담고 timeout시간안에 예외를 반환한다") {
                 shouldThrowWithMessage<JwtException>("Authorization fail") {
                     throwJwtExceptionOnStartOrchestrator.sagaSync("")
+                        .decodeResultOrThrow(String::class)
+                }
+            }
+        }
+    }
+
+    describe("throwHttpClientErrorExceptionOnStartOrchestrator 구현채는") {
+        context("처리할 수 없는 HttpClientErrorException이 던져지면") {
+            it("ResultException을 Result에 담고 timeout시간안에 예외를 반환한다") {
+                shouldThrowExactly<ResultException> {
+                    throwHttpClientErrorExceptionOnStartOrchestrator.sagaSync("")
                         .decodeResultOrThrow(String::class)
                 }
             }
