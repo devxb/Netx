@@ -10,6 +10,8 @@ import org.rooftop.netx.engine.OrchestratorTest.Companion.rollbackOrchestratorRe
 import org.rooftop.netx.engine.OrchestratorTest.Companion.upChainResult
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus
+import org.springframework.web.client.HttpClientErrorException
 import reactor.core.publisher.Mono
 import java.time.Instant
 
@@ -315,6 +317,16 @@ internal class OrchestratorConfigurer(
             })
             .joinWithContext({ _, _ -> "" })
             .commit { "" }
+    }
+
+    @Bean(name = ["throwHttpClientErrorExceptionOnStartOrchestrator"])
+    fun throwHttpClientErrorExceptionOnStartOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("throwHttpClientErrorExceptionOnStartOrchestrator")
+            .startWithContext({ _, _ ->
+                throw HttpClientErrorException(HttpStatus.UNAUTHORIZED)
+            })
+            .commitWithContext({ _, _ -> "" })
     }
 
     fun interface ListOrchestrate :

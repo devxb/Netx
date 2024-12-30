@@ -1,5 +1,7 @@
 package org.rooftop.netx.api
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
 class EncodeException(message: String, throwable: Throwable) : RuntimeException(message, throwable)
 
 class DecodeException(message: String, throwable: Throwable) : RuntimeException(message, throwable)
@@ -16,4 +18,5 @@ class FailedAckSagaException(message: String) : RuntimeException(message)
 class ResultTimeoutException(message: String, throwable: Throwable) :
     RuntimeException(message, throwable)
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 class ResultException(message: String) : RuntimeException(message)

@@ -2,9 +2,10 @@ package org.rooftop.netx.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
-import org.rooftop.netx.core.Codec
 import org.rooftop.netx.api.Result
+import org.rooftop.netx.api.ResultException
 import org.rooftop.netx.api.ResultTimeoutException
+import org.rooftop.netx.core.Codec
 import org.rooftop.netx.engine.ResultHolder
 import org.rooftop.netx.engine.logging.info
 import org.springframework.data.redis.core.ReactiveRedisTemplate
@@ -73,10 +74,20 @@ internal class RedisResultHolder(
     }
 
     override fun <T : Throwable> setFailResult(id: String, result: T): Mono<T> {
-        val error = Error(
-            objectMapper.writeValueAsString(result::class.java),
-            objectMapper.writeValueAsString(result)
-        )
+        val error = runCatching {
+            Error(
+                type = objectMapper.writeValueAsString(result::class.java),
+                error = objectMapper.writeValueAsString(result),
+            )
+        }.getOrElse {
+            Error(
+                type = objectMapper.writeValueAsString(ResultException::class.java),
+                error = objectMapper.writeValueAsString(
+                    ResultException("Cannot encode fail result to json cause \"${it.message}\"")
+                ),
+            )
+        }
+
         val encodedError = objectMapper.writeValueAsString(error)
         return reactiveRedisTemplate.opsForList()
             .leftPush(
