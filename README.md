@@ -16,7 +16,7 @@ Netx is a Saga framework, that provides following features.
 3. Supports both Orchestration and Choreograph.
 4. Automatically reruns loss events.
 5. Automatically applies **`Transactional messaging pattern`**.
-6. Supports **`Rollback Dead letter`** relay. If an exception occurs during the rollback process, saga is store to the Dead Letter Queue, and you can relay it. by Using DeadLetterRelay
+6. Supports **`Rollback Dead letter`** relay. If an exception occurs during the rollback process, saga is stored in the Dead Letter Queue, and you can relay it using DeadLetterRelay.
 7. Supports backpressure to control the number of events that can be processed per node.
 8. Prevents multiple nodes in the same group from receiving duplicate events.
 9. Ensures message delivery using the `At Least Once` approach.
