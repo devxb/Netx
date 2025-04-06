@@ -5,6 +5,7 @@ import org.rooftop.netx.api.FailedAckSagaException
 import org.rooftop.netx.api.SagaManager
 import org.rooftop.netx.engine.AbstractSagaDispatcher
 import org.rooftop.netx.engine.core.Saga
+import org.rooftop.netx.engine.deadletter.AbstractDeadLetterManager
 import org.rooftop.netx.meta.SagaHandler
 import org.springframework.context.ApplicationContext
 import org.springframework.data.redis.core.ReactiveRedisTemplate
@@ -16,7 +17,8 @@ internal class RedisStreamSagaDispatcher(
     private val applicationContext: ApplicationContext,
     private val reactiveRedisTemplate: ReactiveRedisTemplate<String, Saga>,
     private val nodeGroup: String,
-) : AbstractSagaDispatcher(codec, sagaManager) {
+    abstractDeadLetterManager: AbstractDeadLetterManager,
+) : AbstractSagaDispatcher(codec, sagaManager, abstractDeadLetterManager) {
 
     override fun findHandlers(): List<Any> {
         return applicationContext.getBeansWithAnnotation(SagaHandler::class.java)

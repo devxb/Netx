@@ -153,7 +153,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
             OrchestrateEvent(
                 orchestrateEvent.orchestratorId,
                 beforeRollbackOrchestrateSequence,
-                "",
+                orchestrateEvent.clientEvent,
                 orchestrateEvent.context,
             )
         holdFailResult(id, throwable)

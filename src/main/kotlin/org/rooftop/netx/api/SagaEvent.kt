@@ -84,5 +84,28 @@ sealed class SagaEvent(
             type
         )
 
+    /**
+     * If you use Orchestrator and get SagaEvent that hold orchestrateEvent.
+     * you can get type class by using this function.
+     *
+     * @param type
+     * @param T
+     */
+    fun <T: Any> decodeOrchestrateEvent(type: Class<T>): T = decodeOrchestrateEvent(type.kotlin)
+
+    /**
+     * @see decodeOrchestrateEvent
+     */
+    fun <T : Any> decodeOrchestrateEvent(type: KClass<T>): T {
+        val orchestrateEvent = codec.decode(
+            event ?: throw NullPointerException("Cannot decode event cause event is null"),
+            object : TypeReference<Map<String, Any>>() {}
+        )
+        val clientEvent = orchestrateEvent["clientEvent"]
+            ?: throw NullPointerException("Cannot decode event cause orchestrateEvent.clientEvent is null")
+
+        return codec.decode(clientEvent as String, type)
+    }
+
     internal abstract fun copy(): SagaEvent
 }

@@ -5,6 +5,7 @@ import org.rooftop.netx.api.*
 import org.rooftop.netx.core.Codec
 import org.rooftop.netx.engine.core.Saga
 import org.rooftop.netx.engine.core.SagaState
+import org.rooftop.netx.engine.deadletter.AbstractDeadLetterManager
 import org.rooftop.netx.engine.logging.info
 import org.rooftop.netx.engine.logging.warningOnError
 import reactor.core.publisher.Flux
@@ -17,7 +18,12 @@ import kotlin.reflect.full.declaredMemberFunctions
 internal abstract class AbstractSagaDispatcher(
     private val codec: Codec,
     private val sagaManager: SagaManager,
+    private val abstractDeadLetterManager: AbstractDeadLetterManager,
 ) {
+
+    init {
+        this.also { abstractDeadLetterManager.dispatcher = it }
+    }
 
     private val functions =
         mutableMapOf<SagaState, MutableList<AbstractDispatchFunction<*>>>()
@@ -55,7 +61,8 @@ internal abstract class AbstractSagaDispatcher(
         messageId: String
     ): Flux<*> = this.doOnComplete {
         Mono.just(saga to messageId)
-            .info("Ack saga \"${saga.id}\"")
+            .filter { messageId != DEAD_LETTER }
+            .info("Ack saga \"${saga.id}\" messageId: $messageId")
             .flatMap {
                 ack(saga, messageId)
                     .warningOnError("Fail to ack saga \"${saga.id}\"")
@@ -65,57 +72,7 @@ internal abstract class AbstractSagaDispatcher(
     }
 
     private fun mapSagaEvent(saga: Saga): Mono<SagaEvent> {
-        return when (saga.state) {
-            SagaState.START -> Mono.just(
-                SagaStartEvent(
-                    id = saga.id,
-                    nodeName = saga.serverId,
-                    group = saga.group,
-                    event = extractEvent(saga),
-                    codec = codec,
-                )
-            )
-
-            SagaState.COMMIT -> Mono.just(
-                SagaCommitEvent(
-                    id = saga.id,
-                    nodeName = saga.serverId,
-                    group = saga.group,
-                    event = extractEvent(saga),
-                    codec = codec
-                )
-            )
-
-            SagaState.JOIN -> Mono.just(
-                SagaJoinEvent(
-                    id = saga.id,
-                    nodeName = saga.serverId,
-                    group = saga.group,
-                    event = extractEvent(saga),
-                    codec = codec,
-                )
-            )
-
-            SagaState.ROLLBACK ->
-                Mono.just(
-                    SagaRollbackEvent(
-                        id = saga.id,
-                        nodeName = saga.serverId,
-                        group = saga.group,
-                        event = extractEvent(saga),
-                        cause = saga.cause
-                            ?: throw NullPointerException("Null value on SagaRollbackEvent's cause field"),
-                        codec = codec,
-                    )
-                )
-        }
-    }
-
-    private fun extractEvent(saga: Saga): String? {
-        return when (saga.event != null) {
-            true -> saga.event
-            false -> null
-        }
+        return Mono.just(saga.toEvent(codec))
     }
 
     internal fun addOrchestrate(handler: Any) {
@@ -145,6 +102,7 @@ internal abstract class AbstractSagaDispatcher(
                                 noRollbackFor,
                                 nextState,
                                 sagaManager,
+                                abstractDeadLetterManager,
                             )
                         )
                     }.onFailure {
@@ -190,6 +148,7 @@ internal abstract class AbstractSagaDispatcher(
                                     noRollbackFor,
                                     nextState,
                                     sagaManager,
+                                    abstractDeadLetterManager,
                                 )
                             )
                         }.onFailure {
@@ -225,6 +184,7 @@ internal abstract class AbstractSagaDispatcher(
                                     noRollbackFor,
                                     nextState,
                                     sagaManager,
+                                    abstractDeadLetterManager,
                                 )
                             )
                         }.onFailure {
@@ -288,7 +248,8 @@ internal abstract class AbstractSagaDispatcher(
         messageId: String
     ): Mono<Pair<Saga, String>>
 
-    private companion object {
+    internal companion object {
+        internal const val DEAD_LETTER = "dead letter"
         private const val DISPATCHED = "dispatched"
 
         private val notMatchedSagaHandlerException =

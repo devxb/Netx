@@ -329,6 +329,65 @@ internal class OrchestratorConfigurer(
             .commitWithContext({ _, _ -> "" })
     }
 
+    @Bean(name = ["whenErrorOccurredRollbackThenAddDeadLetterOrchestrator"])
+    fun whenErrorOccurredRollbackThenAddDeadLetterOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("whenErrorOccurredRollbackThenAddDeadLetterOrchestrator")
+            .start(
+                orchestrate = { "" },
+                rollback = {
+                    throw IllegalStateException("Add dead letter")
+                }
+            )
+            .commit(
+                orchestrate = {
+                    throw IllegalStateException("Throw error")
+                }
+            )
+    }
+
+    @Bean(name = ["whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator"])
+    fun whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator")
+            .startWithContext(
+                contextOrchestrate = { _, _ -> "" },
+                contextRollback = { _, _ ->
+                    throw IllegalStateException("Add dead letter")
+                }
+            )
+            .joinWithContext(
+                contextOrchestrate = { _, _ -> "" },
+                contextRollback = { _, _ ->
+                    throw IllegalStateException("Add dead letter")
+                }
+            )
+            .commitWithContext { _, _ ->
+                throw IllegalStateException("Throw error")
+            }
+    }
+
+    @Bean(name = ["whenErrorOccurredRollbackThenAddDeadLetterReactiveOrchestrator"])
+    fun whenErrorOccurredRollbackThenAddDeadLetterReactiveOrchestrator(): Orchestrator<String, String> {
+        return OrchestratorFactory.instance()
+            .create<String>("whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator")
+            .startReactive(
+                orchestrate = { Mono.just("") },
+                rollback = {
+                    throw IllegalStateException("Add dead letter")
+                }
+            )
+            .joinReactive(
+                orchestrate = { Mono.just("") },
+                rollback = {
+                    throw IllegalStateException("Add dead letter")
+                }
+            )
+            .commitReactive {
+                throw IllegalStateException("Throw error")
+            }
+    }
+
     fun interface ListOrchestrate :
         ContextOrchestrate<List<OrchestratorTest.Home>, List<OrchestratorTest.Home>> {
 

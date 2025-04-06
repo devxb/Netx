@@ -169,6 +169,7 @@ class RedisSagaConfigurer(
             nodeGroup = nodeGroup,
             codec = jsonCodec(),
             sagaManager = redisStreamSagaManager(),
+            abstractDeadLetterManager = redisDeadLetterManager(),
         ).also {
             info("RedisStreamSagaDispatcher connect to host : \"$host\" port : \"$port\" nodeName : \"$nodeName\" nodeGroup : \"$nodeGroup\"")
         }
@@ -216,5 +217,15 @@ class RedisSagaConfigurer(
         redisStandaloneConfiguration.password = RedisPassword.of(password)
 
         return LettuceConnectionFactory(redisStandaloneConfiguration)
+    }
+
+    @Bean
+    @Primary
+    @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
+    internal fun redisDeadLetterManager(): RedisDeadLetterManager {
+        return RedisDeadLetterManager(
+            codec = jsonCodec(),
+            reactiveRedisTemplate = sagaReactiveRedisTemplate(),
+        )
     }
 }
