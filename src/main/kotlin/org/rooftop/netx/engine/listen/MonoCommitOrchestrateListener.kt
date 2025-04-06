@@ -16,6 +16,7 @@ internal class MonoCommitOrchestrateListener<T : Any, V : Any> internal construc
     requestHolder: RequestHolder,
     private val resultHolder: ResultHolder,
     typeReference: TypeReference<T>?,
+    private val group: String,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
@@ -24,11 +25,12 @@ internal class MonoCommitOrchestrateListener<T : Any, V : Any> internal construc
     requestHolder,
     resultHolder,
     typeReference,
+    group,
 ) {
     @SagaCommitListener(OrchestrateEvent::class)
     fun listenCommitOrchestrateEvent(sagaCommitEvent: SagaCommitEvent): Mono<V> {
         return sagaCommitEvent.startWithOrchestrateEvent()
-            .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId }
+            .filter { it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId && sagaCommitEvent.group == this.group}
             .mapReifiedRequest()
             .flatMap { (request, event) ->
                 holdRequestIfRollbackable(request, sagaCommitEvent.id)

@@ -5,6 +5,7 @@ import org.rooftop.netx.api.OrchestratorFactory
 import org.rooftop.netx.core.Codec
 
 internal class OrchestratorFactory internal constructor(
+    private val group: String,
     private val sagaManager: SagaManager,
     private val sagaDispatcher: AbstractSagaDispatcher,
     private val codec: Codec,
@@ -26,6 +27,7 @@ internal class OrchestratorFactory internal constructor(
             resultHolder = resultHolder,
             requestHolder = requestHolder,
             orchestratorCache = orchestratorCache,
+            group = group,
         )
     }
 }
