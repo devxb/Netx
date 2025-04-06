@@ -4,7 +4,7 @@
 
 <br>
 
-![version 0.4.8](https://img.shields.io/badge/version-0.4.8-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
+![version 0.4.9](https://img.shields.io/badge/version-0.4.9-black?labelColor=black&style=flat-square) ![jdk 17](https://img.shields.io/badge/minimum_jdk-17-orange?labelColor=black&style=flat-square) ![load-test](https://img.shields.io/badge/load%20test%2010%2C000%2C000-success-brightgreen?labelColor=black&style=flat-square)    
 ![redis--stream](https://img.shields.io/badge/-redis--stream-da2020?style=flat-square&logo=Redis&logoColor=white)
 
 **TPS(6,000)** on my Macbook air m2(default options). _[link](#Test1-TPS)_ 
@@ -16,11 +16,27 @@ Netx is a Saga framework, that provides following features.
 3. Supports both Orchestration and Choreograph.
 4. Automatically reruns loss events.
 5. Automatically applies **`Transactional messaging pattern`**.
-6. Supports backpressure to control the number of events that can be processed per node.
-7. Prevents multiple nodes in the same group from receiving duplicate events.
-8. Ensures message delivery using the `At Least Once` approach.
+6. Supports **`Rollback Dead letter`** relay. If an exception occurs during the rollback process, saga is store to the Dead Letter Queue, and you can relay it. by Using DeadLetterRelay
+7. Supports backpressure to control the number of events that can be processed per node.
+8. Prevents multiple nodes in the same group from receiving duplicate events.
+9. Ensures message delivery using the `At Least Once` approach.
 
 You can see the test results [here](#Test).
+
+## Table of Contents
+- [Download](#download)
+- [How to use](#how-to-use)
+    - [Orchestrator-example.](#orchestrator-example)
+    - [Events-Example. Handle saga event](#events-example-handle-saga-event)
+    - [Events-Example. Start pay saga](#events-example-start-pay-saga)
+    - [Events-Example. Join order saga](#events-example-join-order-saga)
+    - [Events-Example. Check exists saga](#events-example-check-exists-saga)
+- [Rollback DeadLetter](#rollback-deadletter)
+    - [Example. relay deadLetter](#example-relay-deadletter)
+    - [Example. handle deadLetter message](#example-handle-deadletter-message)
+- [Test](#test)
+    - [Test1-TPS](#test1-tps)
+    - [Test2-Rollback](#test2-rollback)
 
 ## Download
 
@@ -271,6 +287,49 @@ fun exists(param: Any): Any {
 // Async
 fun exists(param: Any): Mono<Any> {
     return sagaManager.exists(param.sagaId) // Find any saga has ever been started 
+}
+```
+
+### Rollback DeadLetter
+
+#### Example. relay deadLetter
+
+```kotlin
+
+@Component
+class SomeClass(
+    private val deadLetterRelay: DeadLetterRelay,
+) {
+    
+    fun example() {
+        // Relay latest dead letter
+        deadLetterRelay.relay()
+            .subscribe()
+        
+        // Alternatively, you can use the …Sync method in a synchronous environment.
+        deadLetterRelay.relaySync()
+        
+        // Relay specific dead letter by deadLetterId 
+        deadLetterRelay.relaySync("12345-01")
+    }
+} 
+
+```
+
+#### Example. handle deadLetter message
+
+```kotlin 
+
+@Configuration
+class SomeClass(
+    private val deadLetterRegistry: DeadLetterRegistry,
+) {
+    
+    fun example() {
+        deadLetterRegistry.addListener { deadLetterId, sagaEvent ->
+            // do handle
+        }
+    }
 }
 ```
 
