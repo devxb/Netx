@@ -18,5 +18,9 @@ class FailedAckSagaException(message: String) : RuntimeException(message)
 class ResultTimeoutException(message: String, throwable: Throwable) :
     RuntimeException(message, throwable)
 
+class DeadLetterTimeoutException(message: String): RuntimeException(message)
+
+class DeadLetterException(message: String): RuntimeException(message)
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ResultException(message: String) : RuntimeException(message)

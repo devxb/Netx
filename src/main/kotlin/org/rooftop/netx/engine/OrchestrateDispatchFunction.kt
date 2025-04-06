@@ -2,6 +2,8 @@ package org.rooftop.netx.engine
 
 import org.rooftop.netx.api.SagaEvent
 import org.rooftop.netx.api.SagaManager
+import org.rooftop.netx.api.SagaRollbackEvent
+import org.rooftop.netx.engine.deadletter.AbstractDeadLetterManager
 import org.rooftop.netx.engine.logging.info
 import reactor.core.publisher.Mono
 import kotlin.reflect.KClass
@@ -20,6 +22,7 @@ internal class OrchestrateDispatchFunction(
     noRetryFor: Array<KClass<out Throwable>>,
     nextState: NextSagaState,
     sagaManager: SagaManager,
+    private val abstractDeadLetterManager: AbstractDeadLetterManager,
 ) : AbstractDispatchFunction<Mono<*>>(
     eventType,
     function,
@@ -33,11 +36,19 @@ internal class OrchestrateDispatchFunction(
         return Mono.just(sagaEvent)
             .filter { isProcessable(sagaEvent) }
             .map { sagaEvent.copy() }
-            .flatMap { function.call(handler, sagaEvent) }
             .info("Call OrchestrateHandler \"${name()}\" with id \"${sagaEvent.id}\"")
+            .flatMap { function.call(handler, sagaEvent) }
+            .info("Call OrchestratorHandler success \"${name()}\" with id \"${sagaEvent.id}\"")
             .map {
                 publishNextSaga(sagaEvent)
                 it
+            }
+            .onErrorResume {
+                if (sagaEvent is SagaRollbackEvent) {
+                    abstractDeadLetterManager.addDeadLetter(sagaEvent.copy())
+                } else {
+                    Mono.error(it)
+                }
             }
             .switchIfEmpty(`continue`)
             .onErrorResume {

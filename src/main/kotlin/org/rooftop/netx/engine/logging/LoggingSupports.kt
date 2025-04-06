@@ -14,10 +14,14 @@ internal fun infoOnError(message: String, throwable: Throwable) = logger.info(me
 
 internal fun warningOnError(message: String) = logger.warn(message)
 
-internal fun error(message: String) = logger.error(message)
+internal fun error(message: String, throwable: Throwable? = null) = logger.error(message, throwable)
 
 internal fun <T> Mono<T>.info(message: String): Mono<T> = this.doOnNext {
     logger.info(message)
+}
+
+internal fun <T> Mono<T>.info(message: (T) -> String): Mono<T> = this.doOnNext {
+    logger.info(message.invoke(it))
 }
 
 internal fun <T> Mono<T>.infoOnError(message: String): Mono<T> = this.doOnError {

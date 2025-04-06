@@ -8,15 +8,14 @@ import io.kotest.core.annotation.DisplayName
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equals.shouldBeEqual
-import org.rooftop.netx.api.Orchestrator
-import org.rooftop.netx.api.ResultException
-import org.rooftop.netx.api.TypeReference
+import io.kotest.matchers.shouldNotBe
+import org.rooftop.netx.api.*
 import org.rooftop.netx.meta.EnableSaga
 import org.rooftop.netx.redis.RedisContainer
+import org.rooftop.netx.spi.DeadLetterRegistry
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
-import org.springframework.web.client.HttpClientErrorException
 import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
@@ -34,6 +33,7 @@ internal class OrchestratorTest(
     private val homeOrchestrator: Orchestrator<Home, Home>,
     private val instantOrchestrator: Orchestrator<InstantWrapper, InstantWrapper>,
     private val manyTypeOrchestrator: Orchestrator<Int, Home>,
+    private val deadLetterRegistry: DeadLetterRegistry,
     @Qualifier("rollbackOrchestrator") private val rollbackOrchestrator: Orchestrator<String, String>,
     @Qualifier("upChainRollbackOrchestrator") private val upChainRollbackOrchestrator: Orchestrator<String, String>,
     @Qualifier("monoRollbackOrchestrator") private val monoRollbackOrchestrator: Orchestrator<String, String>,
@@ -49,6 +49,9 @@ internal class OrchestratorTest(
     @Qualifier("throwOnCommitWithContextOrchestrator") private val throwOnCommitWithContextOrchestrator: Orchestrator<List<Home>, List<Home>>,
     @Qualifier("throwJwtExceptionOnStartOrchestrator") private val throwJwtExceptionOnStartOrchestrator: Orchestrator<String, String>,
     @Qualifier("throwHttpClientErrorExceptionOnStartOrchestrator") private val throwHttpClientErrorExceptionOnStartOrchestrator: Orchestrator<String, String>,
+    @Qualifier("whenErrorOccurredRollbackThenAddDeadLetterOrchestrator") private val whenErrorOccurredRollbackThenAddDeadLetterOrchestrator: Orchestrator<String, String>,
+    @Qualifier("whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator") private val whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator: Orchestrator<String, String>,
+    @Qualifier("whenErrorOccurredRollbackThenAddDeadLetterReactiveOrchestrator") private val whenErrorOccurredRollbackThenAddDeadLetterReactiveOrchestrator: Orchestrator<String, String>,
 ) : DescribeSpec({
 
     describe("numberOrchestrator 구현채는") {
@@ -308,6 +311,57 @@ internal class OrchestratorTest(
                 shouldThrowExactly<ResultException> {
                     throwHttpClientErrorExceptionOnStartOrchestrator.sagaSync("")
                         .decodeResultOrThrow(String::class)
+                }
+            }
+        }
+    }
+
+    describe("whenErrorOccurredRollbackThenAddDeadLetterOrchestrator 구현채는") {
+        context("롤백 파이프라인에서 에러가 던져지면,") {
+            var result: SagaEvent? = null
+            deadLetterRegistry.addListener { _, event ->
+                result = event
+            }
+
+            it("DeadLetterQueue 에 메시지를 저장한다") {
+                whenErrorOccurredRollbackThenAddDeadLetterOrchestrator.sagaSync("")
+
+                eventually(5.seconds) {
+                    result shouldNotBe null
+                }
+            }
+        }
+    }
+
+    describe("whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator 구현채는") {
+        context("롤백 파이프라인에서 에러가 던져지면,") {
+            var result: SagaEvent? = null
+            deadLetterRegistry.addListener { _, event ->
+                result = event
+            }
+
+            it("DeadLetterQueue 에 메시지를 저장한다") {
+                whenErrorOccurredRollbackThenAddDeadLetterContextOrchestrator.sagaSync("")
+
+                eventually(5.seconds) {
+                    result shouldNotBe null
+                }
+            }
+        }
+    }
+
+    describe("whenErrorOccurredRollbackThenAddDeadLetterReactiveOrchestrator 구현채는") {
+        context("롤백 파이프라인에서 에러가 던져지면,") {
+            var result: SagaEvent? = null
+            deadLetterRegistry.addListener { _, event ->
+                result = event
+            }
+
+            it("DeadLetterQueue 에 메시지를 저장한다") {
+                whenErrorOccurredRollbackThenAddDeadLetterReactiveOrchestrator.sagaSync("")
+
+                eventually(5.seconds) {
+                    result shouldNotBe null
                 }
             }
         }
