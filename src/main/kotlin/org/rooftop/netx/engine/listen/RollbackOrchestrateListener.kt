@@ -16,6 +16,7 @@ internal class RollbackOrchestrateListener<T : Any, V : Any>(
     requestHolder: RequestHolder,
     resultHolder: ResultHolder,
     typeReference: TypeReference<T>?,
+    private val group: String,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
@@ -24,12 +25,13 @@ internal class RollbackOrchestrateListener<T : Any, V : Any>(
     requestHolder,
     resultHolder,
     typeReference,
+    group,
 ) {
 
     @SagaRollbackListener(OrchestrateEvent::class)
     fun listenRollbackOrchestrateEvent(sagaRollbackEvent: SagaRollbackEvent): Mono<Unit> {
         return sagaRollbackEvent.startWithOrchestrateEvent()
-            .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence }
+            .filter { it.orchestratorId == orchestratorId && it.orchestrateSequence == orchestrateSequence && sagaRollbackEvent.group == group }
             .getHeldRequest(sagaRollbackEvent)
             .map { (request, event) ->
                 rollbackCommand.command(request, event.context)

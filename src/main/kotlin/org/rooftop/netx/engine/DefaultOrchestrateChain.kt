@@ -6,6 +6,7 @@ import org.rooftop.netx.engine.listen.*
 import reactor.core.publisher.Mono
 
 internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> private constructor(
+    private val group: String,
     private val orchestratorId: String,
     private val orchestrateSequence: Int,
     private val chainContainer: ChainContainer,
@@ -56,6 +57,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
         requestHolder = chainContainer.requestHolder,
         resultHolder = chainContainer.resultHolder,
         typeReference = function.reified(),
+        group = group,
     )
 
     private fun <S : Any> nextOrchestrateChain(
@@ -63,12 +65,13 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
         nextRollbackOrchestrateListener: RollbackOrchestrateListener<V, S>?
     ): OrchestrateChain<OriginReq, V, S> {
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
-            orchestratorId,
-            orchestrateSequence + 1,
-            chainContainer,
-            nextJoinOrchestrateListener,
-            nextRollbackOrchestrateListener,
-            this,
+            group = group,
+            orchestratorId = orchestratorId,
+            orchestrateSequence = orchestrateSequence + 1,
+            chainContainer = chainContainer,
+            orchestrateListener = nextJoinOrchestrateListener,
+            rollbackOrchestrateListener = nextRollbackOrchestrateListener,
+            beforeDefaultOrchestrateChain = this,
         )
         this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
 
@@ -97,12 +100,13 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
             getMonoRollbackOrchestrateListener<V, S>(CommandType.CONTEXT, contextRollback)
 
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
-            orchestratorId,
-            orchestrateSequence + 1,
-            chainContainer,
-            nextJoinOrchestrateListener,
-            nextRollbackOrchestrateListener,
-            this,
+            group = group,
+            orchestratorId = orchestratorId,
+            orchestrateSequence = orchestrateSequence + 1,
+            chainContainer = chainContainer,
+            orchestrateListener = nextJoinOrchestrateListener,
+            rollbackOrchestrateListener = nextRollbackOrchestrateListener,
+            beforeDefaultOrchestrateChain  = this,
         )
         this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
 
@@ -124,7 +128,8 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
         ),
         requestHolder = chainContainer.requestHolder,
         resultHolder = chainContainer.resultHolder,
-        function.reified(),
+        typeReference = function.reified(),
+        group = group,
     )
 
     private fun <S : Any> nextOrchestrateChain(
@@ -132,12 +137,13 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
         nextRollbackOrchestrateListener: MonoRollbackOrchestrateListener<V, S>?
     ): OrchestrateChain<OriginReq, V, S> {
         val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
-            orchestratorId,
-            orchestrateSequence + 1,
-            chainContainer,
-            nextJoinOrchestrateListener,
-            nextRollbackOrchestrateListener,
-            this,
+            group = group,
+            orchestratorId = orchestratorId,
+            orchestrateSequence = orchestrateSequence + 1,
+            chainContainer = chainContainer,
+            orchestrateListener = nextJoinOrchestrateListener,
+            rollbackOrchestrateListener = nextRollbackOrchestrateListener,
+            beforeDefaultOrchestrateChain = this,
         )
         this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
 
@@ -173,7 +179,8 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
         orchestrateCommand = OrchestrateCommand<T, V>(commandType, chainContainer.codec, function),
         resultHolder = chainContainer.resultHolder,
         requestHolder = chainContainer.requestHolder,
-        function.reified(),
+        typeReference = function.reified(),
+        group = group,
     )
 
     private fun <T : Any, V : Any> getRollbackOrchestrateListener(
@@ -189,6 +196,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
             requestHolder = chainContainer.requestHolder,
             resultHolder = chainContainer.resultHolder,
             typeReference = it.reified(),
+            group = group,
         )
     }
 
@@ -197,12 +205,13 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
     ): Orchestrator<OriginReq, S> {
         return chainContainer.orchestratorCache.cache(orchestratorId) {
             val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
-                orchestratorId,
-                orchestrateSequence + 1,
-                chainContainer,
-                nextCommitOrchestrateListener,
-                null,
-                this,
+                orchestratorId = orchestratorId,
+                orchestrateSequence = orchestrateSequence + 1,
+                chainContainer = chainContainer,
+                orchestrateListener = nextCommitOrchestrateListener,
+                rollbackOrchestrateListener = null,
+                beforeDefaultOrchestrateChain = this,
+                group = group,
             )
             this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
             val firstOrchestrators = nextDefaultOrchestrateChain.initOrchestrateListeners()
@@ -241,12 +250,13 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
     ): Orchestrator<OriginReq, S> {
         return chainContainer.orchestratorCache.cache(orchestratorId) {
             val nextDefaultOrchestrateChain = DefaultOrchestrateChain(
-                orchestratorId,
-                orchestrateSequence + 1,
-                chainContainer,
-                nextJoinOrchestrateListener,
-                null,
-                this,
+                group = group,
+                orchestratorId = orchestratorId,
+                orchestrateSequence = orchestrateSequence + 1,
+                chainContainer = chainContainer,
+                orchestrateListener = nextJoinOrchestrateListener,
+                rollbackOrchestrateListener = null,
+                beforeDefaultOrchestrateChain = this,
             )
             this.nextDefaultOrchestrateChain = nextDefaultOrchestrateChain
 
@@ -385,6 +395,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
         resultHolder = chainContainer.resultHolder,
         requestHolder = chainContainer.requestHolder,
         typeReference = function.reified(),
+        group = group,
     )
 
     private fun <T : Any, V : Any> getMonoRollbackOrchestrateListener(
@@ -404,10 +415,12 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
             requestHolder = chainContainer.requestHolder,
             resultHolder = chainContainer.resultHolder,
             typeReference = it.reified(),
+            group = group,
         )
     }
 
     internal class Pre<T : Any> internal constructor(
+        private val group: String,
         private val orchestratorId: String,
         private val sagaManager: SagaManager,
         private val sagaDispatcher: AbstractSagaDispatcher,
@@ -427,6 +440,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 getRollbackOrchestrateListener<V>(CommandType.DEFAULT, rollback)
 
             return DefaultOrchestrateChain(
+                group = group,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
                 chainContainer = getStreamContainer(),
@@ -445,6 +459,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 getRollbackOrchestrateListener<V>(CommandType.CONTEXT, contextRollback)
 
             return DefaultOrchestrateChain(
+                group = group,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
                 chainContainer = getStreamContainer(),
@@ -469,6 +484,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
             requestHolder = requestHolder,
             resultHolder = resultHolder,
             typeReference = function.reified(),
+            group = group,
         )
 
         private fun <V : Any> getRollbackOrchestrateListener(
@@ -487,7 +503,8 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 ),
                 requestHolder = requestHolder,
                 resultHolder = resultHolder,
-                typeReference = it.reified()
+                typeReference = it.reified(),
+                group = group,
             )
         }
 
@@ -501,6 +518,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 getMonoRollbackOrchestrateListener<V>(CommandType.DEFAULT, rollback)
 
             return DefaultOrchestrateChain(
+                group = group,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
                 chainContainer = getStreamContainer(),
@@ -519,6 +537,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 getMonoRollbackOrchestrateListener<V>(CommandType.CONTEXT, contextRollback)
 
             return DefaultOrchestrateChain(
+                group = group,
                 orchestratorId = orchestratorId,
                 orchestrateSequence = 0,
                 chainContainer = getStreamContainer(),
@@ -543,6 +562,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
             requestHolder = requestHolder,
             resultHolder = resultHolder,
             typeReference = function.reified(),
+            group = group,
         )
 
         private fun <V : Any> getMonoRollbackOrchestrateListener(
@@ -562,6 +582,7 @@ internal class DefaultOrchestrateChain<OriginReq : Any, T : Any, V : Any> privat
                 requestHolder = requestHolder,
                 resultHolder = resultHolder,
                 typeReference = it.reified(),
+                group = group,
             )
         }
 

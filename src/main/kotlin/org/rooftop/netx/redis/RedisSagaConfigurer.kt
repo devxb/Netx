@@ -51,6 +51,7 @@ class RedisSagaConfigurer(
     @Bean
     @ConditionalOnProperty(prefix = "netx", name = ["mode"], havingValue = "redis")
     internal fun redisStreamOrchestratorFactory(): OrchestratorFactory = OrchestratorFactory(
+        group = nodeGroup,
         sagaManager = redisStreamSagaManager(),
         sagaDispatcher = redisStreamSagaDispatcher(),
         codec = jsonCodec(),

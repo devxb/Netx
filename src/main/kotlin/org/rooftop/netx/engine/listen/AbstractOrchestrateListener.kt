@@ -20,6 +20,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
     private val requestHolder: RequestHolder,
     private val resultHolder: ResultHolder,
     private val typeReference: TypeReference<T>?,
+    private val group: String,
 ) {
 
     var isFirst: Boolean = true
@@ -58,7 +59,7 @@ internal abstract class AbstractOrchestrateListener<T : Any, V : Any> internal c
     protected fun orchestrate(sagaEvent: SagaEvent): Mono<OrchestrateEvent> {
         return sagaEvent.startWithOrchestrateEvent()
             .filter {
-                it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId
+                it.orchestrateSequence == orchestrateSequence && it.orchestratorId == orchestratorId && sagaEvent.group == group
             }
             .mapReifiedRequest()
             .flatMap { (request, event) ->

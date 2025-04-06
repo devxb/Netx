@@ -16,6 +16,7 @@ internal class StartOrchestrateListener<T : Any, V : Any>(
     private val requestHolder: RequestHolder,
     private val resultHolder: ResultHolder,
     private val typeReference: TypeReference<T>?,
+    private val group: String,
 ) : AbstractOrchestrateListener<T, V>(
     orchestratorId,
     orchestrateSequence,
@@ -24,6 +25,7 @@ internal class StartOrchestrateListener<T : Any, V : Any>(
     requestHolder,
     resultHolder,
     typeReference,
+    group,
 ) {
 
     override fun withAnnotated(): AbstractOrchestrateListener<T, V> {
@@ -43,6 +45,7 @@ internal class StartOrchestrateListener<T : Any, V : Any>(
             requestHolder,
             resultHolder,
             typeReference,
+            group,
         ) {
             @SagaStartListener(
                 event = OrchestrateEvent::class,
@@ -67,6 +70,7 @@ internal class StartOrchestrateListener<T : Any, V : Any>(
             requestHolder,
             resultHolder,
             typeReference,
+            group,
         ) {
             @SagaStartListener(
                 event = OrchestrateEvent::class,
