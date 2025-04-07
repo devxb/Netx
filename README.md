@@ -292,6 +292,10 @@ fun exists(param: Any): Mono<Any> {
 
 ### Rollback DeadLetter
 
+In certain scenarios, an exception may occur during a rollback event.    
+When this happens, the event should not be retried. To accommodate this behavior, Netx automatically acknowledges (ACK) any rollback event that triggers an exception, rather than attempting a retry.   
+The exception-causing event is then transferred to a dead-letter stream, enabling a manual retry process at a later time if needed.
+
 #### Example. relay deadLetter
 
 ```kotlin
